@@ -1,0 +1,9 @@
+/release
+/bin
+/obj
+/tags
+/debug
+/test
+/spdlog
+/TODO
+/.ccls-cache
