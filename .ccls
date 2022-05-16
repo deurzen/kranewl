@@ -1,3 +1,22 @@
 clang
 %c
 -Iinclude
+`pkg-config --cflags wlroots pangocairo cairo pixman-1 xkbcommon wayland-server libinput libucl libprocps spdlog`
+-Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
+-Wnon-virtual-dtor
+-Wold-style-cast
+-Wcast-align
+-Wunused
+-Woverloaded-virtual
+-Wpedantic
+-Wconversion
+-Wsign-conversion
+-Wmisleading-indentation
+-Wduplicated-cond
+-Wduplicated-branches
+-Wlogical-op
+-Wnull-dereference
+-Wuseless-cast
+-Wdouble-promotion
+-Wformat=2
+-Weffc++
