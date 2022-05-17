@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(kranewl
     VERSION 0.0.1
-    DESCRIPTION "A wlroots-based dynamic Wayland compositor, written in C++"
+    DESCRIPTION "A wlroots-based dynamic Wayland compositor, written in C++, configured with Lua"
     HOMEPAGE_URL "%%https://github.com/deurzen/kranewl%%"
     LANGUAGES CXX
 )
@@ -12,6 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
+    -fdiagnostics-show-option
+    # -Weffc++
     -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
     -Wnon-virtual-dtor
     -Wold-style-cast
@@ -29,7 +31,6 @@ add_compile_options(
     -Wuseless-cast
     -Wdouble-promotion
     -Wformat=2
-    -Weffc++
 )
 
 find_program(CCACHE ccache)
@@ -106,6 +107,19 @@ endif()
 file(GLOB_RECURSE KRANEWL_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} src/kranewl/*.cc)
 file(GLOB_RECURSE KRANEC_SOURCES RELATIVE ${CMAKE_SOURCE_DIR} src/kranec/*.cc)
 
+find_package(PkgConfig)
+pkg_get_variable(WAYLAND_PROTOCOLS wayland-protocols pkgdatadir)
+
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/include/protocols/xdg-shell-protocol.h
+    COMMAND wayland-scanner server-header ${WAYLAND_PROTOCOLS}/stable/xdg-shell/xdg-shell.xml ${CMAKE_SOURCE_DIR}/include/protocols/xdg-shell-protocol.h
+    COMMENT "Generating xdg-shell-protocol.h"
+)
+
+add_custom_target(run ALL
+    DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/xdg-shell-protocol.h
+)
+
 add_executable(kranewl
     ${KRANEWL_SOURCES}
 )
@@ -114,7 +128,6 @@ add_executable(kranec
     ${KRANEC_SOURCES}
 )
 
-find_package(PkgConfig)
 pkg_check_modules(spdlog REQUIRED IMPORTED_TARGET spdlog)
 pkg_check_modules(lua REQUIRED IMPORTED_TARGET lua54)
 pkg_check_modules(cairo REQUIRED IMPORTED_TARGET cairo)
@@ -127,6 +140,10 @@ pkg_check_modules(xkbcommon REQUIRED IMPORTED_TARGET xkbcommon)
 
 target_compile_features(kranewl PRIVATE cxx_std_20)
 target_compile_features(kranec PRIVATE cxx_std_20)
+target_compile_definitions(kranewl PRIVATE
+    # required to use wlroots' unstable interfaces
+    WLR_USE_UNSTABLE
+)
 
 target_link_libraries(kranewl
     PRIVATE
@@ -144,9 +161,23 @@ target_link_libraries(kranewl
 target_include_directories(kranewl PRIVATE
     ${CMAKE_SOURCE_DIR}/src/kranewl
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/protocols
 )
 
 target_include_directories(kranec PRIVATE
     ${CMAKE_SOURCE_DIR}/src/kranec
     ${CMAKE_SOURCE_DIR}/include
+    ${CMAKE_SOURCE_DIR}/include/protocols
+)
+
+include(CTest)
+
+add_test(NAME kranewl
+    COMMAND
+    kranewl
+)
+
+set_tests_properties(kranewl
+    PROPERTIES
+    ENVIRONMENT WL_BACKEND=x11
 )
