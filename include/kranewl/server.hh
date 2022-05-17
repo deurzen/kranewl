@@ -18,6 +18,4 @@ public:
 private:
     std::string m_wm_name;
 
-
-
 };
