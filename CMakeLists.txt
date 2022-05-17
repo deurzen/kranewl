@@ -114,46 +114,32 @@ add_executable(kranec
     ${KRANEC_SOURCES}
 )
 
-find_package(spdlog REQUIRED)
-target_link_libraries(kranewl PRIVATE spdlog::spdlog)
-
-include(FindPkgConfig)
 find_package(PkgConfig)
-
-pkg_search_module(CAIRO REQUIRED cairo)
-include_directories(${CAIRO_INCLUDE_DIRS})
-link_directories(${CAIRO_LIBRARY_DIRS})
-
-pkg_search_module(PANGOCAIRO REQUIRED pangocairo)
-include_directories(${PANGOCAIRO_INCLUDE_DIRS})
-link_directories(${PANGOCAIRO_LIBRARY_DIRS})
-
-pkg_search_module(WAYLANDSERVER REQUIRED wayland-server)
-include_directories(${WAYLANDSERVER_INCLUDE_DIRS})
-link_directories(${WAYLANDSERVER_LIBRARY_DIRS})
-
-pkg_search_module(LIBINPUT REQUIRED libinput)
-include_directories(${LIBINPUT_INCLUDE_DIRS})
-link_directories(${LIBINPUT_LIBRARY_DIRS})
-
-pkg_search_module(LIBUCL REQUIRED libucl)
-include_directories(${LIBUCL_INCLUDE_DIRS})
-link_directories(${LIBUCL_LIBRARY_DIRS})
-
-pkg_search_module(PIXMAN REQUIRED pixman-1)
-include_directories(${PIXMAN_INCLUDE_DIRS})
-link_directories(${PIXMAN_LIBRARY_DIRS})
-
-pkg_search_module(WLROOTS REQUIRED wlroots)
-include_directories(${WLROOTS_INCLUDE_DIRS})
-link_directories(${WLROOTS_LIBRARY_DIRS})
-
-pkg_search_module(XKBCOMMON REQUIRED xkbcommon)
-include_directories(${XKBCOMMON_INCLUDE_DIRS})
-link_directories(${XKBCOMMON_LIBRARY_DIRS})
+pkg_check_modules(spdlog REQUIRED IMPORTED_TARGET spdlog)
+pkg_check_modules(lua REQUIRED IMPORTED_TARGET lua54)
+pkg_check_modules(cairo REQUIRED IMPORTED_TARGET cairo)
+pkg_check_modules(pangocairo REQUIRED IMPORTED_TARGET pangocairo)
+pkg_check_modules(wayland_server REQUIRED IMPORTED_TARGET wayland-server)
+pkg_check_modules(wlroots REQUIRED IMPORTED_TARGET wlroots)
+pkg_check_modules(pixman_1 REQUIRED IMPORTED_TARGET pixman-1)
+pkg_check_modules(libinput REQUIRED IMPORTED_TARGET libinput)
+pkg_check_modules(xkbcommon REQUIRED IMPORTED_TARGET xkbcommon)
 
 target_compile_features(kranewl PRIVATE cxx_std_20)
 target_compile_features(kranec PRIVATE cxx_std_20)
+
+target_link_libraries(kranewl
+    PRIVATE
+    PkgConfig::spdlog
+    PkgConfig::lua
+    PkgConfig::cairo
+    PkgConfig::pangocairo
+    PkgConfig::wayland_server
+    PkgConfig::wlroots
+    PkgConfig::pixman_1
+    PkgConfig::libinput
+    PkgConfig::xkbcommon
+)
 
 target_include_directories(kranewl PRIVATE
     ${CMAKE_SOURCE_DIR}/src/kranewl
