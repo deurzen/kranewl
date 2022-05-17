@@ -22,7 +22,7 @@ main(int argc, char** argv)
     const ConfigParser config_parser{options.config_path};
     const Config config = config_parser.generate_config();
 
-    Server server{"kranewl"};
+    Server server;
     Model{server, config, options.autostart_path}.run();
 
     return EXIT_SUCCESS;
