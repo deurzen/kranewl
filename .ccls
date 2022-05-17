@@ -1,7 +1,7 @@
 clang
 %c
 -Iinclude
-`pkg-config --cflags wlroots pangocairo cairo pixman-1 xkbcommon wayland-server libinput libucl libprocps spdlog`
+`pkg-config --cflags wlroots lua pangocairo cairo pixman-1 xkbcommon wayland-server libinput libprocps spdlog`
 -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
 -Wnon-virtual-dtor
 -Wold-style-cast
