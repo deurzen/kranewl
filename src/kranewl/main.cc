@@ -8,6 +8,7 @@
 #include <kranewl/conf/options.hh>
 #include <kranewl/model.hh>
 #include <kranewl/server.hh>
+#include <kranewl/decoration.hh>
 
 #include <spdlog/spdlog.h>
 

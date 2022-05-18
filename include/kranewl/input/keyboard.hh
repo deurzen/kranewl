@@ -7,9 +7,11 @@ extern "C" {
 class Server;
 struct Keyboard {
     struct wl_list link;
+
     Server* server;
+
     struct wlr_input_device* device;
 
-    struct wl_listener modifiers;
-    struct wl_listener key;
+    struct wl_listener l_modifiers;
+    struct wl_listener l_key;
 };

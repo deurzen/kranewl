@@ -26,12 +26,12 @@ operator==(Dim const& lhs, Dim const& rhs)
 }
 
 inline std::ostream&
-operator<<(std::ostream& os, Dim const& dim) {
+operator<<(std::ostream& os, Dim const& dim)
+{
     return os << "(" << dim.w << "×" << dim.h << ")";
 }
 
-struct Pos final
-{
+struct Pos final {
     int x;
     int y;
 
@@ -58,7 +58,8 @@ operator==(Pos const& lhs, Pos const& rhs)
 }
 
 inline std::ostream&
-operator<<(std::ostream& os, Pos const& pos) {
+operator<<(std::ostream& os, Pos const& pos)
+{
     return os << "(" << pos.x << ", " << pos.y << ")";
 }
 
@@ -98,8 +99,7 @@ operator-(Pos const& pos, Dim const& dim)
     };
 }
 
-struct Padding final
-{
+struct Padding final {
     int left;
     int right;
     int top;
@@ -109,15 +109,15 @@ struct Padding final
 typedef Padding Extents;
 
 inline std::ostream&
-operator<<(std::ostream& os, Padding const& padding) {
+operator<<(std::ostream& os, Padding const& padding)
+{
     return os << "[" << padding.left
         << "; " << padding.top
         << "; " << padding.right
         << "; " << padding.bottom << "]";
 }
 
-struct Region final
-{
+struct Region final {
     Pos pos;
     Dim dim;
 };
@@ -129,17 +129,18 @@ operator==(Region const& lhs, Region const& rhs)
 }
 
 inline std::ostream&
-operator<<(std::ostream& os, Region const& region) {
+operator<<(std::ostream& os, Region const& region)
+{
     return os << "[" << region.pos << " " << region.dim << "]";
 }
 
-struct Distance final
-{
+struct Distance final {
     int dx;
     int dy;
 };
 
 inline std::ostream&
-operator<<(std::ostream& os, Distance const& dist) {
+operator<<(std::ostream& os, Distance const& dist)
+{
     return os << "𝛿(" << dist.dx << ", " << dist.dy << ")";
 }

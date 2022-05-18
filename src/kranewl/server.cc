@@ -11,6 +11,7 @@
 #include <wayland-util.h>
 
 // https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
 #define class class_
 #define namespace namespace_
 #define static
@@ -21,14 +22,27 @@ extern "C" {
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_input_device.h>
+#include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_keyboard.h>
+#include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_pointer.h>
+#include <wlr/types/wlr_pointer_constraints_v1.h>
+#include <wlr/types/wlr_presentation_time.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
+#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_virtual_keyboard_v1.h>
+#include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #ifdef WLR_HAS_XWAYLAND
@@ -55,24 +69,37 @@ Server::Server()
         return renderer;
       }(m_display, m_backend)),
       m_allocator(wlr_allocator_autocreate(m_backend, m_renderer)),
+      ml_new_xdg_surface({ .notify = Server::new_xdg_surface }),
+      ml_new_layer_shell_surface({ .notify = Server::new_layer_shell_surface }),
+      ml_cursor_motion({ .notify = Server::cursor_motion }),
+      ml_cursor_motion_absolute({ .notify = Server::cursor_motion_absolute }),
+      ml_cursor_button({ .notify = Server::cursor_button }),
+      ml_cursor_axis({ .notify = Server::cursor_axis }),
+      ml_cursor_frame({ .notify = Server::cursor_frame }),
+      ml_request_set_cursor({ .notify = Server::request_set_cursor }),
+      ml_request_start_drag({ .notify = Server::request_start_drag }),
+      ml_start_drag({ .notify = Server::start_drag }),
+      ml_new_input({ .notify = Server::new_input }),
+      ml_request_set_selection({ .notify = Server::request_set_selection }),
+      ml_new_output({ .notify = Server::new_output }),
+      ml_output_manager_apply({ .notify = Server::output_manager_apply }),
+      ml_output_manager_test({ .notify = Server::output_manager_test }),
       m_socket(wl_display_add_socket_auto(m_display))
 {
-    wlr_compositor_create(m_display, m_renderer);
-    wlr_data_device_manager_create(m_display);
+    m_compositor = wlr_compositor_create(m_display, m_renderer);
+    m_data_device_manager = wlr_data_device_manager_create(m_display);
 
     m_output_layout = wlr_output_layout_create();
 
     wl_list_init(&m_outputs);
-    m_new_output.notify = Server::new_output;
-    wl_signal_add(&m_backend->events.new_output, &m_new_output);
+    wl_signal_add(&m_backend->events.new_output, &ml_new_output);
 
     m_scene = wlr_scene_create();
     wlr_scene_attach_output_layout(m_scene, m_output_layout);
 
     wl_list_init(&m_views);
     m_xdg_shell = wlr_xdg_shell_create(m_display);
-    m_new_xdg_surface.notify = Server::new_xdg_surface;
-    wl_signal_add(&m_xdg_shell->events.new_surface, &m_new_xdg_surface);
+    wl_signal_add(&m_xdg_shell->events.new_surface, &ml_new_xdg_surface);
 
     m_cursor = wlr_cursor_create();
     wlr_cursor_attach_output_layout(m_cursor, m_output_layout);
@@ -80,29 +107,46 @@ Server::Server()
     m_cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
     wlr_xcursor_manager_load(m_cursor_mgr, 1);
 
-    { // set up cursor signals
-        m_cursor_motion.notify = Server::cursor_motion;
-        wl_signal_add(&m_cursor->events.motion, &m_cursor_motion);
-        m_cursor_motion_absolute.notify = Server::cursor_motion_absolute;
-        wl_signal_add(&m_cursor->events.motion_absolute, &m_cursor_motion_absolute);
-        m_cursor_button.notify = Server::cursor_button;
-        wl_signal_add(&m_cursor->events.button, &m_cursor_button);
-        m_cursor_axis.notify = Server::cursor_axis;
-        wl_signal_add(&m_cursor->events.axis, &m_cursor_axis);
-        m_cursor_frame.notify = Server::cursor_frame;
-        wl_signal_add(&m_cursor->events.frame, &m_cursor_frame);
+    m_seat = wlr_seat_create(m_display, "seat0");
+    m_presentation = wlr_presentation_create(m_display, m_backend);
+    m_idle = wlr_idle_create(m_display);
+
+    { // set up cursor handling
+        wl_signal_add(&m_cursor->events.motion, &ml_cursor_motion);
+        wl_signal_add(&m_cursor->events.motion_absolute, &ml_cursor_motion_absolute);
+        wl_signal_add(&m_cursor->events.button, &ml_cursor_button);
+        wl_signal_add(&m_cursor->events.axis, &ml_cursor_axis);
+        wl_signal_add(&m_cursor->events.frame, &ml_cursor_frame);
     }
 
-    { // set up keyboard signals
+    { // set up keyboard handling
         wl_list_init(&m_keyboards);
-        m_new_input.notify = Server::new_input;
-        wl_signal_add(&m_backend->events.new_input, &m_new_input);
-        m_seat = wlr_seat_create(m_display, "seat0");
-        m_request_cursor.notify = Server::seat_request_cursor;
-        wl_signal_add(&m_seat->events.request_set_cursor, &m_request_cursor);
-        m_request_set_selection.notify = Server::seat_request_set_selection;
-        wl_signal_add(&m_seat->events.request_set_selection, &m_request_set_selection);
+        wl_signal_add(&m_backend->events.new_input, &ml_new_input);
+        wl_signal_add(&m_seat->events.request_set_cursor, &ml_request_set_cursor);
+        wl_signal_add(&m_seat->events.request_set_selection, &ml_request_set_selection);
+        wl_signal_add(&m_seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
     }
+
+    m_server_decoration_manager = wlr_server_decoration_manager_create(m_display);
+    m_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(m_display);
+
+    wlr_server_decoration_manager_set_default_mode(
+        m_server_decoration_manager,
+        WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
+    );
+
+    wlr_xdg_output_manager_v1_create(m_display, m_output_layout);
+    m_output_manager = wlr_output_manager_v1_create(m_display);
+	wl_signal_add(&m_output_manager->events.apply, &ml_output_manager_apply);
+	wl_signal_add(&m_output_manager->events.test, &ml_output_manager_test);
+
+    m_input_inhibit_manager = wlr_input_inhibit_manager_create(m_display);
+    m_keyboard_shortcuts_inhibit_manager = wlr_keyboard_shortcuts_inhibit_v1_create(m_display);
+
+    m_pointer_constraints = wlr_pointer_constraints_v1_create(m_display);
+    m_relative_pointer_manager = wlr_relative_pointer_manager_v1_create(m_display);
+    m_virtual_pointer_manager = wlr_virtual_pointer_manager_v1_create(m_display);
+    m_virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(m_display);
 
     if (m_socket.empty()) {
         wlr_backend_destroy(m_backend);
@@ -118,6 +162,11 @@ Server::Server()
     }
 
     setenv("WAYLAND_DISPLAY", m_socket.c_str(), true);
+    setenv("XDG_CURRENT_DESKTOP", "kranewl", true);
+
+    setenv("QT_QPA_PLATFORM", "wayland", true);
+    setenv("MOZ_ENABLE_WAYLAND", "1", true);
+
     spdlog::info("Server initiated on WAYLAND_DISPLAY=" + m_socket);
 }
 
@@ -136,7 +185,7 @@ Server::start() noexcept
 void
 Server::new_output(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_new_output);
+    Server* server = wl_container_of(listener, server, ml_new_output);
 
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
 
@@ -154,17 +203,29 @@ Server::new_output(struct wl_listener* listener, void* data)
     Output* output = reinterpret_cast<Output*>(calloc(1, sizeof(Output)));
     output->wlr_output = wlr_output;
     output->server = server;
-    output->frame.notify = Server::output_frame;
-    wl_signal_add(&wlr_output->events.frame, &output->frame);
+    output->l_frame.notify = Server::output_frame;
+    wl_signal_add(&wlr_output->events.frame, &output->l_frame);
     wl_list_insert(&server->m_outputs, &output->link);
 
     wlr_output_layout_add_auto(server->m_output_layout, wlr_output);
 }
 
 void
+Server::output_manager_apply(struct wl_listener* listener, void* data)
+{
+    // TODO
+}
+
+void
+Server::output_manager_test(struct wl_listener* listener, void* data)
+{
+    // TODO
+}
+
+void
 Server::new_xdg_surface(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_new_xdg_surface);
+    Server* server = wl_container_of(listener, server, ml_new_xdg_surface);
 
     struct wlr_xdg_surface* xdg_surface = reinterpret_cast<struct wlr_xdg_surface*>(data);
 
@@ -190,24 +251,30 @@ Server::new_xdg_surface(struct wl_listener* listener, void* data)
     view->scene_node->data = view;
     xdg_surface->data = view->scene_node;
 
-    view->map.notify = xdg_toplevel_map;
-    wl_signal_add(&xdg_surface->events.map, &view->map);
-    view->unmap.notify = xdg_toplevel_unmap;
-    wl_signal_add(&xdg_surface->events.unmap, &view->unmap);
-    view->destroy.notify = xdg_toplevel_destroy;
-    wl_signal_add(&xdg_surface->events.destroy, &view->destroy);
+    view->l_map.notify = xdg_toplevel_map;
+    wl_signal_add(&xdg_surface->events.map, &view->l_map);
+    view->l_unmap.notify = xdg_toplevel_unmap;
+    wl_signal_add(&xdg_surface->events.unmap, &view->l_unmap);
+    view->l_destroy.notify = xdg_toplevel_destroy;
+    wl_signal_add(&xdg_surface->events.destroy, &view->l_destroy);
 
     struct wlr_xdg_toplevel* toplevel = xdg_surface->toplevel;
-    view->request_move.notify = xdg_toplevel_request_move;
-    wl_signal_add(&toplevel->events.request_move, &view->request_move);
-    view->request_resize.notify = xdg_toplevel_request_resize;
-    wl_signal_add(&toplevel->events.request_resize, &view->request_resize);
+    view->l_request_move.notify = xdg_toplevel_request_move;
+    wl_signal_add(&toplevel->events.request_move, &view->l_request_move);
+    view->l_request_resize.notify = xdg_toplevel_request_resize;
+    wl_signal_add(&toplevel->events.request_resize, &view->l_request_resize);
+}
+
+void
+Server::new_layer_shell_surface(struct wl_listener* listener, void* data)
+{
+    // TODO
 }
 
 void
 Server::new_input(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_new_input);
+    Server* server = wl_container_of(listener, server, ml_new_input);
     struct wlr_input_device* device = reinterpret_cast<struct wlr_input_device*>(data);
 
     switch (device->type) {
@@ -253,10 +320,10 @@ Server::new_keyboard(Server* server, struct wlr_input_device* device)
     xkb_context_unref(context);
     wlr_keyboard_set_repeat_info(device->keyboard, 25, 600);
 
-    keyboard->modifiers.notify = keyboard_handle_modifiers;
-    wl_signal_add(&device->keyboard->events.modifiers, &keyboard->modifiers);
-    keyboard->key.notify = keyboard_handle_key;
-    wl_signal_add(&device->keyboard->events.key, &keyboard->key);
+    keyboard->l_modifiers.notify = keyboard_handle_modifiers;
+    wl_signal_add(&device->keyboard->events.modifiers, &keyboard->l_modifiers);
+    keyboard->l_key.notify = keyboard_handle_key;
+    wl_signal_add(&device->keyboard->events.key, &keyboard->l_key);
 
     wlr_seat_set_keyboard(server->m_seat, device);
     wl_list_insert(&server->m_keyboards, &keyboard->link);
@@ -265,7 +332,7 @@ Server::new_keyboard(Server* server, struct wlr_input_device* device)
 void
 Server::cursor_motion(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_cursor_motion);
+    Server* server = wl_container_of(listener, server, ml_cursor_motion);
     struct wlr_event_pointer_motion* event
         = reinterpret_cast<wlr_event_pointer_motion*>(data);
 
@@ -276,7 +343,7 @@ Server::cursor_motion(struct wl_listener* listener, void* data)
 void
 Server::cursor_motion_absolute(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_cursor_motion_absolute);
+    Server* server = wl_container_of(listener, server, ml_cursor_motion_absolute);
     struct wlr_event_pointer_motion_absolute* event
         = reinterpret_cast<wlr_event_pointer_motion_absolute*>(data);
 
@@ -287,7 +354,7 @@ Server::cursor_motion_absolute(struct wl_listener* listener, void* data)
 void
 Server::cursor_button(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_cursor_button);
+    Server* server = wl_container_of(listener, server, ml_cursor_button);
 
     struct wlr_event_pointer_button* event
         = reinterpret_cast<wlr_event_pointer_button*>(data);
@@ -320,7 +387,7 @@ Server::cursor_button(struct wl_listener* listener, void* data)
 void
 Server::cursor_axis(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_cursor_axis);
+    Server* server = wl_container_of(listener, server, ml_cursor_axis);
 
     struct wlr_event_pointer_axis* event
         = reinterpret_cast<wlr_event_pointer_axis*>(data);
@@ -338,9 +405,27 @@ Server::cursor_axis(struct wl_listener* listener, void* data)
 void
 Server::cursor_frame(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_cursor_frame);
+    Server* server = wl_container_of(listener, server, ml_cursor_frame);
 
     wlr_seat_pointer_notify_frame(server->m_seat);
+}
+
+void
+Server::request_set_cursor(struct wl_listener* listener, void* data)
+{
+    Server* server = wl_container_of(listener, server, ml_request_set_cursor);
+
+    struct wlr_seat_pointer_request_set_cursor_event* event
+        = reinterpret_cast<struct wlr_seat_pointer_request_set_cursor_event*>(data);
+    struct wlr_seat_client* focused_client = server->m_seat->pointer_state.focused_client;
+
+    if (focused_client == event->seat_client)
+        wlr_cursor_set_surface(
+            server->m_cursor,
+            event->surface,
+            event->hotspot_x,
+            event->hotspot_y
+        );
 }
 
 void
@@ -439,9 +524,21 @@ Server::cursor_process_resize(Server* server, uint32_t time)
 }
 
 void
+Server::request_start_drag(struct wl_listener*, void*)
+{
+
+}
+
+void
+Server::start_drag(struct wl_listener*, void*)
+{
+
+}
+
+void
 Server::keyboard_handle_modifiers(struct wl_listener* listener, void* data)
 {
-    Keyboard* keyboard = wl_container_of(listener, keyboard, modifiers);
+    Keyboard* keyboard = wl_container_of(listener, keyboard, l_modifiers);
 
     wlr_seat_set_keyboard(keyboard->server->m_seat, keyboard->device);
     wlr_seat_keyboard_notify_modifiers(
@@ -453,7 +550,7 @@ Server::keyboard_handle_modifiers(struct wl_listener* listener, void* data)
 void
 Server::keyboard_handle_key(struct wl_listener* listener, void* data)
 {
-    Keyboard* keyboard = wl_container_of(listener, keyboard, key);
+    Keyboard* keyboard = wl_container_of(listener, keyboard, l_key);
     Server* server = keyboard->server;
 
     struct wlr_event_keyboard_key* event
@@ -517,27 +614,9 @@ Server::keyboard_handle_keybinding(Server* server, xkb_keysym_t sym)
 }
 
 void
-Server::seat_request_cursor(struct wl_listener* listener, void* data)
+Server::request_set_selection(struct wl_listener* listener, void* data)
 {
-    Server* server = wl_container_of(listener, server, m_request_cursor);
-
-    struct wlr_seat_pointer_request_set_cursor_event* event
-        = reinterpret_cast<struct wlr_seat_pointer_request_set_cursor_event*>(data);
-    struct wlr_seat_client* focused_client = server->m_seat->pointer_state.focused_client;
-
-    if (focused_client == event->seat_client)
-        wlr_cursor_set_surface(
-            server->m_cursor,
-            event->surface,
-            event->hotspot_x,
-            event->hotspot_y
-        );
-}
-
-void
-Server::seat_request_set_selection(struct wl_listener* listener, void* data)
-{
-    Server* server = wl_container_of(listener, server, m_request_set_selection);
+    Server* server = wl_container_of(listener, server, ml_request_set_selection);
 
     struct wlr_seat_request_set_selection_event* event
         = reinterpret_cast<struct wlr_seat_request_set_selection_event*>(data);
@@ -548,7 +627,7 @@ Server::seat_request_set_selection(struct wl_listener* listener, void* data)
 void
 Server::output_frame(struct wl_listener* listener, void* data)
 {
-    Output* output = wl_container_of(listener, output, frame);
+    Output* output = wl_container_of(listener, output, l_frame);
     struct wlr_scene* scene = output->server->m_scene;
 
     struct wlr_scene_output* scene_output
@@ -627,7 +706,7 @@ Server::focus_view(View* view, struct wlr_surface* surface)
 void
 Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
 {
-    View* view = wl_container_of(listener, view, map);
+    View* view = wl_container_of(listener, view, l_map);
 
     wl_list_insert(&view->server->m_views, &view->link);
     focus_view(view, view->xdg_surface->surface);
@@ -636,20 +715,20 @@ Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
 void
 Server::xdg_toplevel_unmap(struct wl_listener* listener, void* data)
 {
-    View* view = wl_container_of(listener, view, unmap);
+    View* view = wl_container_of(listener, view, l_unmap);
     wl_list_remove(&view->link);
 }
 
 void
 Server::xdg_toplevel_destroy(struct wl_listener* listener, void* data)
 {
-    View* view = wl_container_of(listener, view, destroy);
+    View* view = wl_container_of(listener, view, l_destroy);
 
-    wl_list_remove(&view->map.link);
-    wl_list_remove(&view->unmap.link);
-    wl_list_remove(&view->destroy.link);
-    wl_list_remove(&view->request_move.link);
-    wl_list_remove(&view->request_resize.link);
+    wl_list_remove(&view->l_map.link);
+    wl_list_remove(&view->l_unmap.link);
+    wl_list_remove(&view->l_destroy.link);
+    wl_list_remove(&view->l_request_move.link);
+    wl_list_remove(&view->l_request_resize.link);
 
     free(view);
 }
@@ -657,7 +736,7 @@ Server::xdg_toplevel_destroy(struct wl_listener* listener, void* data)
 void
 Server::xdg_toplevel_request_move(struct wl_listener* listener, void* data)
 {
-    View* view = wl_container_of(listener, view, request_move);
+    View* view = wl_container_of(listener, view, l_request_move);
     xdg_toplevel_handle_moveresize(view, Server::CursorMode::Move, 0);
 }
 
@@ -667,7 +746,7 @@ Server::xdg_toplevel_request_resize(struct wl_listener* listener, void* data)
     struct wlr_xdg_toplevel_resize_event* event
         = reinterpret_cast<struct wlr_xdg_toplevel_resize_event*>(data);
 
-    View* view = wl_container_of(listener, view, request_resize);
+    View* view = wl_container_of(listener, view, l_request_resize);
     xdg_toplevel_handle_moveresize(view, Server::CursorMode::Resize, event->edges);
 }
 
