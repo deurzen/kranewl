@@ -3,6 +3,7 @@
 #include <kranewl/input/keyboard.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
+#include <kranewl/exec.hh>
 
 #include <spdlog/spdlog.h>
 
@@ -30,7 +31,6 @@ extern "C" {
 #include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
-#include <wlr/util/log.h>
 #ifdef WLR_HAS_XWAYLAND
 #include <wlr/xwayland.h>
 #endif
@@ -57,8 +57,6 @@ Server::Server()
       m_allocator(wlr_allocator_autocreate(m_backend, m_renderer)),
       m_socket(wl_display_add_socket_auto(m_display))
 {
-    wlr_log_init(WLR_DEBUG, NULL);
-
     wlr_compositor_create(m_display, m_renderer);
     wlr_data_device_manager_create(m_display);
 
@@ -108,14 +106,14 @@ Server::Server()
 
     if (m_socket.empty()) {
         wlr_backend_destroy(m_backend);
-        exit(1);
+        std::exit(1);
         return;
     }
 
     if (!wlr_backend_start(m_backend)) {
         wlr_backend_destroy(m_backend);
         wl_display_destroy(m_display);
-        exit(1);
+        std::exit(1);
         return;
     }
 
@@ -497,13 +495,19 @@ Server::keyboard_handle_keybinding(Server* server, xkb_keysym_t sym)
     case XKB_KEY_Escape:
         wl_display_terminate(server->m_display);
         break;
-    case XKB_KEY_F1:
+    case XKB_KEY_j:
         {
             if (wl_list_length(&server->m_views) < 2)
                 break;
 
-            View* next_view = wl_container_of(server->m_views.prev, next_view, link);
-            focus_view(next_view, next_view->xdg_surface->surface);
+            View* prev_view = wl_container_of(server->m_views.prev, prev_view, link);
+            focus_view(prev_view, prev_view->xdg_surface->surface);
+        }
+        break;
+    case XKB_KEY_Return:
+        {
+            std::string foot = "foot";
+            exec_external(foot);
         }
         break;
     default: return false;

@@ -15,8 +15,8 @@ static const std::string USAGE = "usage: kranewl [...options]\n\n"
     "options: \n"
     "  -a <autostart_file> Path to an executable autostart file.\n"
     "  -c <config_file>    Path to a configuration file.\n"
-    "  -h                  Prints this message.\n"
-    "  -v                  Prints the version.";
+    "  -v                  Prints the version.\n"
+    "  -h                  Prints this message.";
 
 static std::string
 default_user_path(std::string const& path) noexcept
@@ -88,14 +88,14 @@ parse_options(int argc, char** argv) noexcept
 
         case 'v':
             std::cout << VERSION << std::endl << std::flush;
-            exit(EXIT_SUCCESS);
+            std::exit(EXIT_SUCCESS);
             break;
 
         case '?':
         case 'h':
         default:
             std::cout << USAGE << std::endl << std::flush;
-            exit(EXIT_SUCCESS);
+            std::exit(EXIT_SUCCESS);
             break;
         }
     }

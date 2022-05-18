@@ -11,11 +11,19 @@
 
 #include <spdlog/spdlog.h>
 
+extern "C" {
+#include <wlr/util/log.h>
+}
+
 #include <string>
 
 int
 main(int argc, char** argv)
 {
+#ifndef NDEBUG
+    wlr_log_init(WLR_DEBUG, NULL);
+#endif
+
     const Options options = parse_options(argc, argv);
 
     spdlog::info("Initializing kranewl-" VERSION);
