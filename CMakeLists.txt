@@ -116,8 +116,15 @@ add_custom_command(
     COMMENT "Generating xdg-shell-protocol.h"
 )
 
+add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
+    COMMAND wayland-scanner server-header ${WAYLAND_PROTOCOLS}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
+    COMMENT "Generating pointer-constraints-unstable-v1.h"
+)
+
 add_custom_target(run ALL
     DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/xdg-shell-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
 )
 
 add_executable(kranewl
