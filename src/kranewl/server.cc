@@ -82,7 +82,7 @@ Server::Server()
     m_cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
     wlr_xcursor_manager_load(m_cursor_mgr, 1);
 
-    { // sets up cursor signals
+    { // set up cursor signals
         m_cursor_motion.notify = Server::cursor_motion;
         wl_signal_add(&m_cursor->events.motion, &m_cursor_motion);
         m_cursor_motion_absolute.notify = Server::cursor_motion_absolute;
@@ -95,7 +95,7 @@ Server::Server()
         wl_signal_add(&m_cursor->events.frame, &m_cursor_frame);
     }
 
-    { // sets up keyboard signals
+    { // set up keyboard signals
         wl_list_init(&m_keyboards);
         m_new_input.notify = Server::new_input;
         wl_signal_add(&m_backend->events.new_input, &m_new_input);
@@ -139,6 +139,7 @@ void
 Server::new_output(struct wl_listener* listener, void* data)
 {
     Server* server = wl_container_of(listener, server, m_new_output);
+
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
 
     wlr_output_init_render(wlr_output, server->m_allocator, server->m_renderer);
@@ -166,6 +167,7 @@ void
 Server::new_xdg_surface(struct wl_listener* listener, void* data)
 {
     Server* server = wl_container_of(listener, server, m_new_xdg_surface);
+
     struct wlr_xdg_surface* xdg_surface = reinterpret_cast<struct wlr_xdg_surface*>(data);
 
     if (xdg_surface->role == WLR_XDG_SURFACE_ROLE_POPUP) {
@@ -288,6 +290,7 @@ void
 Server::cursor_button(struct wl_listener* listener, void* data)
 {
     Server* server = wl_container_of(listener, server, m_cursor_button);
+
     struct wlr_event_pointer_button* event
         = reinterpret_cast<wlr_event_pointer_button*>(data);
 
@@ -298,9 +301,9 @@ Server::cursor_button(struct wl_listener* listener, void* data)
         event->state
     );
 
-    double sx, sy;
     struct wlr_surface* surface = NULL;
 
+    double sx, sy;
     View* view = desktop_view_at(
         server,
         server->m_cursor->x,
@@ -320,7 +323,9 @@ void
 Server::cursor_axis(struct wl_listener* listener, void* data)
 {
     Server* server = wl_container_of(listener, server, m_cursor_axis);
-    struct wlr_event_pointer_axis* event = reinterpret_cast<wlr_event_pointer_axis*>(data);
+
+    struct wlr_event_pointer_axis* event
+        = reinterpret_cast<wlr_event_pointer_axis*>(data);
 
     wlr_seat_pointer_notify_axis(
         server->m_seat,
@@ -336,6 +341,7 @@ void
 Server::cursor_frame(struct wl_listener* listener, void* data)
 {
     Server* server = wl_container_of(listener, server, m_cursor_frame);
+
     wlr_seat_pointer_notify_frame(server->m_seat);
 }
 
@@ -345,12 +351,13 @@ Server::cursor_process_motion(Server* server, uint32_t time)
     switch (server->m_cursor_mode) {
     case Server::CursorMode::Move:   cursor_process_move(server, time);   return;
     case Server::CursorMode::Resize: cursor_process_resize(server, time); return;
-    default: return;
+    default: break;
     }
 
-    double sx, sy;
     struct wlr_seat* seat = server->m_seat;
     struct wlr_surface* surface = NULL;
+
+    double sx, sy;
     View* view = desktop_view_at(
         server,
         server->m_cursor->x,
@@ -376,31 +383,179 @@ Server::cursor_process_motion(Server* server, uint32_t time)
 
 void
 Server::cursor_process_move(Server* server, uint32_t time)
-{}
+{
+    View* view = server->m_grabbed_view;
+
+    view->x = server->m_cursor->x - server->m_grab_x;
+    view->y = server->m_cursor->y - server->m_grab_y;
+
+    wlr_scene_node_set_position(view->scene_node, view->x, view->y);
+}
 
 void
 Server::cursor_process_resize(Server* server, uint32_t time)
-{}
+{
+    View* view = server->m_grabbed_view;
+
+    double border_x = server->m_cursor->x - server->m_grab_x;
+    double border_y = server->m_cursor->y - server->m_grab_y;
+
+    int new_left = server->m_grab_geobox.x;
+    int new_right = server->m_grab_geobox.x + server->m_grab_geobox.width;
+    int new_top = server->m_grab_geobox.y;
+    int new_bottom = server->m_grab_geobox.y + server->m_grab_geobox.height;
+
+    if (server->m_resize_edges & WLR_EDGE_TOP) {
+        new_top = border_y;
+
+        if (new_top >= new_bottom)
+            new_top = new_bottom - 1;
+    } else if (server->m_resize_edges & WLR_EDGE_BOTTOM) {
+        new_bottom = border_y;
+
+        if (new_bottom <= new_top)
+            new_bottom = new_top + 1;
+    }
+
+    if (server->m_resize_edges & WLR_EDGE_LEFT) {
+        new_left = border_x;
+
+        if (new_left >= new_right)
+            new_left = new_right - 1;
+    } else if (server->m_resize_edges & WLR_EDGE_RIGHT) {
+        new_right = border_x;
+
+        if (new_right <= new_left)
+            new_right = new_left + 1;
+    }
+
+    struct wlr_box geo_box;
+    wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
+    view->x = new_left - geo_box.x;
+    view->y = new_top - geo_box.y;
+    wlr_scene_node_set_position(view->scene_node, view->x, view->y);
+
+    int new_width = new_right - new_left;
+    int new_height = new_bottom - new_top;
+    wlr_xdg_toplevel_set_size(view->xdg_surface, new_width, new_height);
+}
 
 void
 Server::keyboard_handle_modifiers(struct wl_listener* listener, void* data)
-{}
+{
+    Keyboard* keyboard = wl_container_of(listener, keyboard, modifiers);
+
+    wlr_seat_set_keyboard(keyboard->server->m_seat, keyboard->device);
+    wlr_seat_keyboard_notify_modifiers(
+        keyboard->server->m_seat,
+        &keyboard->device->keyboard->modifiers
+    );
+}
 
 void
 Server::keyboard_handle_key(struct wl_listener* listener, void* data)
-{}
+{
+    Keyboard* keyboard = wl_container_of(listener, keyboard, key);
+    Server* server = keyboard->server;
+
+    struct wlr_event_keyboard_key* event
+        = reinterpret_cast<struct wlr_event_keyboard_key*>(data);
+    struct wlr_seat* seat = server->m_seat;
+
+    uint32_t keycode = event->keycode + 8;
+    const xkb_keysym_t* syms;
+
+    int nsyms = xkb_state_key_get_syms(
+        keyboard->device->keyboard->xkb_state,
+        keycode,
+        &syms
+    );
+
+    bool handled = false;
+    uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
+
+    if ((modifiers & WLR_MODIFIER_ALT) && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+        for (int i = 0; i < nsyms; i++)
+            handled = keyboard_handle_keybinding(server, syms[i]);
+    }
+
+    if (!handled) {
+        wlr_seat_set_keyboard(seat, keyboard->device);
+        wlr_seat_keyboard_notify_key(
+            seat,
+            event->time_msec,
+            event->keycode,
+            event->state
+        );
+    }
+}
+
+bool
+Server::keyboard_handle_keybinding(Server* server, xkb_keysym_t sym)
+{
+    switch (sym) {
+    case XKB_KEY_Escape:
+        wl_display_terminate(server->m_display);
+        break;
+    case XKB_KEY_F1:
+        {
+            if (wl_list_length(&server->m_views) < 2)
+                break;
+
+            View* next_view = wl_container_of(server->m_views.prev, next_view, link);
+            focus_view(next_view, next_view->xdg_surface->surface);
+        }
+        break;
+    default: return false;
+    }
+
+    return true;
+}
 
 void
 Server::seat_request_cursor(struct wl_listener* listener, void* data)
-{}
+{
+    Server* server = wl_container_of(listener, server, m_request_cursor);
+
+    struct wlr_seat_pointer_request_set_cursor_event* event
+        = reinterpret_cast<struct wlr_seat_pointer_request_set_cursor_event*>(data);
+    struct wlr_seat_client* focused_client = server->m_seat->pointer_state.focused_client;
+
+    if (focused_client == event->seat_client)
+        wlr_cursor_set_surface(
+            server->m_cursor,
+            event->surface,
+            event->hotspot_x,
+            event->hotspot_y
+        );
+}
 
 void
 Server::seat_request_set_selection(struct wl_listener* listener, void* data)
-{}
+{
+    Server* server = wl_container_of(listener, server, m_request_set_selection);
+
+    struct wlr_seat_request_set_selection_event* event
+        = reinterpret_cast<struct wlr_seat_request_set_selection_event*>(data);
+
+    wlr_seat_set_selection(server->m_seat, event->source, event->serial);
+}
 
 void
 Server::output_frame(struct wl_listener* listener, void* data)
-{}
+{
+    Output* output = wl_container_of(listener, output, frame);
+    struct wlr_scene* scene = output->server->m_scene;
+
+    struct wlr_scene_output* scene_output
+        = wlr_scene_get_scene_output(scene, output->wlr_output);
+
+    wlr_scene_output_commit(scene_output);
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    wlr_scene_output_send_frame_done(scene_output, &now);
+}
 
 View*
 Server::desktop_view_at(
@@ -412,31 +567,146 @@ Server::desktop_view_at(
     double* sy
 )
 {
+    struct wlr_scene_node* node = wlr_scene_node_at(
+        &server->m_scene->node,
+        lx, ly,
+        sx, sy
+    );
 
+    if (!node || node->type != WLR_SCENE_NODE_SURFACE)
+        return nullptr;
+
+    *surface = wlr_scene_surface_from_node(node)->surface;
+
+    while (node && !node->data)
+        node = node->parent;
+
+    return reinterpret_cast<View*>(node->data);
 }
 
 void
 Server::focus_view(View* view, struct wlr_surface* surface)
 {
+    if (!view)
+        return;
 
+    Server* server = view->server;
+    struct wlr_seat* seat = server->m_seat;
+    struct wlr_surface* prev_surface = seat->keyboard_state.focused_surface;
+
+    if (prev_surface == surface)
+        return;
+
+    if (prev_surface)
+        wlr_xdg_toplevel_set_activated(
+            wlr_xdg_surface_from_wlr_surface(
+                seat->keyboard_state.focused_surface
+            ),
+            false
+        );
+
+    struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(seat);
+
+    wlr_scene_node_raise_to_top(view->scene_node);
+    wl_list_remove(&view->link);
+    wl_list_insert(&server->m_views, &view->link);
+    wlr_xdg_toplevel_set_activated(view->xdg_surface, true);
+    wlr_seat_keyboard_notify_enter(
+        seat,
+        view->xdg_surface->surface,
+        keyboard->keycodes,
+        keyboard->num_keycodes,
+        &keyboard->modifiers
+    );
 }
 
 void
 Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
-{}
+{
+    View* view = wl_container_of(listener, view, map);
+
+    wl_list_insert(&view->server->m_views, &view->link);
+    focus_view(view, view->xdg_surface->surface);
+}
 
 void
 Server::xdg_toplevel_unmap(struct wl_listener* listener, void* data)
-{}
+{
+    View* view = wl_container_of(listener, view, unmap);
+    wl_list_remove(&view->link);
+}
 
 void
 Server::xdg_toplevel_destroy(struct wl_listener* listener, void* data)
-{}
+{
+    View* view = wl_container_of(listener, view, destroy);
+
+    wl_list_remove(&view->map.link);
+    wl_list_remove(&view->unmap.link);
+    wl_list_remove(&view->destroy.link);
+    wl_list_remove(&view->request_move.link);
+    wl_list_remove(&view->request_resize.link);
+
+    free(view);
+}
 
 void
 Server::xdg_toplevel_request_move(struct wl_listener* listener, void* data)
-{}
+{
+    View* view = wl_container_of(listener, view, request_move);
+    xdg_toplevel_handle_moveresize(view, Server::CursorMode::Move, 0);
+}
 
 void
 Server::xdg_toplevel_request_resize(struct wl_listener* listener, void* data)
-{}
+{
+    struct wlr_xdg_toplevel_resize_event* event
+        = reinterpret_cast<struct wlr_xdg_toplevel_resize_event*>(data);
+
+    View* view = wl_container_of(listener, view, request_resize);
+    xdg_toplevel_handle_moveresize(view, Server::CursorMode::Resize, event->edges);
+}
+
+void
+Server::xdg_toplevel_handle_moveresize(View* view, Server::CursorMode mode, uint32_t edges)
+{
+    Server* server = view->server;
+
+    if (view->xdg_surface->surface
+        != wlr_surface_get_root_surface(server->m_seat->pointer_state.focused_surface))
+    {
+        return;
+    }
+
+    server->m_grabbed_view = view;
+    server->m_cursor_mode = mode;
+
+    switch (mode) {
+    case Server::CursorMode::Move:
+        server->m_grab_x = server->m_cursor->x - view->x;
+        server->m_grab_y = server->m_cursor->y - view->y;
+        return;
+    case Server::CursorMode::Resize:
+        {
+            struct wlr_box geo_box;
+            wlr_xdg_surface_get_geometry(view->xdg_surface, &geo_box);
+
+            double border_x = (view->x + geo_box.x) +
+                ((edges & WLR_EDGE_RIGHT) ? geo_box.width : 0);
+
+            double border_y = (view->y + geo_box.y) +
+                ((edges & WLR_EDGE_BOTTOM) ? geo_box.height : 0);
+
+            server->m_grab_x = server->m_cursor->x - border_x;
+            server->m_grab_y = server->m_cursor->y - border_y;
+
+            server->m_grab_geobox = geo_box;
+            server->m_grab_geobox.x += view->x;
+            server->m_grab_geobox.y += view->y;
+
+            server->m_resize_edges = edges;
+        }
+        return;
+    default: return;
+    }
+}

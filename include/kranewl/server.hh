@@ -3,6 +3,7 @@
 extern "C" {
 #include <wlr/backend.h>
 #include <wlr/util/box.h>
+#include <xkbcommon/xkbcommon.h>
 }
 
 #include <cstdint>
@@ -41,6 +42,7 @@ private:
 
     static void keyboard_handle_modifiers(struct wl_listener*, void*);
     static void keyboard_handle_key(struct wl_listener*, void*);
+    static bool keyboard_handle_keybinding(Server*, xkb_keysym_t);
 
     static void seat_request_cursor(struct wl_listener*, void*);
     static void seat_request_set_selection(struct wl_listener*, void*);
@@ -54,6 +56,7 @@ private:
     static void xdg_toplevel_destroy(struct wl_listener*, void*);
     static void xdg_toplevel_request_move(struct wl_listener*, void*);
     static void xdg_toplevel_request_resize(struct wl_listener*, void*);
+    static void xdg_toplevel_handle_moveresize(View*, CursorMode, uint32_t);
 
     struct wl_display* m_display;
     struct wlr_backend* m_backend;
@@ -79,7 +82,7 @@ private:
     struct wl_listener m_request_set_selection;
     struct wl_list m_keyboards;
     CursorMode m_cursor_mode;
-    struct tinywl_view* m_grabbed_view;
+    View* m_grabbed_view;
     double m_grab_x, m_grab_y;
     struct wlr_box m_grab_geobox;
     uint32_t m_resize_edges;
