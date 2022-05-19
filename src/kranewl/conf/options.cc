@@ -3,11 +3,13 @@
 #include <kranewl/conf/options.hh>
 
 #include <cassert>
-#include <optional>
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
+#include <optional>
+extern "C" {
 #include <sys/stat.h>
 #include <unistd.h>
+}
 
 static const std::string CONFIG_FILE = "kranewlrc.lua";
 static const std::string DEFAULT_CONFIG = "/etc/kranewl/" + CONFIG_FILE;

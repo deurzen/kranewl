@@ -22,7 +22,7 @@ int
 main(int argc, char** argv)
 {
 #ifndef NDEBUG
-    wlr_log_init(WLR_DEBUG, NULL);
+    /* wlr_log_init(WLR_DEBUG, NULL); */
 #endif
 
     const Options options = parse_options(argc, argv);

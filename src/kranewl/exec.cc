@@ -1,6 +1,8 @@
-#include <unistd.h>
 #include <cstdlib>
 #include <string>
+extern "C" {
+#include <unistd.h>
+}
 
 void
 exec_external(std::string& command) {

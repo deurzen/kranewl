@@ -2,18 +2,6 @@
 
 #include <ostream>
 
-enum class Edge {
-    Left, Right, Top, Bottom
-};
-
-enum class Corner {
-    TopLeft, TopRight, BottomLeft, BottomRight
-};
-
-enum class Direction {
-    Forward, Backward
-};
-
 struct Dim final {
     int w;
     int h;

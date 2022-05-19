@@ -14,6 +14,7 @@ extern "C" {
 #include <string>
 #include <vector>
 
+typedef class Server* Server_ptr;
 typedef class Partition* Partition_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
@@ -40,6 +41,7 @@ typedef struct Client final
             || client->disowned;
     }
 
+    Client();
     Client(
         Surface surface,
         Partition_ptr partition,
@@ -55,6 +57,8 @@ typedef struct Client final
     Client& operator=(Client const&) = default;
 
     OutsideState get_outside_state() const noexcept;
+
+    struct wlr_surface* get_surface() noexcept;
 
     void focus() noexcept;
     void unfocus() noexcept;
@@ -76,6 +80,9 @@ typedef struct Client final
 
     void set_tile_decoration(Decoration const&) noexcept;
     void set_free_decoration(Decoration const&) noexcept;
+
+    struct wl_list link;
+    Server_ptr server;
 
     SurfaceType surface_type;
     Surface surface;
@@ -132,9 +139,11 @@ typedef struct Client final
     struct wl_listener l_destroy;
     struct wl_listener l_set_title;
     struct wl_listener l_fullscreen;
+    struct wl_listener l_request_move;
+    struct wl_listener l_request_resize;
 #ifdef XWAYLAND
-    struct wl_listener l_activate;
-    struct wl_listener l_configure;
+    struct wl_listener l_request_activate;
+    struct wl_listener l_request_configure;
     struct wl_listener l_set_hints;
 #else
     struct wl_listener l_new_xdg_popup;

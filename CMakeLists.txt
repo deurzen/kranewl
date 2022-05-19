@@ -12,6 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
+    -g
     -fdiagnostics-show-option
     # -Weffc++
     -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
@@ -31,6 +32,7 @@ add_compile_options(
     -Wuseless-cast
     -Wdouble-promotion
     -Wformat=2
+    -DXWAYLAND
 )
 
 find_program(CCACHE ccache)
@@ -117,6 +119,12 @@ add_custom_command(
 )
 
 add_custom_command(
+    OUTPUT ${CMAKE_SOURCE_DIR}/include/protocols/wlr-layer-shell-unstable-v1-protocol.h
+    COMMAND wayland-scanner server-header ${CMAKE_SOURCE_DIR}/protocols/wlr-layer-shell-unstable-v1.xml ${CMAKE_SOURCE_DIR}/include/protocols/wlr-layer-shell-unstable-v1-protocol.h
+    COMMENT "Generating layer-shell-protocol.h"
+)
+
+add_custom_command(
     OUTPUT ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
     COMMAND wayland-scanner server-header ${WAYLAND_PROTOCOLS}/unstable/pointer-constraints/pointer-constraints-unstable-v1.xml ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
     COMMENT "Generating pointer-constraints-unstable-v1.h"
@@ -124,6 +132,7 @@ add_custom_command(
 
 add_custom_target(run ALL
     DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/xdg-shell-protocol.h
+    DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/wlr-layer-shell-unstable-v1-protocol.h
     DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
 )
 
@@ -144,6 +153,7 @@ pkg_check_modules(wlroots REQUIRED IMPORTED_TARGET wlroots)
 pkg_check_modules(pixman_1 REQUIRED IMPORTED_TARGET pixman-1)
 pkg_check_modules(libinput REQUIRED IMPORTED_TARGET libinput)
 pkg_check_modules(xkbcommon REQUIRED IMPORTED_TARGET xkbcommon)
+pkg_check_modules(xcb REQUIRED IMPORTED_TARGET xcb)
 
 target_compile_features(kranewl PRIVATE cxx_std_20)
 target_compile_features(kranec PRIVATE cxx_std_20)
@@ -163,6 +173,7 @@ target_link_libraries(kranewl
     PkgConfig::pixman_1
     PkgConfig::libinput
     PkgConfig::xkbcommon
+    PkgConfig::xcb
 )
 
 target_include_directories(kranewl PRIVATE

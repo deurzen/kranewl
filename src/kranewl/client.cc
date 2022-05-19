@@ -1,5 +1,25 @@
 #include <kranewl/client.hh>
 
+// https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
+#define class class_
+#define namespace namespace_
+#define static
+extern "C" {
+#include <wlr/types/wlr_xdg_shell.h>
+#ifdef XWAYLAND
+#include <wlr/xwayland.h>
+#endif
+}
+#undef static
+#undef class
+#undef namespace
+
+Client::Client()
+{
+    wl_list_init(&link);
+}
+
 Client::Client(
     Surface surface,
     Partition_ptr partition,
@@ -43,7 +63,9 @@ Client::Client(
       last_focused(std::chrono::steady_clock::now()),
       managed_since(std::chrono::steady_clock::now()),
       m_outside_state(OutsideState::Unfocused)
-{}
+{
+    wl_list_init(&link);
+}
 
 Client::~Client()
 {}
@@ -55,6 +77,19 @@ Client::get_outside_state() const noexcept
         return Client::OutsideState::Urgent;
 
     return m_outside_state;
+}
+
+struct wlr_surface*
+Client::get_surface() noexcept
+{
+    switch (surface_type) {
+    case SurfaceType::XDGShell: //fallthrough
+    case SurfaceType::LayerShell: return surface.xdg->surface;
+    case SurfaceType::X11Managed: //fallthrough
+    case SurfaceType::X11Unmanaged: return surface.xwayland->surface;
+    }
+
+    return nullptr;
 }
 
 void
