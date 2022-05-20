@@ -2,6 +2,7 @@
 
 #include <kranewl/exec.hh>
 #include <kranewl/input/keyboard.hh>
+#include <kranewl/model.hh>
 #include <kranewl/tree/client.hh>
 #include <kranewl/tree/output.hh>
 
@@ -65,17 +66,18 @@ extern "C" {
 
 #include <cstdlib>
 
-Server::Server()
-    : m_display(wl_display_create()),
-      m_event_loop(wl_display_get_event_loop(m_display)),
-      m_backend(wlr_backend_autocreate(m_display)),
-      m_renderer([](struct wl_display* display, struct wlr_backend* backend) {
+Server::Server(Model& model)
+    : m_model(model),
+      mp_display(wl_display_create()),
+      mp_event_loop(wl_display_get_event_loop(mp_display)),
+      mp_backend(wlr_backend_autocreate(mp_display)),
+      mp_renderer([](struct wl_display* display, struct wlr_backend* backend) {
         struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
         wlr_renderer_init_wl_display(renderer, display);
 
         return renderer;
-      }(m_display, m_backend)),
-      m_allocator(wlr_allocator_autocreate(m_backend, m_renderer)),
+      }(mp_display, mp_backend)),
+      mp_allocator(wlr_allocator_autocreate(mp_backend, mp_renderer)),
       ml_new_output({ .notify = Server::new_output }),
       ml_output_layout_change({ .notify = Server::output_layout_change }),
       ml_output_manager_apply({ .notify = Server::output_manager_apply }),
@@ -102,114 +104,114 @@ Server::Server()
       ml_xwayland_ready({ .notify = Server::xwayland_ready }),
       ml_new_xwayland_surface({ .notify = Server::new_xwayland_surface }),
 #endif
-      m_socket(wl_display_add_socket_auto(m_display))
+      m_socket(wl_display_add_socket_auto(mp_display))
 {
-    m_compositor = wlr_compositor_create(m_display, m_renderer);
-    m_data_device_manager = wlr_data_device_manager_create(m_display);
+    mp_compositor = wlr_compositor_create(mp_display, mp_renderer);
+    mp_data_device_manager = wlr_data_device_manager_create(mp_display);
 
-    m_output_layout = wlr_output_layout_create();
+    mp_output_layout = wlr_output_layout_create();
 
     wl_list_init(&m_outputs);
-    wl_signal_add(&m_backend->events.new_output, &ml_new_output);
+    wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
 
-    m_scene = wlr_scene_create();
-    wlr_scene_attach_output_layout(m_scene, m_output_layout);
+    mp_scene = wlr_scene_create();
+    wlr_scene_attach_output_layout(mp_scene, mp_output_layout);
 
     wl_list_init(&m_clients);
 
-    m_layer_shell = wlr_layer_shell_v1_create(m_display);
-    wl_signal_add(&m_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
+    mp_layer_shell = wlr_layer_shell_v1_create(mp_display);
+    wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
 
-    m_xdg_shell = wlr_xdg_shell_create(m_display);
-    wl_signal_add(&m_xdg_shell->events.new_surface, &ml_new_xdg_surface);
+    mp_xdg_shell = wlr_xdg_shell_create(mp_display);
+    wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
 
-    m_cursor = wlr_cursor_create();
-    wlr_cursor_attach_output_layout(m_cursor, m_output_layout);
+    mp_cursor = wlr_cursor_create();
+    wlr_cursor_attach_output_layout(mp_cursor, mp_output_layout);
 
-    m_cursor_manager = wlr_xcursor_manager_create(NULL, 24);
-    wlr_xcursor_manager_load(m_cursor_manager, 1);
+    mp_cursor_manager = wlr_xcursor_manager_create(NULL, 24);
+    wlr_xcursor_manager_load(mp_cursor_manager, 1);
 
-    m_seat = wlr_seat_create(m_display, "seat0");
-    m_presentation = wlr_presentation_create(m_display, m_backend);
-    m_idle = wlr_idle_create(m_display);
+    mp_seat = wlr_seat_create(mp_display, "seat0");
+    mp_presentation = wlr_presentation_create(mp_display, mp_backend);
+    mp_idle = wlr_idle_create(mp_display);
 
-    m_idle_inhibit_manager = wlr_idle_inhibit_v1_create(m_display);
-    wl_signal_add(&m_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
+    mp_idle_inhibit_manager = wlr_idle_inhibit_v1_create(mp_display);
+    wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
 
     { // set up cursor handling
-        wl_signal_add(&m_cursor->events.motion, &ml_cursor_motion);
-        wl_signal_add(&m_cursor->events.motion_absolute, &ml_cursor_motion_absolute);
-        wl_signal_add(&m_cursor->events.button, &ml_cursor_button);
-        wl_signal_add(&m_cursor->events.axis, &ml_cursor_axis);
-        wl_signal_add(&m_cursor->events.frame, &ml_cursor_frame);
+        wl_signal_add(&mp_cursor->events.motion, &ml_cursor_motion);
+        wl_signal_add(&mp_cursor->events.motion_absolute, &ml_cursor_motion_absolute);
+        wl_signal_add(&mp_cursor->events.button, &ml_cursor_button);
+        wl_signal_add(&mp_cursor->events.axis, &ml_cursor_axis);
+        wl_signal_add(&mp_cursor->events.frame, &ml_cursor_frame);
     }
 
     { // set up keyboard handling
         wl_list_init(&m_keyboards);
-        wl_signal_add(&m_backend->events.new_input, &ml_new_input);
-        wl_signal_add(&m_seat->events.request_set_cursor, &ml_request_set_cursor);
-        wl_signal_add(&m_seat->events.request_set_selection, &ml_request_set_selection);
-        wl_signal_add(&m_seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
+        wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
+        wl_signal_add(&mp_seat->events.request_set_cursor, &ml_request_set_cursor);
+        wl_signal_add(&mp_seat->events.request_set_selection, &ml_request_set_selection);
+        wl_signal_add(&mp_seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
     }
 
-    m_server_decoration_manager = wlr_server_decoration_manager_create(m_display);
-    m_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(m_display);
+    mp_server_decoration_manager = wlr_server_decoration_manager_create(mp_display);
+    mp_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(mp_display);
 
     wlr_server_decoration_manager_set_default_mode(
-        m_server_decoration_manager,
+        mp_server_decoration_manager,
         WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
     );
 
-    wlr_xdg_output_manager_v1_create(m_display, m_output_layout);
-    wl_signal_add(&m_output_layout->events.change, &ml_output_layout_change);
+    wlr_xdg_output_manager_v1_create(mp_display, mp_output_layout);
+    wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
 
-    m_output_manager = wlr_output_manager_v1_create(m_display);
-    wl_signal_add(&m_output_manager->events.apply, &ml_output_manager_apply);
-    wl_signal_add(&m_output_manager->events.test, &ml_output_manager_test);
+    mp_output_manager = wlr_output_manager_v1_create(mp_display);
+    wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
+    wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
 
-    wlr_scene_set_presentation(m_scene, wlr_presentation_create(m_display, m_backend));
+    wlr_scene_set_presentation(mp_scene, wlr_presentation_create(mp_display, mp_backend));
 
 #ifdef XWAYLAND
-    m_xwayland = wlr_xwayland_create(m_display, m_compositor, 1);
+    mp_xwayland = wlr_xwayland_create(mp_display, mp_compositor, 1);
 
-    if (m_xwayland) {
-        wl_signal_add(&m_xwayland->events.ready, &ml_xwayland_ready);
-        wl_signal_add(&m_xwayland->events.new_surface, &ml_new_xwayland_surface);
+    if (mp_xwayland) {
+        wl_signal_add(&mp_xwayland->events.ready, &ml_xwayland_ready);
+        wl_signal_add(&mp_xwayland->events.new_surface, &ml_new_xwayland_surface);
 
-        setenv("DISPLAY", m_xwayland->display_name, 1);
+        setenv("DISPLAY", mp_xwayland->display_name, 1);
     } else
         spdlog::error("Failed to initiate XWayland");
         spdlog::warn("Continuing without XWayland functionality");
 #endif
 
-    m_input_inhibit_manager = wlr_input_inhibit_manager_create(m_display);
-    wl_signal_add(&m_input_inhibit_manager->events.activate, &ml_inhibit_activate);
-    wl_signal_add(&m_input_inhibit_manager->events.deactivate, &ml_inhibit_deactivate);
+    mp_input_inhibit_manager = wlr_input_inhibit_manager_create(mp_display);
+    wl_signal_add(&mp_input_inhibit_manager->events.activate, &ml_inhibit_activate);
+    wl_signal_add(&mp_input_inhibit_manager->events.deactivate, &ml_inhibit_deactivate);
 
-    m_keyboard_shortcuts_inhibit_manager = wlr_keyboard_shortcuts_inhibit_v1_create(m_display);
-    // TODO: m_keyboard_shortcuts_inhibit_manager signals
+    mp_keyboard_shortcuts_inhibit_manager = wlr_keyboard_shortcuts_inhibit_v1_create(mp_display);
+    // TODO: mp_keyboard_shortcuts_inhibit_manager signals
 
-    m_pointer_constraints = wlr_pointer_constraints_v1_create(m_display);
-    // TODO: m_pointer_constraints signals
+    mp_pointer_constraints = wlr_pointer_constraints_v1_create(mp_display);
+    // TODO: mp_pointer_constraints signals
 
-    m_relative_pointer_manager = wlr_relative_pointer_manager_v1_create(m_display);
-    // TODO: m_relative_pointer_manager signals
+    mp_relative_pointer_manager = wlr_relative_pointer_manager_v1_create(mp_display);
+    // TODO: mp_relative_pointer_manager signals
 
-    m_virtual_pointer_manager = wlr_virtual_pointer_manager_v1_create(m_display);
-    // TODO: m_virtual_pointer_manager signals
+    mp_virtual_pointer_manager = wlr_virtual_pointer_manager_v1_create(mp_display);
+    // TODO: mp_virtual_pointer_manager signals
 
-    m_virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(m_display);
-    // TODO: m_virtual_keyboard_manager signals
+    mp_virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(mp_display);
+    // TODO: mp_virtual_keyboard_manager signals
 
     if (m_socket.empty()) {
-        wlr_backend_destroy(m_backend);
+        wlr_backend_destroy(mp_backend);
         std::exit(1);
         return;
     }
 
-    if (!wlr_backend_start(m_backend)) {
-        wlr_backend_destroy(m_backend);
-        wl_display_destroy(m_display);
+    if (!wlr_backend_start(mp_backend)) {
+        wlr_backend_destroy(mp_backend);
+        wl_display_destroy(mp_display);
         std::exit(1);
         return;
     }
@@ -225,14 +227,14 @@ Server::Server()
 
 Server::~Server()
 {
-    wl_display_destroy_clients(m_display);
-    wl_display_destroy(m_display);
+    wl_display_destroy_clients(mp_display);
+    wl_display_destroy(mp_display);
 }
 
 void
 Server::start() noexcept
 {
-    wl_display_run(m_display);
+    wl_display_run(mp_display);
 }
 
 void
@@ -241,26 +243,28 @@ Server::new_output(struct wl_listener* listener, void* data)
     Server_ptr server = wl_container_of(listener, server, ml_new_output);
 
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
-    wlr_output_init_render(wlr_output, server->m_allocator, server->m_renderer);
+    wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer);
 
     if (!wl_list_empty(&wlr_output->modes)) {
-        struct wlr_output_mode* mode = wlr_output_preferred_mode(wlr_output);
-
-        wlr_output_set_mode(wlr_output, mode);
+        wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
+        wlr_output_enable_adaptive_sync(wlr_output, true);
         wlr_output_enable(wlr_output, true);
 
         if (!wlr_output_commit(wlr_output))
             return;
     }
 
-    Output* output = reinterpret_cast<Output*>(calloc(1, sizeof(Output)));
-    output->mp_wlr_output = wlr_output;
-    output->mp_server = server;
-    output->ml_frame.notify = Server::output_frame;
-    wl_signal_add(&wlr_output->events.frame, &output->ml_frame);
-    /* wl_list_insert(&server->m_outputs, &output->m_link); */
+    Output_ptr output = server->m_model.create_output(
+        wlr_output,
+        wlr_scene_output_create(server->mp_scene, wlr_output)
+    );
 
-    wlr_output_layout_add_auto(server->m_output_layout, wlr_output);
+    output->ml_frame.notify = Server::output_frame;
+    output->ml_destroy.notify = Server::output_destroy;
+    wl_signal_add(&wlr_output->events.frame, &output->ml_frame);
+    wl_signal_add(&wlr_output->events.destroy, &output->ml_destroy);
+
+    wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
 }
 
 void
@@ -277,6 +281,24 @@ Server::output_manager_apply(struct wl_listener* listener, void* data)
 
 void
 Server::output_manager_test(struct wl_listener* listener, void* data)
+{
+    // TODO
+}
+
+void
+Server::output_frame(struct wl_listener* listener, void* data)
+{
+    Output_ptr output = wl_container_of(listener, output, ml_frame);
+
+    wlr_scene_output_commit(output->mp_wlr_scene_output);
+
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    wlr_scene_output_send_frame_done(output->mp_wlr_scene_output, &now);
+}
+
+void
+Server::output_destroy(struct wl_listener* listener, void* data)
 {
     // TODO
 }
@@ -310,7 +332,7 @@ Server::new_xdg_surface(struct wl_listener* listener, void* data)
 
     xdg_surface->data = client->mp_scene;
     client->mp_scene = wlr_scene_xdg_surface_create(
-        &client->mp_server->m_scene->node,
+        &client->mp_server->mp_scene->node,
         client->m_surface.xdg
     );
 
@@ -363,13 +385,13 @@ Server::new_input(struct wl_listener* listener, void* data)
     if (!wl_list_empty(&server->m_keyboards))
         caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
-    wlr_seat_set_capabilities(server->m_seat, caps);
+    wlr_seat_set_capabilities(server->mp_seat, caps);
 }
 
 void
 Server::new_pointer(Server_ptr server, struct wlr_input_device* device)
 {
-    wlr_cursor_attach_input_device(server->m_cursor, device);
+    wlr_cursor_attach_input_device(server->mp_cursor, device);
 }
 
 void
@@ -396,7 +418,7 @@ Server::new_keyboard(Server_ptr server, struct wlr_input_device* device)
     keyboard->ml_key.notify = keyboard_handle_key;
     wl_signal_add(&device->keyboard->events.key, &keyboard->ml_key);
 
-    wlr_seat_set_keyboard(server->m_seat, device);
+    wlr_seat_set_keyboard(server->mp_seat, device);
     wl_list_insert(&server->m_keyboards, &keyboard->m_link);
 }
 
@@ -431,7 +453,7 @@ Server::cursor_motion(struct wl_listener* listener, void* data)
     struct wlr_event_pointer_motion* event
         = reinterpret_cast<wlr_event_pointer_motion*>(data);
 
-    wlr_cursor_move(server->m_cursor, event->device, event->delta_x, event->delta_y);
+    wlr_cursor_move(server->mp_cursor, event->device, event->delta_x, event->delta_y);
     cursor_process_motion(server, event->time_msec);
 }
 
@@ -442,7 +464,7 @@ Server::cursor_motion_absolute(struct wl_listener* listener, void* data)
     struct wlr_event_pointer_motion_absolute* event
         = reinterpret_cast<wlr_event_pointer_motion_absolute*>(data);
 
-    wlr_cursor_warp_absolute(server->m_cursor, event->device, event->x, event->y);
+    wlr_cursor_warp_absolute(server->mp_cursor, event->device, event->x, event->y);
     cursor_process_motion(server, event->time_msec);
 }
 
@@ -455,7 +477,7 @@ Server::cursor_button(struct wl_listener* listener, void* data)
         = reinterpret_cast<wlr_event_pointer_button*>(data);
 
     wlr_seat_pointer_notify_button(
-        server->m_seat,
+        server->mp_seat,
         event->time_msec,
         event->button,
         event->state
@@ -466,8 +488,8 @@ Server::cursor_button(struct wl_listener* listener, void* data)
     double sx, sy;
     Client_ptr client = desktop_client_at(
         server,
-        server->m_cursor->x,
-        server->m_cursor->y,
+        server->mp_cursor->x,
+        server->mp_cursor->y,
         &surface,
         &sx,
         &sy
@@ -488,7 +510,7 @@ Server::cursor_axis(struct wl_listener* listener, void* data)
         = reinterpret_cast<wlr_event_pointer_axis*>(data);
 
     wlr_seat_pointer_notify_axis(
-        server->m_seat,
+        server->mp_seat,
         event->time_msec,
         event->orientation,
         event->delta,
@@ -502,7 +524,7 @@ Server::cursor_frame(struct wl_listener* listener, void* data)
 {
     Server_ptr server = wl_container_of(listener, server, ml_cursor_frame);
 
-    wlr_seat_pointer_notify_frame(server->m_seat);
+    wlr_seat_pointer_notify_frame(server->mp_seat);
 }
 
 void
@@ -512,11 +534,11 @@ Server::request_set_cursor(struct wl_listener* listener, void* data)
 
     struct wlr_seat_pointer_request_set_cursor_event* event
         = reinterpret_cast<struct wlr_seat_pointer_request_set_cursor_event*>(data);
-    struct wlr_seat_client* focused_client = server->m_seat->pointer_state.focused_client;
+    struct wlr_seat_client* focused_client = server->mp_seat->pointer_state.focused_client;
 
     if (focused_client == event->seat_client)
         wlr_cursor_set_surface(
-            server->m_cursor,
+            server->mp_cursor,
             event->surface,
             event->hotspot_x,
             event->hotspot_y
@@ -532,14 +554,14 @@ Server::cursor_process_motion(Server_ptr server, uint32_t time)
     default: break;
     }
 
-    struct wlr_seat* seat = server->m_seat;
+    struct wlr_seat* seat = server->mp_seat;
     struct wlr_surface* surface = NULL;
 
     double sx, sy;
     Client_ptr client = desktop_client_at(
         server,
-        server->m_cursor->x,
-        server->m_cursor->y,
+        server->mp_cursor->x,
+        server->mp_cursor->y,
         &surface,
         &sx,
         &sy
@@ -547,9 +569,9 @@ Server::cursor_process_motion(Server_ptr server, uint32_t time)
 
     if (!client)
         wlr_xcursor_manager_set_cursor_image(
-            server->m_cursor_manager,
+            server->mp_cursor_manager,
             "left_ptr",
-            server->m_cursor
+            server->mp_cursor
         );
 
     if (surface) {
@@ -562,10 +584,10 @@ Server::cursor_process_motion(Server_ptr server, uint32_t time)
 void
 Server::cursor_process_move(Server_ptr server, uint32_t time)
 {
-    Client_ptr client = server->m_grabbed_client;
+    Client_ptr client = server->mp_grabbed_client;
 
-    client->m_active_region.pos.x = server->m_cursor->x - server->m_grab_x;
-    client->m_active_region.pos.y = server->m_cursor->y - server->m_grab_y;
+    client->m_active_region.pos.x = server->mp_cursor->x - server->m_grab_x;
+    client->m_active_region.pos.y = server->mp_cursor->y - server->m_grab_y;
 
     wlr_scene_node_set_position(
         client->mp_scene,
@@ -577,10 +599,10 @@ Server::cursor_process_move(Server_ptr server, uint32_t time)
 void
 Server::cursor_process_resize(Server_ptr server, uint32_t time)
 {
-    Client_ptr client = server->m_grabbed_client;
+    Client_ptr client = server->mp_grabbed_client;
 
-    double border_x = server->m_cursor->x - server->m_grab_x;
-    double border_y = server->m_cursor->y - server->m_grab_y;
+    double border_x = server->mp_cursor->x - server->m_grab_x;
+    double border_y = server->mp_cursor->y - server->m_grab_y;
 
     int new_left = server->m_grab_geobox.x;
     int new_right = server->m_grab_geobox.x + server->m_grab_geobox.width;
@@ -650,9 +672,9 @@ Server::keyboard_handle_modifiers(struct wl_listener* listener, void* data)
 {
     Keyboard* keyboard = wl_container_of(listener, keyboard, ml_modifiers);
 
-    wlr_seat_set_keyboard(keyboard->mp_server->m_seat, keyboard->mp_device);
+    wlr_seat_set_keyboard(keyboard->mp_server->mp_seat, keyboard->mp_device);
     wlr_seat_keyboard_notify_modifiers(
-        keyboard->mp_server->m_seat,
+        keyboard->mp_server->mp_seat,
         &keyboard->mp_device->keyboard->modifiers
     );
 }
@@ -665,7 +687,7 @@ Server::keyboard_handle_key(struct wl_listener* listener, void* data)
 
     struct wlr_event_keyboard_key* event
         = reinterpret_cast<struct wlr_event_keyboard_key*>(data);
-    struct wlr_seat* seat = server->m_seat;
+    struct wlr_seat* seat = server->mp_seat;
 
     uint32_t keycode = event->keycode + 8;
     const xkb_keysym_t* syms;
@@ -700,7 +722,7 @@ Server::keyboard_handle_keybinding(Server_ptr server, xkb_keysym_t sym)
 {
     switch (sym) {
     case XKB_KEY_Escape:
-        wl_display_terminate(server->m_display);
+        wl_display_terminate(server->mp_display);
         break;
     case XKB_KEY_j:
         {
@@ -745,7 +767,7 @@ Server::request_set_selection(struct wl_listener* listener, void* data)
     struct wlr_seat_request_set_selection_event* event
         = reinterpret_cast<struct wlr_seat_request_set_selection_event*>(data);
 
-    wlr_seat_set_selection(server->m_seat, event->source, event->serial);
+    wlr_seat_set_selection(server->mp_seat, event->source, event->serial);
 }
 
 void
@@ -756,23 +778,7 @@ Server::request_set_primary_selection(struct wl_listener* listener, void* data)
     struct wlr_seat_request_set_primary_selection_event* event
         = reinterpret_cast<struct wlr_seat_request_set_primary_selection_event*>(data);
 
-    wlr_seat_set_primary_selection(server->m_seat, event->source, event->serial);
-}
-
-void
-Server::output_frame(struct wl_listener* listener, void* data)
-{
-    Output* output = wl_container_of(listener, output, ml_frame);
-    struct wlr_scene* scene = output->mp_server->m_scene;
-
-    struct wlr_scene_output* scene_output
-        = wlr_scene_get_scene_output(scene, output->mp_wlr_output);
-
-    wlr_scene_output_commit(scene_output);
-
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    wlr_scene_output_send_frame_done(scene_output, &now);
+    wlr_seat_set_primary_selection(server->mp_seat, event->source, event->serial);
 }
 
 Client_ptr
@@ -786,7 +792,7 @@ Server::desktop_client_at(
 )
 {
     struct wlr_scene_node* node = wlr_scene_node_at(
-        &server->m_scene->node,
+        &server->mp_scene->node,
         lx, ly,
         sx, sy
     );
@@ -809,7 +815,7 @@ Server::focus_client(Client_ptr client, struct wlr_surface* surface)
         return;
 
     Server_ptr server = client->mp_server;
-    struct wlr_seat* seat = server->m_seat;
+    struct wlr_seat* seat = server->mp_seat;
     struct wlr_surface* prev_surface = seat->keyboard_state.focused_surface;
 
     if (prev_surface == surface)
@@ -900,18 +906,18 @@ Server::xdg_toplevel_handle_moveresize(
     Server_ptr server = client->mp_server;
 
     if (client->get_surface()
-        != wlr_surface_get_root_surface(server->m_seat->pointer_state.focused_surface))
+        != wlr_surface_get_root_surface(server->mp_seat->pointer_state.focused_surface))
     {
         return;
     }
 
-    server->m_grabbed_client = client;
+    server->mp_grabbed_client = client;
     server->m_cursor_mode = mode;
 
     switch (mode) {
     case Server::CursorMode::Move:
-        server->m_grab_x = server->m_cursor->x - client->m_active_region.pos.x;
-        server->m_grab_y = server->m_cursor->y - client->m_active_region.pos.y;
+        server->m_grab_x = server->mp_cursor->x - client->m_active_region.pos.x;
+        server->m_grab_y = server->mp_cursor->y - client->m_active_region.pos.y;
         return;
     case Server::CursorMode::Resize:
         {
@@ -924,8 +930,8 @@ Server::xdg_toplevel_handle_moveresize(
             double border_y = (client->m_active_region.pos.y + geo_box.y) +
                 ((edges & WLR_EDGE_BOTTOM) ? geo_box.height : 0);
 
-            server->m_grab_x = server->m_cursor->x - border_x;
-            server->m_grab_y = server->m_cursor->y - border_y;
+            server->m_grab_x = server->mp_cursor->x - border_x;
+            server->m_grab_y = server->mp_cursor->y - border_y;
 
             server->m_grab_geobox = geo_box;
             server->m_grab_geobox.x += client->m_active_region.pos.x;
@@ -944,7 +950,7 @@ Server::xwayland_ready(struct wl_listener* listener, void*)
 {
     Server_ptr server = wl_container_of(listener, server, ml_xwayland_ready);
 
-	xcb_connection_t* xconn = xcb_connect(server->m_xwayland->display_name, NULL);
+	xcb_connection_t* xconn = xcb_connect(server->mp_xwayland->display_name, NULL);
 	if (xcb_connection_has_error(xconn)) {
         spdlog::error("Could not establish a connection with the X server");
         spdlog::warn("Continuing with limited XWayland functionality");
@@ -956,11 +962,11 @@ Server::xwayland_ready(struct wl_listener* listener, void*)
 	/* netatom[NetWMWindowTypeToolbar] = getatom(xconn, "_NET_WM_WINDOW_TYPE_TOOLBAR"); */
 	/* netatom[NetWMWindowTypeUtility] = getatom(xconn, "_NET_WM_WINDOW_TYPE_UTILITY"); */
 
-	wlr_xwayland_set_seat(server->m_xwayland, server->m_seat);
+	wlr_xwayland_set_seat(server->mp_xwayland, server->mp_seat);
 
 	struct wlr_xcursor* xcursor;
-	if ((xcursor = wlr_xcursor_manager_get_xcursor(server->m_cursor_manager, "left_ptr", 1)))
-		wlr_xwayland_set_cursor(server->m_xwayland,
+	if ((xcursor = wlr_xcursor_manager_get_xcursor(server->mp_cursor_manager, "left_ptr", 1)))
+		wlr_xwayland_set_cursor(server->mp_xwayland,
 				xcursor->images[0]->buffer, xcursor->images[0]->width * 4,
 				xcursor->images[0]->width, xcursor->images[0]->height,
 				xcursor->images[0]->hotspot_x, xcursor->images[0]->hotspot_y);

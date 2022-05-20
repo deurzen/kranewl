@@ -11,6 +11,7 @@ extern "C" {
 #include <cstdint>
 #include <string>
 
+class Model;
 typedef struct Client* Client_ptr;
 typedef class Server* Server_ptr;
 typedef class Server final {
@@ -21,7 +22,7 @@ typedef class Server final {
     };
 
 public:
-    Server();
+    Server(Model&);
     ~Server();
 
     void start() noexcept;
@@ -31,6 +32,8 @@ private:
     static void output_layout_change(struct wl_listener*, void*);
     static void output_manager_apply(struct wl_listener*, void*);
     static void output_manager_test(struct wl_listener*, void*);
+    static void output_frame(struct wl_listener*, void*);
+    static void output_destroy(struct wl_listener*, void*);
 
     static void new_xdg_surface(struct wl_listener*, void*);
     static void new_layer_shell_surface(struct wl_listener*, void*);
@@ -62,7 +65,6 @@ private:
     static void request_set_selection(struct wl_listener*, void*);
     static void request_set_primary_selection(struct wl_listener*, void*);
 
-    static void output_frame(struct wl_listener*, void*);
     static Client_ptr desktop_client_at(Server_ptr, double, double, struct wlr_surface**, double*, double*);
     static void focus_client(Client_ptr, struct wlr_surface*);
 
@@ -81,42 +83,44 @@ private:
     static void xwayland_set_hints(struct wl_listener*, void*);
 #endif
 
-    struct wl_display* m_display;
-    struct wl_event_loop* m_event_loop;
+    Model& m_model;
 
-    struct wlr_backend* m_backend;
-    struct wlr_renderer* m_renderer;
-    struct wlr_allocator* m_allocator;
-    struct wlr_compositor* m_compositor;
-    struct wlr_data_device_manager* m_data_device_manager;
+    struct wl_display* mp_display;
+    struct wl_event_loop* mp_event_loop;
+
+    struct wlr_backend* mp_backend;
+    struct wlr_renderer* mp_renderer;
+    struct wlr_allocator* mp_allocator;
+    struct wlr_compositor* mp_compositor;
+    struct wlr_data_device_manager* mp_data_device_manager;
 
 #ifdef XWAYLAND
-    struct wlr_xwayland* m_xwayland;
+    struct wlr_xwayland* mp_xwayland;
 #endif
 
-    struct wlr_output_layout* m_output_layout;
-    struct wlr_scene* m_scene;
-    struct wlr_xdg_shell* m_xdg_shell;
-    struct wlr_layer_shell_v1* m_layer_shell;
-    struct wlr_xdg_activation_v1* m_xdg_activation;
+    struct wlr_output_layout* mp_output_layout;
+    struct wlr_scene* mp_scene;
+    struct wlr_xdg_shell* mp_xdg_shell;
+    struct wlr_layer_shell_v1* mp_layer_shell;
+    struct wlr_xdg_activation_v1* mp_xdg_activation;
 
-    struct wlr_output_manager_v1* m_output_manager;
-    struct wlr_presentation* m_presentation;
-    struct wlr_idle* m_idle;
+    struct wlr_output_manager_v1* mp_output_manager;
+    struct wlr_presentation* mp_presentation;
+    struct wlr_idle* mp_idle;
 
-    struct wlr_server_decoration_manager* m_server_decoration_manager;
-    struct wlr_xdg_decoration_manager_v1* m_xdg_decoration_manager;
+    struct wlr_server_decoration_manager* mp_server_decoration_manager;
+    struct wlr_xdg_decoration_manager_v1* mp_xdg_decoration_manager;
 
-    struct wlr_seat* m_seat;
-    struct wlr_cursor* m_cursor;
-    struct wlr_xcursor_manager* m_cursor_manager;
-    struct wlr_pointer_constraints_v1* m_pointer_constraints;
-    struct wlr_relative_pointer_manager_v1* m_relative_pointer_manager;
-    struct wlr_virtual_pointer_manager_v1* m_virtual_pointer_manager;
-    struct wlr_virtual_keyboard_manager_v1* m_virtual_keyboard_manager;
-    struct wlr_input_inhibit_manager* m_input_inhibit_manager;
-    struct wlr_idle_inhibit_manager_v1* m_idle_inhibit_manager;
-    struct wlr_keyboard_shortcuts_inhibit_manager_v1* m_keyboard_shortcuts_inhibit_manager;
+    struct wlr_seat* mp_seat;
+    struct wlr_cursor* mp_cursor;
+    struct wlr_xcursor_manager* mp_cursor_manager;
+    struct wlr_pointer_constraints_v1* mp_pointer_constraints;
+    struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
+    struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
+    struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
+    struct wlr_input_inhibit_manager* mp_input_inhibit_manager;
+    struct wlr_idle_inhibit_manager_v1* mp_idle_inhibit_manager;
+    struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
 
     struct wl_list m_outputs;
     struct wl_list m_clients;
@@ -150,7 +154,7 @@ private:
 #endif
 
     CursorMode m_cursor_mode;
-    Client_ptr m_grabbed_client;
+    Client_ptr mp_grabbed_client;
     double m_grab_x, m_grab_y;
     struct wlr_box m_grab_geobox;
     uint32_t m_resize_edges;

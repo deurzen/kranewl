@@ -14,18 +14,20 @@
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
-class Server;
+typedef class Server* Server_ptr;
 class Config;
 class Model final
 {
 public:
-    Model(Server&, Config const&, std::optional<std::string>);
+    Model(Config const&, std::optional<std::string>);
     ~Model();
+
+    void register_server(Server&);
 
     void run();
     void exit();
 
-    Output_ptr create_output(Surface);
+    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 
@@ -36,7 +38,7 @@ public:
     void spawn_external(std::string&&) const;
 
 private:
-    Server& m_server;
+    Server_ptr mp_server;
     Config const& m_config;
 
     bool m_running;

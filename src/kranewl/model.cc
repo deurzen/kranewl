@@ -15,12 +15,10 @@
 #include <spdlog/spdlog.h>
 
 Model::Model(
-    Server& server,
     Config const& config,
     [[maybe_unused]] std::optional<std::string> autostart_path
 )
-    : m_server{server},
-      m_config{config},
+    : m_config{config},
       m_running{true},
       m_outputs{{}, true},
       m_contexts{{}, true},
@@ -73,30 +71,43 @@ Model::Model(
         context->activate_workspace(Index{0});
     }
 
-    /* acquire_outputs(); */
-
     m_contexts.activate_at_index(0);
     m_workspaces.activate_at_index(0);
 
     mp_context = *m_contexts.active_element();
     mp_workspace = *m_workspaces.active_element();
-
-    m_server.start();
 }
 
 Model::~Model()
 {}
 
 void
+Model::register_server(Server& server)
+{
+    mp_server = &server;
+}
+
+void
 Model::run()
 {
-    // TODO
+    mp_server->start();
 }
 
 Output_ptr
-Model::create_output(Surface)
+Model::create_output(
+    struct wlr_output* wlr_output,
+    struct wlr_scene_output* wlr_scene_output
+)
 {
-    /* Output_ptr output = new Output(); */
+    Output_ptr output = new Output(
+        mp_server,
+        wlr_output,
+        wlr_scene_output
+    );
+
+    register_output(output);
+
+    return output;
 }
 
 void
@@ -115,7 +126,7 @@ Client_ptr
 Model::create_client(Surface surface)
 {
     Client_ptr client = new Client(
-        &m_server,
+        mp_server,
         surface,
         mp_output,
         mp_context,
@@ -123,6 +134,8 @@ Model::create_client(Surface surface)
     );
 
     register_client(client);
+
+    return client;
 }
 
 void

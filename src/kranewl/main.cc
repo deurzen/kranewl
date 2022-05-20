@@ -31,8 +31,11 @@ main(int argc, char** argv)
     const ConfigParser config_parser{options.config_path};
     const Config config = config_parser.generate_config();
 
-    Server server;
-    Model{server, config, options.autostart_path}.run();
+    Model model{config, options.autostart_path};
+    Server server{model};
+
+    model.register_server(server);
+    model.run();
 
     return EXIT_SUCCESS;
 }
