@@ -5,11 +5,11 @@
 
 struct Options final {
     Options(
-        std::string const&& _config_path,
-        std::optional<std::string> _autostart_path
+        std::string const&& config_path_,
+        std::optional<std::string> autostart_path_
     )
-        : config_path(_config_path),
-          autostart_path(_autostart_path)
+        : config_path(config_path_),
+          autostart_path(autostart_path_)
     {}
 
     std::string config_path;

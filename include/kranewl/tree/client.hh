@@ -37,9 +37,9 @@ typedef struct Client final {
     static bool
     is_free(Client_ptr client)
     {
-        return (client->floating && (!client->fullscreen || client->contained))
-            || !client->managed
-            || client->disowned;
+        return (client->m_floating && (!client->m_fullscreen || client->m_contained))
+            || !client->m_managed
+            || client->m_disowned;
     }
 
     Client(
@@ -80,68 +80,63 @@ typedef struct Client final {
     void set_tile_decoration(Decoration const&) noexcept;
     void set_free_decoration(Decoration const&) noexcept;
 
-    Server_ptr p_server;
+    Server_ptr mp_server;
 
-    Uid uid;
-    Surface surface;
+    Uid m_uid;
+    Surface m_surface;
 
-    struct wlr_scene_node* p_scene;
-    struct wlr_scene_node* p_scene_surface;
-    struct wlr_scene_rect* protrusions[4]; // top, bottom, left, right
+    struct wlr_scene_node* mp_scene;
+    struct wlr_scene_node* mp_scene_surface;
+    struct wlr_scene_rect* m_protrusions[4]; // top, bottom, left, right
 
-    std::string title;
+    std::string m_title;
 
-    Output_ptr p_output;
-    Context_ptr p_context;
-    Workspace_ptr p_workspace;
+    Output_ptr mp_output;
+    Context_ptr mp_context;
+    Workspace_ptr mp_workspace;
 
-    Region free_region;
-    Region tile_region;
-    Region active_region;
-    Region previous_region;
-    Region inner_region;
+    Region m_free_region;
+    Region m_tile_region;
+    Region m_active_region;
+    Region m_previous_region;
+    Region m_inner_region;
 
-    Decoration tile_decoration;
-    Decoration free_decoration;
-    Decoration active_decoration;
+    Decoration m_tile_decoration;
+    Decoration m_free_decoration;
+    Decoration m_active_decoration;
 
-    Client_ptr p_parent;
-    std::vector<Client_ptr> children;
-    Client_ptr p_producer;
-    std::vector<Client_ptr> consumers;
+    bool m_focused;
+    bool m_mapped;
+    bool m_managed;
+    bool m_urgent;
+    bool m_floating;
+    bool m_fullscreen;
+    bool m_contained;
+    bool m_invincible;
+    bool m_sticky;
+    bool m_iconifyable;
+    bool m_iconified;
+    bool m_disowned;
+    bool m_producing;
+    bool m_attaching;
 
-    bool focused;
-    bool mapped;
-    bool managed;
-    bool urgent;
-    bool floating;
-    bool fullscreen;
-    bool contained;
-    bool invincible;
-    bool sticky;
-    bool iconifyable;
-    bool iconified;
-    bool disowned;
-    bool producing;
-    bool attaching;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
+    std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
 
-    std::chrono::time_point<std::chrono::steady_clock> last_focused;
-    std::chrono::time_point<std::chrono::steady_clock> managed_since;
-
-    struct wl_listener l_commit;
-    struct wl_listener l_map;
-    struct wl_listener l_unmap;
-    struct wl_listener l_destroy;
-    struct wl_listener l_set_title;
-    struct wl_listener l_fullscreen;
-    struct wl_listener l_request_move;
-    struct wl_listener l_request_resize;
+    struct wl_listener ml_commit;
+    struct wl_listener ml_map;
+    struct wl_listener ml_unmap;
+    struct wl_listener ml_destroy;
+    struct wl_listener ml_set_title;
+    struct wl_listener ml_fullscreen;
+    struct wl_listener ml_request_move;
+    struct wl_listener ml_request_resize;
 #ifdef XWAYLAND
-    struct wl_listener l_request_activate;
-    struct wl_listener l_request_configure;
-    struct wl_listener l_set_hints;
+    struct wl_listener ml_request_activate;
+    struct wl_listener ml_request_configure;
+    struct wl_listener ml_set_hints;
 #else
-    struct wl_listener l_new_xdg_popup;
+    struct wl_listener ml_new_xdg_popup;
 #endif
 
 private:
@@ -155,14 +150,14 @@ private:
 inline bool
 operator==(Client const& lhs, Client const& rhs)
 {
-    if (lhs.surface.type != rhs.surface.type)
+    if (lhs.m_surface.type != rhs.m_surface.type)
         return false;
 
-    switch (lhs.surface.type) {
+    switch (lhs.m_surface.type) {
     case SurfaceType::XDGShell: // fallthrough
-    case SurfaceType::LayerShell: return lhs.surface.xdg == rhs.surface.xdg;
+    case SurfaceType::LayerShell: return lhs.m_surface.xdg == rhs.m_surface.xdg;
     case SurfaceType::X11Managed: // fallthrough
-    case SurfaceType::X11Unmanaged: return lhs.surface.xwayland == rhs.surface.xwayland;
+    case SurfaceType::X11Unmanaged: return lhs.m_surface.xwayland == rhs.m_surface.xwayland;
     }
 }
 
@@ -174,13 +169,13 @@ namespace std
         std::size_t
         operator()(Client const& client) const
         {
-            switch (client.surface.type) {
+            switch (client.m_surface.type) {
             case SurfaceType::XDGShell: // fallthrough
             case SurfaceType::LayerShell:
-                return std::hash<wlr_xdg_surface*>{}(client.surface.xdg);
+                return std::hash<wlr_xdg_surface*>{}(client.m_surface.xdg);
             case SurfaceType::X11Managed: // fallthrough
             case SurfaceType::X11Unmanaged:
-                return std::hash<wlr_xwayland_surface*>{}(client.surface.xwayland);
+                return std::hash<wlr_xwayland_surface*>{}(client.m_surface.xwayland);
             }
         }
 

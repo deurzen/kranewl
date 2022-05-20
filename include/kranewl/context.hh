@@ -9,8 +9,7 @@
 typedef class Client* Client_ptr;
 typedef class Workspace* Workspace_ptr;
 typedef class Output* Output_ptr;
-typedef class Context final
-{
+typedef class Context final {
 public:
     Context(Index index, std::string name)
         : m_index(index),

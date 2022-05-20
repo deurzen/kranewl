@@ -22,40 +22,36 @@ Client::Client(
     Context_ptr context,
     Workspace_ptr workspace
 )
-    : uid{surface.uid()},
-      server{server},
-      surface{surface},
-      output{output},
-      context{context},
-      workspace{workspace},
-      free_region{{}},
-      tile_region{{}},
-      active_region{{}},
-      previous_region{{}},
-      inner_region{{}},
-      tile_decoration{{}},
-      free_decoration{{}},
-      active_decoration{{}},
-      parent{nullptr},
-      children{{}},
-      producer{nullptr},
-      consumers{{}},
-      focused{false},
-      mapped{false},
-      managed{true},
-      urgent{false},
-      floating{false},
-      fullscreen{false},
-      contained{false},
-      invincible{false},
-      sticky{false},
-      iconifyable{true},
-      iconified{false},
-      disowned{false},
-      producing{true},
-      attaching{false},
-      last_focused{std::chrono::steady_clock::now()},
-      managed_since{std::chrono::steady_clock::now()},
+    : m_uid{surface.uid()},
+      mp_server{server},
+      m_surface{surface},
+      mp_output{output},
+      mp_context{context},
+      mp_workspace{workspace},
+      m_free_region{{}},
+      m_tile_region{{}},
+      m_active_region{{}},
+      m_previous_region{{}},
+      m_inner_region{{}},
+      m_tile_decoration{{}},
+      m_free_decoration{{}},
+      m_active_decoration{{}},
+      m_focused{false},
+      m_mapped{false},
+      m_managed{true},
+      m_urgent{false},
+      m_floating{false},
+      m_fullscreen{false},
+      m_contained{false},
+      m_invincible{false},
+      m_sticky{false},
+      m_iconifyable{true},
+      m_iconified{false},
+      m_disowned{false},
+      m_producing{true},
+      m_attaching{false},
+      m_last_focused{std::chrono::steady_clock::now()},
+      m_managed_since{std::chrono::steady_clock::now()},
       m_outside_state{OutsideState::Unfocused}
 {}
 
@@ -65,7 +61,7 @@ Client::~Client()
 Client::OutsideState
 Client::get_outside_state() const noexcept
 {
-    if (urgent)
+    if (m_urgent)
         return Client::OutsideState::Urgent;
 
     return m_outside_state;
@@ -74,11 +70,11 @@ Client::get_outside_state() const noexcept
 struct wlr_surface*
 Client::get_surface() noexcept
 {
-    switch (surface.type) {
+    switch (m_surface.type) {
     case SurfaceType::XDGShell: //fallthrough
-    case SurfaceType::LayerShell: return surface.xdg->surface;
+    case SurfaceType::LayerShell: return m_surface.xdg->surface;
     case SurfaceType::X11Managed: //fallthrough
-    case SurfaceType::X11Unmanaged: return surface.xwayland->surface;
+    case SurfaceType::X11Unmanaged: return m_surface.xwayland->surface;
     }
 
     return nullptr;
@@ -87,8 +83,8 @@ Client::get_surface() noexcept
 void
 Client::focus() noexcept
 {
-    focused = true;
-    last_focused = std::chrono::steady_clock::now();
+    m_focused = true;
+    m_last_focused = std::chrono::steady_clock::now();
 
     switch (m_outside_state) {
     case OutsideState::Unfocused:         m_outside_state = OutsideState::Focused;         return;
@@ -101,7 +97,7 @@ Client::focus() noexcept
 void
 Client::unfocus() noexcept
 {
-    focused = false;
+    m_focused = false;
 
     switch (m_outside_state) {
     case OutsideState::Focused:         m_outside_state = OutsideState::Unfocused;         return;
@@ -114,7 +110,7 @@ Client::unfocus() noexcept
 void
 Client::stick() noexcept
 {
-    sticky = true;
+    m_sticky = true;
 
     switch (m_outside_state) {
     case OutsideState::Focused:   m_outside_state = OutsideState::FocusedSticky;   return;
@@ -126,7 +122,7 @@ Client::stick() noexcept
 void
 Client::unstick() noexcept
 {
-    sticky = false;
+    m_sticky = false;
 
     switch (m_outside_state) {
     case OutsideState::FocusedSticky:   m_outside_state = OutsideState::Focused;   return;
@@ -138,7 +134,7 @@ Client::unstick() noexcept
 void
 Client::disown() noexcept
 {
-    disowned = true;
+    m_disowned = true;
 
     switch (m_outside_state) {
     case OutsideState::Focused:   m_outside_state = OutsideState::FocusedDisowned;   return;
@@ -150,7 +146,7 @@ Client::disown() noexcept
 void
 Client::reclaim() noexcept
 {
-    disowned = false;
+    m_disowned = false;
 
     switch (m_outside_state) {
     case OutsideState::FocusedDisowned:   m_outside_state = OutsideState::Focused;   return;
@@ -162,52 +158,52 @@ Client::reclaim() noexcept
 void
 Client::set_tile_region(Region& region) noexcept
 {
-    tile_region = region;
+    m_tile_region = region;
     set_active_region(region);
 }
 
 void
 Client::set_free_region(Region& region) noexcept
 {
-    free_region = region;
+    m_free_region = region;
     set_active_region(region);
 }
 
 void
 Client::set_active_region(Region& region) noexcept
 {
-    previous_region = active_region;
+    m_previous_region = m_active_region;
     set_inner_region(region);
-    active_region = region;
+    m_active_region = region;
 }
 
 void
 Client::set_tile_decoration(Decoration const& decoration) noexcept
 {
-    tile_decoration = decoration;
-    active_decoration = decoration;
+    m_tile_decoration = decoration;
+    m_active_decoration = decoration;
 }
 
 void
 Client::set_free_decoration(Decoration const& decoration) noexcept
 {
-    free_decoration = decoration;
-    active_decoration = decoration;
+    m_free_decoration = decoration;
+    m_active_decoration = decoration;
 }
 
 void
 Client::set_inner_region(Region& region) noexcept
 {
-    if (active_decoration.frame) {
-        Frame const& frame = *active_decoration.frame;
+    if (m_active_decoration.frame) {
+        Frame const& frame = *m_active_decoration.frame;
 
-        inner_region.pos.x = frame.extents.left;
-        inner_region.pos.y = frame.extents.top;
-        inner_region.dim.w = region.dim.w - frame.extents.left - frame.extents.right;
-        inner_region.dim.h = region.dim.h - frame.extents.top - frame.extents.bottom;
+        m_inner_region.pos.x = frame.extents.left;
+        m_inner_region.pos.y = frame.extents.top;
+        m_inner_region.dim.w = region.dim.w - frame.extents.left - frame.extents.right;
+        m_inner_region.dim.h = region.dim.h - frame.extents.top - frame.extents.bottom;
     } else {
-        inner_region.pos.x = 0;
-        inner_region.pos.y = 0;
-        inner_region.dim = region.dim;
+        m_inner_region.pos.x = 0;
+        m_inner_region.pos.y = 0;
+        m_inner_region.dim = region.dim;
     }
 }

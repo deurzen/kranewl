@@ -10,13 +10,13 @@ extern "C" {
 
 typedef class Server* Server_ptr;
 struct Keyboard {
-    Server_ptr p_server;
+    Server_ptr mp_server;
 
-    struct wl_list link;
-	struct wlr_input_device* p_device;
+    struct wl_list m_link;
+	struct wlr_input_device* mp_device;
 
-    struct wl_listener l_modifiers;
-    struct wl_listener l_key;
+    struct wl_listener ml_modifiers;
+    struct wl_listener ml_key;
 };
 
 struct KeyboardInput {

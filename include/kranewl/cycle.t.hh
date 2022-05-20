@@ -648,4 +648,3 @@ Cycle<T>::stack() const
 {
     return m_stack.as_vector();
 }
-

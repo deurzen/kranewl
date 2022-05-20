@@ -96,8 +96,7 @@ Model::run()
 Output_ptr
 Model::create_output(Surface)
 {
-    Output_ptr output = new Output();
-
+    /* Output_ptr output = new Output(); */
 }
 
 void

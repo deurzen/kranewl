@@ -27,8 +27,7 @@ enum class Corner {
     BottomRight,
 };
 
-enum class Toggle
-{
+enum class Toggle {
     On,
     Off,
     Reverse,

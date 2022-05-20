@@ -9,15 +9,13 @@
 #include <unordered_map>
 #include <variant>
 
-enum class StackAction
-{
+enum class StackAction {
     Insert,
     Remove
 };
 
 template <typename T>
-class HistoryStack final
-{
+class HistoryStack final {
     static_assert(std::is_pointer<T>::value,
         "Only pointer types may be stored in a history stack.");
 
@@ -40,8 +38,7 @@ private:
 };
 
 template <typename T>
-class Cycle final
-{
+class Cycle final {
     static_assert(std::is_pointer<T>::value,
         "Only pointer types may be stored in a cycle.");
 
@@ -183,17 +180,15 @@ public:
     }
 
 private:
-    Index m_index;
+    void sync_active();
+    void push_index_to_stack(std::optional<Index>);
+    void push_active_to_stack();
+    std::optional<T> get_active_from_stack();
 
+    Index m_index;
     std::deque<T> m_elements;
 
     bool m_unwindable;
     HistoryStack<T> m_stack;
-
-    void sync_active();
-
-    void push_index_to_stack(std::optional<Index>);
-    void push_active_to_stack();
-    std::optional<T> get_active_from_stack();
 
 };

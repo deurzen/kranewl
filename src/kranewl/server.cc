@@ -254,11 +254,11 @@ Server::new_output(struct wl_listener* listener, void* data)
     }
 
     Output* output = reinterpret_cast<Output*>(calloc(1, sizeof(Output)));
-    output->wlr_output = wlr_output;
-    output->server = server;
+    output->mp_wlr_output = wlr_output;
+    output->mp_server = server;
     output->ml_frame.notify = Server::output_frame;
     wl_signal_add(&wlr_output->events.frame, &output->ml_frame);
-    wl_list_insert(&server->m_outputs, &output->link);
+    /* wl_list_insert(&server->m_outputs, &output->m_link); */
 
     wlr_output_layout_add_auto(server->m_output_layout, wlr_output);
 }
@@ -308,26 +308,26 @@ Server::new_xdg_surface(struct wl_listener* listener, void* data)
         nullptr
     );
 
-    xdg_surface->data = client->scene;
-    client->scene = wlr_scene_xdg_surface_create(
-        &client->server->m_scene->node,
-        client->surface.xdg
+    xdg_surface->data = client->mp_scene;
+    client->mp_scene = wlr_scene_xdg_surface_create(
+        &client->mp_server->m_scene->node,
+        client->m_surface.xdg
     );
 
-    client->scene->data = client;
+    client->mp_scene->data = client;
 
-    client->l_map.notify = xdg_toplevel_map;
-    wl_signal_add(&xdg_surface->events.map, &client->l_map);
-    client->l_unmap.notify = xdg_toplevel_unmap;
-    wl_signal_add(&xdg_surface->events.unmap, &client->l_unmap);
-    client->l_destroy.notify = xdg_toplevel_destroy;
-    wl_signal_add(&xdg_surface->events.destroy, &client->l_destroy);
+    client->ml_map.notify = xdg_toplevel_map;
+    wl_signal_add(&xdg_surface->events.map, &client->ml_map);
+    client->ml_unmap.notify = xdg_toplevel_unmap;
+    wl_signal_add(&xdg_surface->events.unmap, &client->ml_unmap);
+    client->ml_destroy.notify = xdg_toplevel_destroy;
+    wl_signal_add(&xdg_surface->events.destroy, &client->ml_destroy);
 
     struct wlr_xdg_toplevel* toplevel = xdg_surface->toplevel;
-    client->l_request_move.notify = xdg_toplevel_request_move;
-    wl_signal_add(&toplevel->events.request_move, &client->l_request_move);
-    client->l_request_resize.notify = xdg_toplevel_request_resize;
-    wl_signal_add(&toplevel->events.request_resize, &client->l_request_resize);
+    client->ml_request_move.notify = xdg_toplevel_request_move;
+    wl_signal_add(&toplevel->events.request_move, &client->ml_request_move);
+    client->ml_request_resize.notify = xdg_toplevel_request_resize;
+    wl_signal_add(&toplevel->events.request_resize, &client->ml_request_resize);
 }
 
 void
@@ -376,8 +376,8 @@ void
 Server::new_keyboard(Server_ptr server, struct wlr_input_device* device)
 {
     Keyboard* keyboard = reinterpret_cast<Keyboard*>(calloc(1, sizeof(Keyboard)));
-    keyboard->server = server;
-    keyboard->device = device;
+    keyboard->mp_server = server;
+    keyboard->mp_device = device;
 
     struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     struct xkb_keymap* keymap = xkb_keymap_new_from_names(
@@ -391,13 +391,13 @@ Server::new_keyboard(Server_ptr server, struct wlr_input_device* device)
     xkb_context_unref(context);
     wlr_keyboard_set_repeat_info(device->keyboard, 25, 600);
 
-    keyboard->l_modifiers.notify = keyboard_handle_modifiers;
-    wl_signal_add(&device->keyboard->events.modifiers, &keyboard->l_modifiers);
-    keyboard->l_key.notify = keyboard_handle_key;
-    wl_signal_add(&device->keyboard->events.key, &keyboard->l_key);
+    keyboard->ml_modifiers.notify = keyboard_handle_modifiers;
+    wl_signal_add(&device->keyboard->events.modifiers, &keyboard->ml_modifiers);
+    keyboard->ml_key.notify = keyboard_handle_key;
+    wl_signal_add(&device->keyboard->events.key, &keyboard->ml_key);
 
     wlr_seat_set_keyboard(server->m_seat, device);
-    wl_list_insert(&server->m_keyboards, &keyboard->link);
+    wl_list_insert(&server->m_keyboards, &keyboard->m_link);
 }
 
 void
@@ -564,13 +564,13 @@ Server::cursor_process_move(Server_ptr server, uint32_t time)
 {
     Client_ptr client = server->m_grabbed_client;
 
-    client->active_region.pos.x = server->m_cursor->x - server->m_grab_x;
-    client->active_region.pos.y = server->m_cursor->y - server->m_grab_y;
+    client->m_active_region.pos.x = server->m_cursor->x - server->m_grab_x;
+    client->m_active_region.pos.y = server->m_cursor->y - server->m_grab_y;
 
     wlr_scene_node_set_position(
-        client->scene,
-        client->active_region.pos.x,
-        client->active_region.pos.y
+        client->mp_scene,
+        client->m_active_region.pos.x,
+        client->m_active_region.pos.y
     );
 }
 
@@ -612,22 +612,22 @@ Server::cursor_process_resize(Server_ptr server, uint32_t time)
     }
 
     struct wlr_box geo_box;
-    wlr_xdg_surface_get_geometry(client->surface.xdg, &geo_box);
+    wlr_xdg_surface_get_geometry(client->m_surface.xdg, &geo_box);
 
-    client->active_region.pos.x = new_left - geo_box.x;
-    client->active_region.pos.y = new_top - geo_box.y;
+    client->m_active_region.pos.x = new_left - geo_box.x;
+    client->m_active_region.pos.y = new_top - geo_box.y;
 
     wlr_scene_node_set_position(
-        client->scene,
-        client->active_region.pos.x,
-        client->active_region.pos.y
+        client->mp_scene,
+        client->m_active_region.pos.x,
+        client->m_active_region.pos.y
     );
 
     int new_width = new_right - new_left;
     int new_height = new_bottom - new_top;
 
     wlr_xdg_toplevel_set_size(
-        client->surface.xdg,
+        client->m_surface.xdg,
         new_width,
         new_height
     );
@@ -648,20 +648,20 @@ Server::start_drag(struct wl_listener*, void*)
 void
 Server::keyboard_handle_modifiers(struct wl_listener* listener, void* data)
 {
-    Keyboard* keyboard = wl_container_of(listener, keyboard, l_modifiers);
+    Keyboard* keyboard = wl_container_of(listener, keyboard, ml_modifiers);
 
-    wlr_seat_set_keyboard(keyboard->server->m_seat, keyboard->device);
+    wlr_seat_set_keyboard(keyboard->mp_server->m_seat, keyboard->mp_device);
     wlr_seat_keyboard_notify_modifiers(
-        keyboard->server->m_seat,
-        &keyboard->device->keyboard->modifiers
+        keyboard->mp_server->m_seat,
+        &keyboard->mp_device->keyboard->modifiers
     );
 }
 
 void
 Server::keyboard_handle_key(struct wl_listener* listener, void* data)
 {
-    Keyboard* keyboard = wl_container_of(listener, keyboard, l_key);
-    Server_ptr server = keyboard->server;
+    Keyboard* keyboard = wl_container_of(listener, keyboard, ml_key);
+    Server_ptr server = keyboard->mp_server;
 
     struct wlr_event_keyboard_key* event
         = reinterpret_cast<struct wlr_event_keyboard_key*>(data);
@@ -671,13 +671,13 @@ Server::keyboard_handle_key(struct wl_listener* listener, void* data)
     const xkb_keysym_t* syms;
 
     int nsyms = xkb_state_key_get_syms(
-        keyboard->device->keyboard->xkb_state,
+        keyboard->mp_device->keyboard->xkb_state,
         keycode,
         &syms
     );
 
     bool handled = false;
-    uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->device->keyboard);
+    uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->mp_device->keyboard);
 
     if ((modifiers & WLR_MODIFIER_ALT) && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
         for (int i = 0; i < nsyms; i++)
@@ -685,7 +685,7 @@ Server::keyboard_handle_key(struct wl_listener* listener, void* data)
     }
 
     if (!handled) {
-        wlr_seat_set_keyboard(seat, keyboard->device);
+        wlr_seat_set_keyboard(seat, keyboard->mp_device);
         wlr_seat_keyboard_notify_key(
             seat,
             event->time_msec,
@@ -763,10 +763,10 @@ void
 Server::output_frame(struct wl_listener* listener, void* data)
 {
     Output* output = wl_container_of(listener, output, ml_frame);
-    struct wlr_scene* scene = output->m_server->m_scene;
+    struct wlr_scene* scene = output->mp_server->m_scene;
 
     struct wlr_scene_output* scene_output
-        = wlr_scene_get_scene_output(scene, output->m_wlr_output);
+        = wlr_scene_get_scene_output(scene, output->mp_wlr_output);
 
     wlr_scene_output_commit(scene_output);
 
@@ -808,7 +808,7 @@ Server::focus_client(Client_ptr client, struct wlr_surface* surface)
     if (!client)
         return;
 
-    Server_ptr server = client->server;
+    Server_ptr server = client->mp_server;
     struct wlr_seat* seat = server->m_seat;
     struct wlr_surface* prev_surface = seat->keyboard_state.focused_surface;
 
@@ -825,14 +825,14 @@ Server::focus_client(Client_ptr client, struct wlr_surface* surface)
 
     struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(seat);
 
-    if (client->scene)
-        wlr_scene_node_raise_to_top(client->scene);
+    if (client->mp_scene)
+        wlr_scene_node_raise_to_top(client->mp_scene);
 
     /* wl_list_remove(&client->link); */
     /* wl_list_insert(&server->m_clients, &client->link); */
 
-    if (client->surface.type == SurfaceType::XDGShell || client->surface.type == SurfaceType::LayerShell)
-        wlr_xdg_toplevel_set_activated(client->surface.xdg, true);
+    if (client->m_surface.type == SurfaceType::XDGShell || client->m_surface.type == SurfaceType::LayerShell)
+        wlr_xdg_toplevel_set_activated(client->m_surface.xdg, true);
 
     wlr_seat_keyboard_notify_enter(
         seat,
@@ -846,7 +846,7 @@ Server::focus_client(Client_ptr client, struct wlr_surface* surface)
 void
 Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
 {
-    Client_ptr client = wl_container_of(listener, client, l_map);
+    Client_ptr client = wl_container_of(listener, client, ml_map);
 
     /* wl_list_insert(&client->server->m_clients, &client->link); */
     focus_client(client, client->get_surface());
@@ -855,20 +855,20 @@ Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
 void
 Server::xdg_toplevel_unmap(struct wl_listener* listener, void* data)
 {
-    Client_ptr client = wl_container_of(listener, client, l_unmap);
+    Client_ptr client = wl_container_of(listener, client, ml_unmap);
     /* wl_list_remove(&client->link); */
 }
 
 void
 Server::xdg_toplevel_destroy(struct wl_listener* listener, void* data)
 {
-    Client_ptr client = wl_container_of(listener, client, l_destroy);
+    Client_ptr client = wl_container_of(listener, client, ml_destroy);
 
-    wl_list_remove(&client->l_map.link);
-    wl_list_remove(&client->l_unmap.link);
-    wl_list_remove(&client->l_destroy.link);
-    wl_list_remove(&client->l_request_move.link);
-    wl_list_remove(&client->l_request_resize.link);
+    wl_list_remove(&client->ml_map.link);
+    wl_list_remove(&client->ml_unmap.link);
+    wl_list_remove(&client->ml_destroy.link);
+    wl_list_remove(&client->ml_request_move.link);
+    wl_list_remove(&client->ml_request_resize.link);
 
     delete client;
 }
@@ -876,7 +876,7 @@ Server::xdg_toplevel_destroy(struct wl_listener* listener, void* data)
 void
 Server::xdg_toplevel_request_move(struct wl_listener* listener, void* data)
 {
-    Client_ptr client = wl_container_of(listener, client, l_request_move);
+    Client_ptr client = wl_container_of(listener, client, ml_request_move);
     xdg_toplevel_handle_moveresize(client, Server::CursorMode::Move, 0);
 }
 
@@ -886,7 +886,7 @@ Server::xdg_toplevel_request_resize(struct wl_listener* listener, void* data)
     struct wlr_xdg_toplevel_resize_event* event
         = reinterpret_cast<struct wlr_xdg_toplevel_resize_event*>(data);
 
-    Client_ptr client = wl_container_of(listener, client, l_request_resize);
+    Client_ptr client = wl_container_of(listener, client, ml_request_resize);
     xdg_toplevel_handle_moveresize(client, Server::CursorMode::Resize, event->edges);
 }
 
@@ -897,7 +897,7 @@ Server::xdg_toplevel_handle_moveresize(
     uint32_t edges
 )
 {
-    Server_ptr server = client->server;
+    Server_ptr server = client->mp_server;
 
     if (client->get_surface()
         != wlr_surface_get_root_surface(server->m_seat->pointer_state.focused_surface))
@@ -910,26 +910,26 @@ Server::xdg_toplevel_handle_moveresize(
 
     switch (mode) {
     case Server::CursorMode::Move:
-        server->m_grab_x = server->m_cursor->x - client->active_region.pos.x;
-        server->m_grab_y = server->m_cursor->y - client->active_region.pos.y;
+        server->m_grab_x = server->m_cursor->x - client->m_active_region.pos.x;
+        server->m_grab_y = server->m_cursor->y - client->m_active_region.pos.y;
         return;
     case Server::CursorMode::Resize:
         {
             struct wlr_box geo_box;
-            wlr_xdg_surface_get_geometry(client->surface.xdg, &geo_box);
+            wlr_xdg_surface_get_geometry(client->m_surface.xdg, &geo_box);
 
-            double border_x = (client->active_region.pos.x + geo_box.x) +
+            double border_x = (client->m_active_region.pos.x + geo_box.x) +
                 ((edges & WLR_EDGE_RIGHT) ? geo_box.width : 0);
 
-            double border_y = (client->active_region.pos.y + geo_box.y) +
+            double border_y = (client->m_active_region.pos.y + geo_box.y) +
                 ((edges & WLR_EDGE_BOTTOM) ? geo_box.height : 0);
 
             server->m_grab_x = server->m_cursor->x - border_x;
             server->m_grab_y = server->m_cursor->y - border_y;
 
             server->m_grab_geobox = geo_box;
-            server->m_grab_geobox.x += client->active_region.pos.x;
-            server->m_grab_geobox.y += client->active_region.pos.y;
+            server->m_grab_geobox.x += client->m_active_region.pos.x;
+            server->m_grab_geobox.y += client->m_active_region.pos.y;
 
             server->m_resize_edges = edges;
         }
@@ -986,22 +986,22 @@ Server::new_xwayland_surface(struct wl_listener* listener, void* data)
 
 	xwayland_surface->data = client;
 
-    client->l_map = { .notify = Server::xdg_toplevel_map };
-    client->l_unmap = { .notify = Server::xdg_toplevel_unmap };
-    client->l_destroy = { .notify = Server::xdg_toplevel_destroy };
-    // TODO: client->l_set_title = { .notify = Server::... };
-    // TODO: client->l_fullscreen = { .notify = Server::... };
-    client->l_request_activate = { .notify = Server::xwayland_request_activate };
-    client->l_request_configure = { .notify = Server::xwayland_request_configure };
-    client->l_set_hints = { .notify = Server::xwayland_set_hints };
-    // TODO: client->l_new_xdg_popup = { .notify = Server::... };
+    client->ml_map = { .notify = Server::xdg_toplevel_map };
+    client->ml_unmap = { .notify = Server::xdg_toplevel_unmap };
+    client->ml_destroy = { .notify = Server::xdg_toplevel_destroy };
+    // TODO: client->ml_set_title = { .notify = Server::... };
+    // TODO: client->ml_fullscreen = { .notify = Server::... };
+    client->ml_request_activate = { .notify = Server::xwayland_request_activate };
+    client->ml_request_configure = { .notify = Server::xwayland_request_configure };
+    client->ml_set_hints = { .notify = Server::xwayland_set_hints };
+    // TODO: client->ml_new_xdg_popup = { .notify = Server::... };
 
-    wl_signal_add(&xwayland_surface->events.map, &client->l_map);
-    wl_signal_add(&xwayland_surface->events.unmap, &client->l_unmap);
-    wl_signal_add(&xwayland_surface->events.destroy, &client->l_destroy);
-    wl_signal_add(&xwayland_surface->events.request_activate, &client->l_request_activate);
-    wl_signal_add(&xwayland_surface->events.request_configure, &client->l_request_configure);
-    wl_signal_add(&xwayland_surface->events.set_hints, &client->l_set_hints);
+    wl_signal_add(&xwayland_surface->events.map, &client->ml_map);
+    wl_signal_add(&xwayland_surface->events.unmap, &client->ml_unmap);
+    wl_signal_add(&xwayland_surface->events.destroy, &client->ml_destroy);
+    wl_signal_add(&xwayland_surface->events.request_activate, &client->ml_request_activate);
+    wl_signal_add(&xwayland_surface->events.request_configure, &client->ml_request_configure);
+    wl_signal_add(&xwayland_surface->events.set_hints, &client->ml_set_hints);
 }
 
 void
