@@ -1,9 +1,10 @@
 #pragma once
 
 #include <kranewl/common.hh>
-#include <kranewl/geometry.hh>
-#include <kranewl/placement.hh>
 #include <kranewl/cycle.hh>
+#include <kranewl/geometry.hh>
+#include <kranewl/layout.hh>
+#include <kranewl/placement.hh>
 #include <kranewl/util.hh>
 
 typedef class Client* Client_ptr;

@@ -108,6 +108,15 @@ operator<<(std::ostream& os, Padding const& padding)
 struct Region final {
     Pos pos;
     Dim dim;
+
+    void apply_minimum_dim(Dim const&);
+    void apply_extents(Extents const&);
+    void remove_extents(Extents const&);
+
+    bool contains(Pos) const;
+    bool contains(Region const&) const;
+
+    Pos center() const;
 };
 
 inline bool

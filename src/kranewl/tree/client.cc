@@ -1,4 +1,4 @@
-#include <kranewl/client.hh>
+#include <kranewl/tree/client.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
@@ -15,57 +15,49 @@ extern "C" {
 #undef class
 #undef namespace
 
-Client::Client()
-{
-    wl_list_init(&link);
-}
-
 Client::Client(
+    Server_ptr server,
     Surface surface,
-    Partition_ptr partition,
+    Output_ptr output,
     Context_ptr context,
-    Workspace_ptr workspace,
-    std::optional<Pid> pid,
-    std::optional<Pid> ppid
+    Workspace_ptr workspace
 )
-    : surface(surface),
-      partition(partition),
-      context(context),
-      workspace(workspace),
-      free_region({}),
-      tile_region({}),
-      active_region({}),
-      previous_region({}),
-      inner_region({}),
-      tile_decoration({}),
-      free_decoration({}),
-      active_decoration({}),
-      parent(nullptr),
-      children({}),
-      producer(nullptr),
-      consumers({}),
-      focused(false),
-      mapped(false),
-      managed(true),
-      urgent(false),
-      floating(false),
-      fullscreen(false),
-      contained(false),
-      invincible(false),
-      sticky(false),
-      iconifyable(true),
-      iconified(false),
-      disowned(false),
-      producing(true),
-      attaching(false),
-      pid(pid),
-      ppid(ppid),
-      last_focused(std::chrono::steady_clock::now()),
-      managed_since(std::chrono::steady_clock::now()),
-      m_outside_state(OutsideState::Unfocused)
-{
-    wl_list_init(&link);
-}
+    : uid{surface.uid()},
+      server{server},
+      surface{surface},
+      output{output},
+      context{context},
+      workspace{workspace},
+      free_region{{}},
+      tile_region{{}},
+      active_region{{}},
+      previous_region{{}},
+      inner_region{{}},
+      tile_decoration{{}},
+      free_decoration{{}},
+      active_decoration{{}},
+      parent{nullptr},
+      children{{}},
+      producer{nullptr},
+      consumers{{}},
+      focused{false},
+      mapped{false},
+      managed{true},
+      urgent{false},
+      floating{false},
+      fullscreen{false},
+      contained{false},
+      invincible{false},
+      sticky{false},
+      iconifyable{true},
+      iconified{false},
+      disowned{false},
+      producing{true},
+      attaching{false},
+      last_focused{std::chrono::steady_clock::now()},
+      managed_since{std::chrono::steady_clock::now()},
+      m_outside_state{OutsideState::Unfocused}
+{}
 
 Client::~Client()
 {}
@@ -82,7 +74,7 @@ Client::get_outside_state() const noexcept
 struct wlr_surface*
 Client::get_surface() noexcept
 {
-    switch (surface_type) {
+    switch (surface.type) {
     case SurfaceType::XDGShell: //fallthrough
     case SurfaceType::LayerShell: return surface.xdg->surface;
     case SurfaceType::X11Managed: //fallthrough

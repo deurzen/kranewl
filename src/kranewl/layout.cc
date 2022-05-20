@@ -1,8 +1,10 @@
 #include <kranewl/layout.hh>
 
-#include <kranewl/util.hh>
-#include <kranewl/client.hh>
 #include <kranewl/cycle.t.hh>
+#include <kranewl/tree/client.hh>
+#include <kranewl/util.hh>
+
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <cmath>
@@ -256,13 +258,13 @@ LayoutHandler::layout_wraps() const
 }
 
 
-std::size_t
+int
 LayoutHandler::gap_size() const
 {
     return (*mp_layout->data.active_element())->gap_size;
 }
 
-std::size_t
+int
 LayoutHandler::main_count() const
 {
     return (*mp_layout->data.active_element())->main_count;
@@ -307,10 +309,10 @@ LayoutHandler::change_gap_size(Util::Change<int> change)
 
     if (value <= 0)
         data->gap_size = 0;
-    else if (static_cast<std::size_t>(value) >= Layout::LayoutData::MAX_GAP_SIZE)
+    else if (static_cast<int>(value) >= Layout::LayoutData::MAX_GAP_SIZE)
         data->gap_size = Layout::LayoutData::MAX_GAP_SIZE;
     else
-        data->gap_size = static_cast<std::size_t>(value);
+        data->gap_size = static_cast<int>(value);
 }
 
 void
@@ -321,10 +323,10 @@ LayoutHandler::change_main_count(Util::Change<int> change)
 
     if (value <= 0)
         data->main_count = 0;
-    else if (static_cast<std::size_t>(value) >= Layout::LayoutData::MAX_MAIN_COUNT)
+    else if (static_cast<int>(value) >= Layout::LayoutData::MAX_MAIN_COUNT)
         data->main_count = Layout::LayoutData::MAX_MAIN_COUNT;
     else
-        data->main_count = static_cast<std::size_t>(value);
+        data->main_count = static_cast<int>(value);
 }
 
 void
@@ -423,16 +425,17 @@ LayoutHandler::cycle_layout_data(Direction direction)
 
 
 void
-LayoutHandler::save_layout(std::size_t number) const
+LayoutHandler::save_layout(int number) const
 {
     std::stringstream datadir_ss;
     std::string home_path = std::getenv("HOME");
 
     if (const char* env_xdgdata = std::getenv("XDG_DATA_HOME"))
-        datadir_ss << env_xdgdata << "/" << WM_NAME << "/";
+        datadir_ss << env_xdgdata << "/kranewl/";
     else
-        datadir_ss << home_path << "/.local/share/" << WM_NAME << "/"
-                   << "layout_" << number;
+        datadir_ss << home_path << "/.local/share/kranewl/";
+
+    datadir_ss << "layout_" << number;
 
     std::string file_path = datadir_ss.str();
 
@@ -448,21 +451,22 @@ LayoutHandler::save_layout(std::size_t number) const
     out.write(reinterpret_cast<const char*>(&m_kind), sizeof(LayoutKind));
     out.write(reinterpret_cast<const char*>(&size), sizeof(size));
     out.write(reinterpret_cast<const char*>(&data[0]),
-        data.size() * sizeof(Layout::LayoutData));
+        static_cast<long>(data.size() * sizeof(Layout::LayoutData)));
     out.close();
 }
 
 void
-LayoutHandler::load_layout(std::size_t number)
+LayoutHandler::load_layout(int number)
 {
     std::stringstream datadir_ss;
     std::string home_path = std::getenv("HOME");
 
     if (const char* env_xdgdata = std::getenv("XDG_DATA_HOME"))
-        datadir_ss << env_xdgdata << "/" << WM_NAME << "/";
+        datadir_ss << env_xdgdata << "/kranewl/";
     else
-        datadir_ss << home_path << "/.local/share/" << WM_NAME << "/"
-                   << "layout_" << number;
+        datadir_ss << home_path << "/.local/share/kranewl/";
+
+    datadir_ss << "layout_" << number;
 
     std::string file_path = datadir_ss.str();
 
@@ -477,7 +481,7 @@ LayoutHandler::load_layout(std::size_t number)
 
         data.resize(size, mp_layout->default_data);
         in.read(reinterpret_cast<char*>(&data[0]),
-            data.size() * sizeof(Layout::LayoutData));
+            static_cast<long>(data.size() * sizeof(Layout::LayoutData)));
 
         set_kind(kind);
         for (Layout::LayoutData_ptr data : mp_layout->data)
@@ -569,8 +573,8 @@ LayoutHandler::arrange_center(
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
 
-    std::size_t h_comp = Layout::LayoutData::MAX_MAIN_COUNT;
-    float w_ratio = data->main_factor / 0.95;
+    int h_comp = Layout::LayoutData::MAX_MAIN_COUNT;
+    float w_ratio = data->main_factor / 0.95f;
     float h_ratio = static_cast<float>((h_comp - data->main_count))
         / static_cast<float>(h_comp);
 
@@ -581,14 +585,14 @@ LayoutHandler::arrange_center(
         [=,this](Client_ptr client) -> Placement {
             Region region = screen_region;
 
-            int w = region.dim.w * w_ratio;
-            int h = region.dim.h * h_ratio;
+            int w = static_cast<int>(static_cast<float>(region.dim.w) * w_ratio);
+            int h = static_cast<int>(static_cast<float>(region.dim.h) * h_ratio);
 
             if (w <= region.dim.w)
-                region.pos.x += (region.dim.w - w) / 2.f;
+                region.pos.x += static_cast<int>(static_cast<float>(region.dim.w - w) / 2.f);
 
             if (h <= region.dim.h)
-                region.pos.y += (region.dim.h - h) / 2.f;
+                region.pos.y += static_cast<int>(static_cast<float>(region.dim.h - h) / 2.f);
 
             region.dim = { w, h };
 
@@ -634,21 +638,21 @@ LayoutHandler::arrange_main_deck(
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    std::size_t n_main;
-    std::size_t n_stack;
+    int n_main;
+    int n_stack;
 
     if (n <= data->main_count) {
         n_main = n;
@@ -660,15 +664,17 @@ LayoutHandler::arrange_main_deck(
 
     int w_main
         = data->main_count > 0
-        ? static_cast<float>(screen_region.dim.w) * data->main_factor
+        ? static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor)
         : 0;
 
     int x_stack = screen_region.pos.x + w_main;
     int w_stack = screen_region.dim.w - w_main;
     int h_main = n_main > 0 ? screen_region.dim.h : 0;
-    int h_stack = n_stack > 0 ? screen_region.dim.h / n_stack : 0;
+    int h_stack = n_stack > 0
+        ? screen_region.dim.h / n_stack
+        : 0;
 
-    std::size_t i = 0;
+    int i = 0;
 
     std::transform(
         begin,
@@ -723,21 +729,21 @@ LayoutHandler::arrange_stack_deck(
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    std::size_t n_main;
-    std::size_t n_stack;
+    int n_main;
+    int n_stack;
 
     if (n <= data->main_count) {
         n_main = n;
@@ -749,7 +755,7 @@ LayoutHandler::arrange_stack_deck(
 
     int w_main
         = data->main_count > 0
-        ? static_cast<float>(screen_region.dim.w) * data->main_factor
+        ? static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor)
         : 0;
 
     int x_stack = screen_region.pos.x + w_main;
@@ -757,7 +763,7 @@ LayoutHandler::arrange_stack_deck(
     int h_main = n_main > 0 ? screen_region.dim.h / n_main : 0;
     int h_stack = n_stack > 0 ? screen_region.dim.h : 0;
 
-    std::size_t i = 0;
+    int i = 0;
 
     std::transform(
         begin,
@@ -812,21 +818,21 @@ LayoutHandler::arrange_double_deck(
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    std::size_t n_main;
-    std::size_t n_stack;
+    int n_main;
+    int n_stack;
 
     if (n <= data->main_count) {
         n_main = n;
@@ -838,7 +844,7 @@ LayoutHandler::arrange_double_deck(
 
     int w_main
         = data->main_count > 0
-        ? static_cast<float>(screen_region.dim.w) * data->main_factor
+        ? static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor)
         : 0;
 
     int x_stack = screen_region.pos.x + w_main;
@@ -846,7 +852,7 @@ LayoutHandler::arrange_double_deck(
     int h_main = n_main > 0 ? screen_region.dim.h : 0;
     int h_stack = n_stack > 0 ? screen_region.dim.h : 0;
 
-    std::size_t i = 0;
+    int i = 0;
 
     std::transform(
         begin,
@@ -901,13 +907,13 @@ LayoutHandler::arrange_paper(
     static const float MIN_W_RATIO = 0.5;
 
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
@@ -916,13 +922,13 @@ LayoutHandler::arrange_paper(
 
     int cw;
     if (data->main_factor > MIN_W_RATIO) {
-        cw = screen_region.dim.w * data->main_factor;
+        cw = static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor);
     } else {
-        cw = screen_region.dim.w * MIN_W_RATIO;
+        cw = static_cast<int>(static_cast<float>(screen_region.dim.w) * MIN_W_RATIO);
     }
 
-    int w = static_cast<float>(screen_region.dim.w - cw)
-        / static_cast<float>(n - 1);
+    int w = static_cast<int>(static_cast<float>(screen_region.dim.w - cw)
+        / static_cast<float>(n - 1));
 
     bool contains_active = false;
     const auto last_active = std::max_element(
@@ -942,7 +948,7 @@ LayoutHandler::arrange_paper(
     );
 
     bool after_active = false;
-    std::size_t i = 0;
+    int i = 0;
 
     std::transform(
         begin,
@@ -1013,21 +1019,21 @@ LayoutHandler::arrange_double_stack(
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    std::size_t n_main;
-    std::size_t n_stack;
+    int n_main;
+    int n_stack;
 
     if (n <= data->main_count) {
         n_main = n;
@@ -1039,7 +1045,7 @@ LayoutHandler::arrange_double_stack(
 
     int w_main
         = data->main_count > 0
-        ? static_cast<float>(screen_region.dim.w) * data->main_factor
+        ? static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor)
         : 0;
 
     int x_stack = screen_region.pos.x + w_main;
@@ -1047,7 +1053,7 @@ LayoutHandler::arrange_double_stack(
     int h_main = n_main > 0 ? screen_region.dim.h / n_main : 0;
     int h_stack = n_stack > 0 ? screen_region.dim.h / n_stack : 0;
 
-    std::size_t i = 0;
+    int i = 0;
 
     std::transform(
         begin,
@@ -1112,21 +1118,21 @@ LayoutHandler::arrange_horizontal_stack(
     client_iter end
 ) const
 {
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    int w = std::lround(static_cast<float>(screen_region.dim.w) / n);
-    std::size_t i = 0;
+    int w = static_cast<int>(std::lround(screen_region.dim.w / n));
+    int i = 0;
 
     std::transform(
         begin,
@@ -1171,21 +1177,21 @@ LayoutHandler::arrange_vertical_stack(
     client_iter end
 ) const
 {
-    std::size_t n = end - begin;
+    int n = static_cast<int>(end - begin);
 
     if (n == 1) {
         placements.emplace_back(Placement {
             mp_layout->config.method,
             *begin,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             screen_region
         });
 
         return;
     }
 
-    int h = std::lround(static_cast<float>(screen_region.dim.h) / n);
-    std::size_t i = 0;
+    int h = static_cast<int>(std::lround(screen_region.dim.h / n));
+    int i = 0;
 
     std::transform(
         begin,
@@ -1229,9 +1235,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     switch (kind) {
     case LayoutKind::Float:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Free,
-            Decoration::FREE_DECORATION,
+            FREE_DECORATION,
             false,
             false,
             false,
@@ -1241,9 +1247,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::FramelessFloat:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Free,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             false,
             false,
             false,
@@ -1253,9 +1259,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::SingleFloat:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Free,
-            Decoration::FREE_DECORATION,
+            FREE_DECORATION,
             false,
             false,
             true,
@@ -1265,9 +1271,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::FramelessSingleFloat:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Free,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             false,
             false,
             true,
@@ -1277,9 +1283,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::Center:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             true,
             true,
             false,
@@ -1289,9 +1295,9 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::Monocle:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration::NO_DECORATION,
+            NO_DECORATION,
             true,
             true,
             false,
@@ -1301,13 +1307,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::MainDeck:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1319,13 +1324,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::StackDeck:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1337,13 +1341,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::DoubleDeck:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1355,13 +1358,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::Paper:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 1, 1, 0, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{1, 1, 0, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1373,13 +1375,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::CompactPaper:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 1, 1, 0, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{1, 1, 0, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1391,13 +1392,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::DoubleStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1409,13 +1409,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::CompactDoubleStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1427,13 +1426,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::HorizontalStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1445,13 +1443,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::CompactHorizontalStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 0, 0, 3, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{0, 0, 3, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1463,13 +1460,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::VerticalStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 3, 0, 0, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{3, 0, 0, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1481,13 +1477,12 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     case LayoutKind::CompactVerticalStack:
     {
-        return LayoutConfig {
+        return LayoutConfig{
             Placement::PlacementMethod::Tile,
-            Decoration {
-                std::nullopt,
-                Frame {
-                    Extents { 3, 0, 0, 0 },
-                    ColorScheme::DEFAULT_COLOR_SCHEME
+            Decoration{
+                Frame{
+                    Extents{3, 0, 0, 0},
+                    DEFAULT_COLOR_SCHEME
                 }
             },
             true,
@@ -1497,7 +1492,11 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
             true
         };
     }
-    default: Util::die("no associated configuration defined");
+    default:
+    {
+        spdlog::critical("no associated configuration defined");
+        std::exit(EXIT_FAILURE);
+    }
     }
 
     return kind_to_config(LayoutKind::Float);
@@ -1510,7 +1509,7 @@ LayoutHandler::Layout::kind_to_default_data(LayoutKind kind)
     case LayoutKind::Center:
     {
         return Layout::LayoutData {
-            Extents { 0, 0, 0, 0 },
+            Extents{0, 0, 0, 0},
             0,
             5,
             .40f
@@ -1534,13 +1533,17 @@ LayoutHandler::Layout::kind_to_default_data(LayoutKind kind)
     case LayoutKind::CompactVerticalStack:
     {
         return Layout::LayoutData {
-            Extents { 0, 0, 0, 0 },
+            Extents{0, 0, 0, 0},
             0,
             1,
             .50f
         };
     }
-    default: Util::die("no associated default data defined");
+    default:
+    {
+        spdlog::critical("no associated default data defined");
+        std::exit(EXIT_FAILURE);
+    }
     }
 
     return kind_to_default_data(LayoutKind::Float);

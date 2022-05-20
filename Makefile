@@ -9,5 +9,6 @@ test: kranewl
 
 .PHONY: clean
 clean:
+	@rm -rf ./tags
 	@rm -rf ./build
 	@rm -f ./include/protocols/*

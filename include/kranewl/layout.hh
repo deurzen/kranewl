@@ -9,14 +9,12 @@
 #include <deque>
 #include <unordered_map>
 
-class LayoutHandler final
-{
+class LayoutHandler final {
     typedef std::deque<Client_ptr>::const_iterator client_iter;
     typedef std::vector<Placement>& placement_vector;
 
 public:
-    enum class LayoutKind
-    {
+    enum class LayoutKind {
         /// free layouts
         Float,
         FramelessFloat,
@@ -42,19 +40,16 @@ public:
     };
 
 private:
-    typedef struct Layout final
-    {
-        typedef struct LayoutData final
-        {
-            constexpr static std::size_t MAX_MAIN_COUNT = 16;
-            constexpr static std::size_t MAX_GAP_SIZE = 300;
-            constexpr static Extents MAX_MARGIN
-                = Extents { 700, 700, 400, 400 };
+    typedef struct Layout final {
+        typedef struct LayoutData final {
+            constexpr static int MAX_MAIN_COUNT = 16;
+            constexpr static int MAX_GAP_SIZE = 300;
+            constexpr static Extents MAX_MARGIN = Extents{700, 700, 400, 400};
 
             LayoutData(
                 Extents margin,
-                std::size_t gap_size,
-                std::size_t main_count,
+                int gap_size,
+                int main_count,
                 float main_factor
             )
                 : margin(margin),
@@ -65,10 +60,10 @@ private:
 
             // generic layout data
             Extents margin;
-            std::size_t gap_size;
+            int gap_size;
 
             // tiled layout data
-            std::size_t main_count;
+            int main_count;
             float main_factor;
         }* LayoutData_ptr;
 
@@ -122,8 +117,8 @@ public:
     bool layout_is_single() const;
     bool layout_wraps() const;
 
-    std::size_t gap_size() const;
-    std::size_t main_count() const;
+    int gap_size() const;
+    int main_count() const;
     float main_factor() const;
     Extents margin() const;
 
@@ -140,8 +135,8 @@ public:
     void reset_layout_data();
     void cycle_layout_data(Direction);
 
-    void save_layout(std::size_t) const;
-    void load_layout(std::size_t);
+    void save_layout(int) const;
+    void load_layout(int);
 
 private:
     LayoutKind m_kind;

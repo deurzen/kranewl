@@ -10,20 +10,21 @@ extern "C" {
 }
 
 #include <chrono>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 typedef class Server* Server_ptr;
-typedef class Partition* Partition_ptr;
+typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
-
 typedef struct Client* Client_ptr;
-typedef struct Client final
-{
-    enum class OutsideState
-    {
+typedef struct Client final {
+    static constexpr Dim MIN_CLIENT_DIM = Dim{25, 10};
+    static constexpr Dim PREFERRED_INIT_CLIENT_DIM = Dim{480, 260};
+
+    enum class OutsideState {
         Focused,
         FocusedDisowned,
         FocusedSticky,
@@ -41,14 +42,12 @@ typedef struct Client final
             || client->disowned;
     }
 
-    Client();
     Client(
+        Server_ptr server,
         Surface surface,
-        Partition_ptr partition,
+        Output_ptr output,
         Context_ptr context,
-        Workspace_ptr workspace,
-        std::optional<Pid> pid,
-        std::optional<Pid> ppid
+        Workspace_ptr workspace
     );
 
     ~Client();
@@ -81,21 +80,20 @@ typedef struct Client final
     void set_tile_decoration(Decoration const&) noexcept;
     void set_free_decoration(Decoration const&) noexcept;
 
-    struct wl_list link;
-    Server_ptr server;
+    Server_ptr p_server;
 
-    SurfaceType surface_type;
+    Uid uid;
     Surface surface;
 
-    struct wlr_scene_node* scene;
-    struct wlr_scene_node* scene_surface;
-    struct wlr_scene_rect* border[4]; // protrusions (top, bottom, left, right)
+    struct wlr_scene_node* p_scene;
+    struct wlr_scene_node* p_scene_surface;
+    struct wlr_scene_rect* protrusions[4]; // top, bottom, left, right
 
     std::string title;
 
-    Partition_ptr partition;
-    Context_ptr context;
-    Workspace_ptr workspace;
+    Output_ptr p_output;
+    Context_ptr p_context;
+    Workspace_ptr p_workspace;
 
     Region free_region;
     Region tile_region;
@@ -107,9 +105,9 @@ typedef struct Client final
     Decoration free_decoration;
     Decoration active_decoration;
 
-    Client_ptr parent;
+    Client_ptr p_parent;
     std::vector<Client_ptr> children;
-    Client_ptr producer;
+    Client_ptr p_producer;
     std::vector<Client_ptr> consumers;
 
     bool focused;
@@ -126,9 +124,6 @@ typedef struct Client final
     bool disowned;
     bool producing;
     bool attaching;
-
-    std::optional<Pid> pid;
-    std::optional<Pid> ppid;
 
     std::chrono::time_point<std::chrono::steady_clock> last_focused;
     std::chrono::time_point<std::chrono::steady_clock> managed_since;
@@ -160,10 +155,10 @@ private:
 inline bool
 operator==(Client const& lhs, Client const& rhs)
 {
-    if (lhs.surface_type != rhs.surface_type)
+    if (lhs.surface.type != rhs.surface.type)
         return false;
 
-    switch (lhs.surface_type) {
+    switch (lhs.surface.type) {
     case SurfaceType::XDGShell: // fallthrough
     case SurfaceType::LayerShell: return lhs.surface.xdg == rhs.surface.xdg;
     case SurfaceType::X11Managed: // fallthrough
@@ -179,7 +174,7 @@ namespace std
         std::size_t
         operator()(Client const& client) const
         {
-            switch (client.surface_type) {
+            switch (client.surface.type) {
             case SurfaceType::XDGShell: // fallthrough
             case SurfaceType::LayerShell:
                 return std::hash<wlr_xdg_surface*>{}(client.surface.xdg);

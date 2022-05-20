@@ -136,8 +136,16 @@ add_custom_target(run ALL
     DEPENDS ${CMAKE_SOURCE_DIR}/include/protocols/pointer-constraints-unstable-v1-protocol.h
 )
 
+set_source_files_properties(tags PROPERTIES GENERATED true)
+add_custom_command (OUTPUT tags
+    COMMAND git ls-files | ctags -R --exclude=.git --c++-kinds=+p --links=no --fields=+iaS --extras=+q -L-
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMENT "Generating project tags"
+)
+
 add_executable(kranewl
     ${KRANEWL_SOURCES}
+    tags
 )
 
 add_executable(kranec

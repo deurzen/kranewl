@@ -11,10 +11,6 @@
 namespace Util
 {
 
-    void die(const std::string&&);
-    void warn(const std::string&&);
-    void assert(bool, const std::string&&);
-
     template <
         typename T,
         typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type

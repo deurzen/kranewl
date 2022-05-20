@@ -1,8 +1,8 @@
 #include <kranewl/server.hh>
 
-#include <kranewl/client.hh>
 #include <kranewl/exec.hh>
 #include <kranewl/input/keyboard.hh>
+#include <kranewl/tree/client.hh>
 #include <kranewl/tree/output.hh>
 
 #include <spdlog/spdlog.h>
@@ -241,23 +241,23 @@ Server::new_output(struct wl_listener* listener, void* data)
     Server_ptr server = wl_container_of(listener, server, ml_new_output);
 
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
-
     wlr_output_init_render(wlr_output, server->m_allocator, server->m_renderer);
 
     if (!wl_list_empty(&wlr_output->modes)) {
         struct wlr_output_mode* mode = wlr_output_preferred_mode(wlr_output);
+
         wlr_output_set_mode(wlr_output, mode);
         wlr_output_enable(wlr_output, true);
-        if (!wlr_output_commit(wlr_output)) {
+
+        if (!wlr_output_commit(wlr_output))
             return;
-        }
     }
 
     Output* output = reinterpret_cast<Output*>(calloc(1, sizeof(Output)));
     output->wlr_output = wlr_output;
     output->server = server;
-    output->l_frame.notify = Server::output_frame;
-    wl_signal_add(&wlr_output->events.frame, &output->l_frame);
+    output->ml_frame.notify = Server::output_frame;
+    wl_signal_add(&wlr_output->events.frame, &output->ml_frame);
     wl_list_insert(&server->m_outputs, &output->link);
 
     wlr_output_layout_add_auto(server->m_output_layout, wlr_output);
@@ -300,18 +300,20 @@ Server::new_xdg_surface(struct wl_listener* listener, void* data)
     }
     assert(xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL);
 
-    Client_ptr client = new Client;
+    Client_ptr client = new Client(
+        server,
+        Surface{xdg_surface, true},
+        nullptr,
+        nullptr,
+        nullptr
+    );
 
-    client->server = server;
     xdg_surface->data = client->scene;
-
-    client->surface = Surface{ .xdg = xdg_surface };
-    client->surface_type = SurfaceType::XDGShell;
-
     client->scene = wlr_scene_xdg_surface_create(
         &client->server->m_scene->node,
         client->surface.xdg
     );
+
     client->scene->data = client;
 
     client->l_map.notify = xdg_toplevel_map;
@@ -705,16 +707,16 @@ Server::keyboard_handle_keybinding(Server_ptr server, xkb_keysym_t sym)
             if (wl_list_length(&server->m_clients) < 2)
                 break;
 
-            Client_ptr prev_client = wl_container_of(
-                server->m_clients.prev,
-                prev_client,
-                link
-            );
+            /* Client_ptr prev_client = wl_container_of( */
+            /*     server->m_clients.prev, */
+            /*     prev_client, */
+            /*     link */
+            /* ); */
 
-            focus_client(
-                prev_client,
-                prev_client->get_surface()
-            );
+            /* focus_client( */
+            /*     prev_client, */
+            /*     prev_client->get_surface() */
+            /* ); */
         }
         break;
     case XKB_KEY_Return:
@@ -760,11 +762,11 @@ Server::request_set_primary_selection(struct wl_listener* listener, void* data)
 void
 Server::output_frame(struct wl_listener* listener, void* data)
 {
-    Output* output = wl_container_of(listener, output, l_frame);
-    struct wlr_scene* scene = output->server->m_scene;
+    Output* output = wl_container_of(listener, output, ml_frame);
+    struct wlr_scene* scene = output->m_server->m_scene;
 
     struct wlr_scene_output* scene_output
-        = wlr_scene_get_scene_output(scene, output->wlr_output);
+        = wlr_scene_get_scene_output(scene, output->m_wlr_output);
 
     wlr_scene_output_commit(scene_output);
 
@@ -826,10 +828,10 @@ Server::focus_client(Client_ptr client, struct wlr_surface* surface)
     if (client->scene)
         wlr_scene_node_raise_to_top(client->scene);
 
-    wl_list_remove(&client->link);
-    wl_list_insert(&server->m_clients, &client->link);
+    /* wl_list_remove(&client->link); */
+    /* wl_list_insert(&server->m_clients, &client->link); */
 
-    if (client->surface_type == SurfaceType::XDGShell || client->surface_type == SurfaceType::LayerShell)
+    if (client->surface.type == SurfaceType::XDGShell || client->surface.type == SurfaceType::LayerShell)
         wlr_xdg_toplevel_set_activated(client->surface.xdg, true);
 
     wlr_seat_keyboard_notify_enter(
@@ -846,9 +848,7 @@ Server::xdg_toplevel_map(struct wl_listener* listener, void* data)
 {
     Client_ptr client = wl_container_of(listener, client, l_map);
 
-    printf("Address of x is %p\n", (void *)client);
-
-    wl_list_insert(&client->server->m_clients, &client->link);
+    /* wl_list_insert(&client->server->m_clients, &client->link); */
     focus_client(client, client->get_surface());
 }
 
@@ -856,7 +856,7 @@ void
 Server::xdg_toplevel_unmap(struct wl_listener* listener, void* data)
 {
     Client_ptr client = wl_container_of(listener, client, l_unmap);
-    wl_list_remove(&client->link);
+    /* wl_list_remove(&client->link); */
 }
 
 void
@@ -976,15 +976,15 @@ Server::new_xwayland_surface(struct wl_listener* listener, void* data)
 	struct wlr_xwayland_surface* xwayland_surface
         = reinterpret_cast<wlr_xwayland_surface*>(data);
 
-    Client_ptr client = new Client;
+    Client_ptr client = new Client(
+        server,
+        Surface{xwayland_surface, xwayland_surface->override_redirect},
+        nullptr,
+        nullptr,
+        nullptr
+    );
 
-    client->server = server;
 	xwayland_surface->data = client;
-
-	client->surface = Surface{ .xwayland = xwayland_surface };
-	client->surface_type = xwayland_surface->override_redirect
-        ? SurfaceType::X11Unmanaged
-        : SurfaceType::X11Managed;
 
     client->l_map = { .notify = Server::xdg_toplevel_map };
     client->l_unmap = { .notify = Server::xdg_toplevel_unmap };

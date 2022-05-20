@@ -40,6 +40,16 @@ struct ColorScheme final {
     RGBA urgent;
 };
 
+const static ColorScheme DEFAULT_COLOR_SCHEME = ColorScheme{
+    .focused   = {0x8181A6FF},
+    .fdisowned = {0xc1c1c1FF},
+    .fsticky   = {0x5F8787FF},
+    .unfocused = {0x333333FF},
+    .udisowned = {0x999999FF},
+    .usticky   = {0x444444FF},
+    .urgent    = {0x87875FFF},
+};
+
 struct Frame final {
     Extents extents;
     ColorScheme colorscheme;
@@ -54,5 +64,16 @@ struct Decoration final {
             return frame->extents;
 
         return Extents{0, 0, 0, 0};
+    }
+};
+
+const Decoration NO_DECORATION = Decoration{
+    std::nullopt,
+};
+
+const Decoration FREE_DECORATION = Decoration{
+    Frame {
+        Extents{ 3, 1, 1, 1 },
+        DEFAULT_COLOR_SCHEME
     }
 };
