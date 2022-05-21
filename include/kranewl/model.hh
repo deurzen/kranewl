@@ -25,7 +25,11 @@ public:
     void register_server(Server_ptr);
     void exit();
 
-    Output_ptr create_output(Server_ptr, struct wlr_output*, struct wlr_scene_output*);
+    Keyboard_ptr create_keyboard(struct wlr_output*, struct wlr_scene_output*);
+    void register_keyboard(Keyboard_ptr);
+    void unregister_keyboard(Keyboard_ptr);
+
+    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 
@@ -42,10 +46,12 @@ private:
     bool m_running;
 
     Cycle<Output_ptr> m_outputs;
+    Cycle<Keyboard_ptr> m_keyboards;
     Cycle<Context_ptr> m_contexts;
     Cycle<Workspace_ptr> m_workspaces;
 
     Output_ptr mp_output;
+    Output_ptr mp_fallback_output;
     Context_ptr mp_context;
     Workspace_ptr mp_workspace;
 

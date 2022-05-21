@@ -20,11 +20,16 @@
 #define static
 extern "C" {
 #include <wlr/backend.h>
+#include <wlr/backend/headless.h>
+#include <wlr/backend/multi.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_cursor.h>
+#include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_export_dmabuf_v1.h>
+#include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
 #include <wlr/types/wlr_idle_inhibit_v1.h>
 #include <wlr/types/wlr_input_device.h>
@@ -41,8 +46,8 @@ extern "C" {
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_relative_pointer_v1.h>
-#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
@@ -76,15 +81,57 @@ Server::Server(Model_ptr model)
       mp_display(wl_display_create()),
       mp_event_loop(wl_display_get_event_loop(mp_display)),
       mp_backend(wlr_backend_autocreate(mp_display)),
+      mp_headless_backend(wlr_headless_backend_create(mp_display)),
       mp_renderer([](struct wl_display* display, struct wlr_backend* backend) {
-        struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
-        wlr_renderer_init_wl_display(renderer, display);
+          struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
+          wlr_renderer_init_wl_display(renderer, display);
 
-        return renderer;
+          return renderer;
       }(mp_display, mp_backend)),
       mp_allocator(wlr_allocator_autocreate(mp_backend, mp_renderer)),
+      mp_compositor(wlr_compositor_create(mp_display, mp_renderer)),
+      mp_data_device_manager(wlr_data_device_manager_create(mp_display)),
+      mp_scene(wlr_scene_create()),
+      m_root([this](struct wl_display* display) {
+          struct wlr_output_layout* wlr_output_layout = wlr_output_layout_create();
+          wlr_xdg_output_manager_v1_create(display, wlr_output_layout);
+
+          struct wlr_output* wlr_output =
+              wlr_headless_add_output(mp_headless_backend, 800, 600);
+
+          wlr_output_set_name(wlr_output, "FALLBACK");
+
+          return Root(
+              this,
+              mp_model,
+              wlr_output_layout,
+              mp_model->create_output(
+                  wlr_output,
+                  wlr_scene_output_create(mp_scene, wlr_output)
+              )
+          );
+      }(mp_display)),
+      mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
+      mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
+      mp_cursor(wlr_cursor_create()),
+      mp_cursor_manager(wlr_xcursor_manager_create(NULL, 24)),
+      mp_seat(wlr_seat_create(mp_display, "seat0")),
+      mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
+      mp_idle(wlr_idle_create(mp_display)),
+      mp_idle_inhibit_manager(wlr_idle_inhibit_v1_create(mp_display)),
+      mp_server_decoration_manager(wlr_server_decoration_manager_create(mp_display)),
+      mp_xdg_decoration_manager(wlr_xdg_decoration_manager_v1_create(mp_display)),
+      mp_output_manager(wlr_output_manager_v1_create(mp_display)),
+      mp_input_inhibit_manager(wlr_input_inhibit_manager_create(mp_display)),
+      mp_keyboard_shortcuts_inhibit_manager(wlr_keyboard_shortcuts_inhibit_v1_create(mp_display)),
+      mp_pointer_constraints(wlr_pointer_constraints_v1_create(mp_display)),
+      mp_relative_pointer_manager(wlr_relative_pointer_manager_v1_create(mp_display)),
+      mp_virtual_pointer_manager(wlr_virtual_pointer_manager_v1_create(mp_display)),
+      mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
+#ifdef XWAYLAND
+      mp_xwayland(wlr_xwayland_create(mp_display, mp_compositor, 1)),
+#endif
       ml_new_output({ .notify = Server::new_output }),
-      ml_output_layout_change({ .notify = Server::output_layout_change }),
       ml_output_manager_apply({ .notify = Server::output_manager_apply }),
       ml_output_manager_test({ .notify = Server::output_manager_test }),
       ml_new_xdg_surface({ .notify = Server::new_xdg_surface }),
@@ -113,121 +160,78 @@ Server::Server(Model_ptr model)
 {
     TRACE();
 
-    mp_compositor = wlr_compositor_create(mp_display, mp_renderer);
-    mp_data_device_manager = wlr_data_device_manager_create(mp_display);
+    if (m_socket.empty()) {
+        wlr_backend_destroy(mp_backend);
+        wlr_backend_destroy(mp_headless_backend);
+        wl_display_destroy(mp_display);
+        std::exit(1);
+        spdlog::critical("Could not set up server socket");
+        return;
+    }
 
-    mp_output_layout = wlr_output_layout_create();
+    wlr_multi_backend_add(mp_backend, mp_headless_backend);
 
-    wl_list_init(&m_outputs);
-    wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
+    wlr_export_dmabuf_manager_v1_create(mp_display);
+    wlr_screencopy_manager_v1_create(mp_display);
+    wlr_data_control_manager_v1_create(mp_display);
+    wlr_gamma_control_manager_v1_create(mp_display);
+    wlr_primary_selection_v1_device_manager_create(mp_display);
 
-    mp_scene = wlr_scene_create();
-    wlr_scene_attach_output_layout(mp_scene, mp_output_layout);
-
-    wl_list_init(&m_clients);
-
-    mp_layer_shell = wlr_layer_shell_v1_create(mp_display);
-    wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
-
-    mp_xdg_shell = wlr_xdg_shell_create(mp_display);
-    wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
-
-    mp_cursor = wlr_cursor_create();
-    wlr_cursor_attach_output_layout(mp_cursor, mp_output_layout);
-
-    mp_cursor_manager = wlr_xcursor_manager_create(NULL, 24);
+    wlr_scene_attach_output_layout(mp_scene, m_root.mp_output_layout);
+    wlr_cursor_attach_output_layout(mp_cursor, m_root.mp_output_layout);
     wlr_xcursor_manager_load(mp_cursor_manager, 1);
-
-    mp_seat = wlr_seat_create(mp_display, "seat0");
-    mp_presentation = wlr_presentation_create(mp_display, mp_backend);
-    mp_idle = wlr_idle_create(mp_display);
-
-    mp_idle_inhibit_manager = wlr_idle_inhibit_v1_create(mp_display);
-    wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
-
-    { // set up cursor handling
-        wl_signal_add(&mp_cursor->events.motion, &ml_cursor_motion);
-        wl_signal_add(&mp_cursor->events.motion_absolute, &ml_cursor_motion_absolute);
-        wl_signal_add(&mp_cursor->events.button, &ml_cursor_button);
-        wl_signal_add(&mp_cursor->events.axis, &ml_cursor_axis);
-        wl_signal_add(&mp_cursor->events.frame, &ml_cursor_frame);
-    }
-
-    { // set up keyboard handling
-        wl_list_init(&m_keyboards);
-        wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
-        wl_signal_add(&mp_seat->events.request_set_cursor, &ml_request_set_cursor);
-        wl_signal_add(&mp_seat->events.request_set_selection, &ml_request_set_selection);
-        wl_signal_add(&mp_seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
-    }
-
-    mp_server_decoration_manager = wlr_server_decoration_manager_create(mp_display);
-    mp_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(mp_display);
-
+    wlr_scene_set_presentation(mp_scene, wlr_presentation_create(mp_display, mp_backend));
     wlr_server_decoration_manager_set_default_mode(
         mp_server_decoration_manager,
         WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
     );
 
-    wlr_xdg_output_manager_v1_create(mp_display, mp_output_layout);
-    wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
-
-    mp_output_manager = wlr_output_manager_v1_create(mp_display);
+    wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
+    wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
+    wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
+    wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
+    wl_signal_add(&mp_cursor->events.motion, &ml_cursor_motion);
+    wl_signal_add(&mp_cursor->events.motion_absolute, &ml_cursor_motion_absolute);
+    wl_signal_add(&mp_cursor->events.button, &ml_cursor_button);
+    wl_signal_add(&mp_cursor->events.axis, &ml_cursor_axis);
+    wl_signal_add(&mp_cursor->events.frame, &ml_cursor_frame);
+    wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
+    wl_signal_add(&mp_seat->events.request_set_cursor, &ml_request_set_cursor);
+    wl_signal_add(&mp_seat->events.request_set_selection, &ml_request_set_selection);
+    wl_signal_add(&mp_seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
-
-    wlr_scene_set_presentation(mp_scene, wlr_presentation_create(mp_display, mp_backend));
-
-#ifdef XWAYLAND
-    mp_xwayland = wlr_xwayland_create(mp_display, mp_compositor, 1);
-
-    if (mp_xwayland) {
-        wl_signal_add(&mp_xwayland->events.ready, &ml_xwayland_ready);
-        wl_signal_add(&mp_xwayland->events.new_surface, &ml_new_xwayland_surface);
-
-        setenv("DISPLAY", mp_xwayland->display_name, 1);
-    } else
-        spdlog::error("Failed to initiate XWayland");
-        spdlog::warn("Continuing without XWayland functionality");
-#endif
-
-    mp_input_inhibit_manager = wlr_input_inhibit_manager_create(mp_display);
     wl_signal_add(&mp_input_inhibit_manager->events.activate, &ml_inhibit_activate);
     wl_signal_add(&mp_input_inhibit_manager->events.deactivate, &ml_inhibit_deactivate);
 
-    mp_keyboard_shortcuts_inhibit_manager = wlr_keyboard_shortcuts_inhibit_v1_create(mp_display);
     // TODO: mp_keyboard_shortcuts_inhibit_manager signals
-
-    mp_pointer_constraints = wlr_pointer_constraints_v1_create(mp_display);
     // TODO: mp_pointer_constraints signals
-
-    mp_relative_pointer_manager = wlr_relative_pointer_manager_v1_create(mp_display);
     // TODO: mp_relative_pointer_manager signals
-
-    mp_virtual_pointer_manager = wlr_virtual_pointer_manager_v1_create(mp_display);
     // TODO: mp_virtual_pointer_manager signals
-
-    mp_virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(mp_display);
     // TODO: mp_virtual_keyboard_manager signals
 
-    if (m_socket.empty()) {
-        wlr_backend_destroy(mp_backend);
-        std::exit(1);
-        return;
+#ifdef XWAYLAND
+    if (mp_xwayland) {
+        wl_signal_add(&mp_xwayland->events.ready, &ml_xwayland_ready);
+        wl_signal_add(&mp_xwayland->events.new_surface, &ml_new_xwayland_surface);
+        setenv("DISPLAY", mp_xwayland->display_name, 1);
+    } else {
+        spdlog::error("Failed to initiate XWayland");
+        spdlog::warn("Continuing without XWayland functionality");
     }
+#endif
 
     if (!wlr_backend_start(mp_backend)) {
         wlr_backend_destroy(mp_backend);
+        wlr_backend_destroy(mp_headless_backend);
         wl_display_destroy(mp_display);
+        spdlog::critical("Could not start backend");
         std::exit(1);
         return;
     }
 
     setenv("WAYLAND_DISPLAY", m_socket.c_str(), true);
     setenv("XDG_CURRENT_DESKTOP", "kranewl", true);
-
-    setenv("QT_QPA_PLATFORM", "wayland", true);
-    setenv("MOZ_ENABLE_WAYLAND", "1", true);
 
     spdlog::info("Server initiated on WAYLAND_DISPLAY=" + m_socket);
 }
@@ -254,9 +258,16 @@ Server::new_output(struct wl_listener* listener, void* data)
     TRACE();
 
     Server_ptr server = wl_container_of(listener, server, ml_new_output);
-
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
-    wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer);
+
+    if (wlr_output == server->m_root.mp_fallback_output->mp_wlr_output)
+        return;
+
+    if (!wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer)) {
+        spdlog::error("Could not initialize rendering to output");
+        spdlog::warn("Ignoring output " + std::string(wlr_output->name));
+        return;
+    }
 
     if (!wl_list_empty(&wlr_output->modes)) {
         wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
@@ -268,42 +279,12 @@ Server::new_output(struct wl_listener* listener, void* data)
     }
 
     Output_ptr output = server->mp_model->create_output(
-        server,
         wlr_output,
         wlr_scene_output_create(server->mp_scene, wlr_output)
     );
 
     wlr_output->data = output;
-    output->ml_frame.notify = Server::output_frame;
-    output->ml_destroy.notify = Server::output_destroy;
-    wl_signal_add(&wlr_output->events.frame, &output->ml_frame);
-    wl_signal_add(&wlr_output->events.destroy, &output->ml_destroy);
-
-    wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
-}
-
-void
-Server::output_destroy(struct wl_listener* listener, void* data)
-{
-    TRACE();
-
-    struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
-    Output_ptr output = reinterpret_cast<Output_ptr>(wlr_output->data);
-    Server_ptr server = output->mp_server;
-
-    wl_list_remove(&output->ml_destroy.link);
-    wl_list_remove(&output->ml_frame.link);
-
-    wlr_scene_output_destroy(output->mp_wlr_scene_output);
-    wlr_output_layout_remove(server->mp_output_layout, output->mp_wlr_output);
-
-    server->mp_model->unregister_output(output);
-}
-
-void
-Server::output_layout_change(struct wl_listener* listener, void* data)
-{
-    // TODO
+    wlr_output_layout_add_auto(server->m_root.mp_output_layout, wlr_output);
 }
 
 void
@@ -316,20 +297,6 @@ void
 Server::output_manager_test(struct wl_listener* listener, void* data)
 {
     // TODO
-}
-
-void
-Server::output_frame(struct wl_listener* listener, void* data)
-{
-    TRACE();
-
-    Output_ptr output = wl_container_of(listener, output, ml_frame);
-
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    wlr_scene_output_commit(output->mp_wlr_scene_output);
-    wlr_scene_output_send_frame_done(output->mp_wlr_scene_output, &now);
 }
 
 void

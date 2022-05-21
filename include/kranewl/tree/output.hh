@@ -1,73 +1,36 @@
 #pragma once
 
 #include <kranewl/common.hh>
-#include <kranewl/geometry.hh>
 #include <kranewl/context.hh>
-#include <kranewl/util.hh>
-
-#include <spdlog/spdlog.h>
+#include <kranewl/geometry.hh>
+#include <kranewl/tree/node.hh>
 
 extern "C" {
-#include <wlr/backend.h>
+#include <wayland-server-core.h>
+#include <wlr/types/wlr_output.h>
 }
 
 typedef class Server* Server_ptr;
+typedef class Model* Model_ptr;
 typedef class Context* Context_ptr;
-typedef class Output final {
+
+typedef class Output final : public Node {
 public:
-    Output(
-        Server_ptr server,
-        struct wlr_output* wlr_output,
-        struct wlr_scene_output* wlr_scene_output
-    )
-        : mp_context(nullptr),
-          mp_server(server),
-          mp_wlr_output(wlr_output),
-          mp_wlr_scene_output(wlr_scene_output)
-    {}
+    Output(Server_ptr, Model_ptr, struct wlr_output*, struct wlr_scene_output*);
+    ~Output();
 
-    void
-    set_context(Context_ptr context)
-    {
-        if (!context)
-            spdlog::error("output must contain a valid context");
+    static void handle_frame(struct wl_listener*, void*);
+    static void handle_destroy(struct wl_listener*, void*);
+    static void handle_present(struct wl_listener*, void*);
+    static void handle_mode(struct wl_listener*, void*);
+    static void handle_commit(struct wl_listener*, void*);
 
-        if (mp_context)
-            mp_context->set_output(nullptr);
-
-        context->set_output(this);
-        mp_context = context;
-    }
-
-    Context_ptr
-    context() const
-    {
-        return mp_context;
-    }
-
-    Region
-    full_region() const
-    {
-        return m_full_region;
-    }
-
-    Region
-    placeable_region() const
-    {
-        return m_placeable_region;
-    }
-
-    bool
-    contains(Pos pos) const
-    {
-        return m_full_region.contains(pos);
-    }
-
-    bool
-    contains(Region region) const
-    {
-        return m_full_region.contains(region);
-    }
+    void set_context(Context_ptr context);
+    Context_ptr context() const;
+    Region full_region() const;
+    Region placeable_region() const;
+    bool contains(Pos pos) const;
+    bool contains(Region region) const;
 
 private:
     Context_ptr mp_context;
@@ -76,11 +39,23 @@ private:
 
 public:
     Server_ptr mp_server;
+    Model_ptr mp_model;
 
     struct wlr_output* mp_wlr_output;
-	struct wlr_scene_output* mp_wlr_scene_output;
+    struct wlr_scene_output* mp_wlr_scene_output;
+
+    struct wlr_output_damage* mp_damage;
+    struct wlr_output_mode* mp_current_mode;
+    enum wl_output_subpixel m_subpixel;
 
     struct wl_listener ml_frame;
     struct wl_listener ml_destroy;
+    struct wl_listener ml_present;
+    struct wl_listener ml_mode;
+    struct wl_listener ml_commit;
+
+    struct {
+        struct wl_signal disable;
+    } m_events;
 
 }* Output_ptr;

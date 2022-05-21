@@ -1,6 +1,7 @@
 #pragma once
 
 #include <kranewl/geometry.hh>
+#include <kranewl/tree/root.hh>
 
 extern "C" {
 #include <wlr/backend.h>
@@ -29,11 +30,9 @@ public:
 
 private:
     static void new_output(struct wl_listener*, void*);
-    static void output_destroy(struct wl_listener*, void*);
     static void output_layout_change(struct wl_listener*, void*);
     static void output_manager_apply(struct wl_listener*, void*);
     static void output_manager_test(struct wl_listener*, void*);
-    static void output_frame(struct wl_listener*, void*);
 
     static void new_xdg_surface(struct wl_listener*, void*);
     static void new_layer_shell_surface(struct wl_listener*, void*);
@@ -89,17 +88,19 @@ private:
     struct wl_event_loop* mp_event_loop;
 
     struct wlr_backend* mp_backend;
+    struct wlr_backend* mp_headless_backend;
     struct wlr_renderer* mp_renderer;
     struct wlr_allocator* mp_allocator;
     struct wlr_compositor* mp_compositor;
     struct wlr_data_device_manager* mp_data_device_manager;
+    struct wlr_scene* mp_scene;
+
+    Root m_root;
 
 #ifdef XWAYLAND
     struct wlr_xwayland* mp_xwayland;
 #endif
 
-    struct wlr_output_layout* mp_output_layout;
-    struct wlr_scene* mp_scene;
     struct wlr_xdg_shell* mp_xdg_shell;
     struct wlr_layer_shell_v1* mp_layer_shell;
     struct wlr_xdg_activation_v1* mp_xdg_activation;
@@ -121,10 +122,6 @@ private:
     struct wlr_input_inhibit_manager* mp_input_inhibit_manager;
     struct wlr_idle_inhibit_manager_v1* mp_idle_inhibit_manager;
     struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
-
-    struct wl_list m_outputs;
-    struct wl_list m_clients;
-    struct wl_list m_keyboards;
 
     struct wl_listener ml_new_output;
     struct wl_listener ml_output_layout_change;
@@ -152,12 +149,6 @@ private:
     struct wl_listener ml_xwayland_ready;
     struct wl_listener ml_new_xwayland_surface;
 #endif
-
-    CursorMode m_cursor_mode;
-    Client_ptr mp_grabbed_client;
-    double m_grab_x, m_grab_y;
-    struct wlr_box m_grab_geobox;
-    uint32_t m_resize_edges;
 
     const std::string m_socket;
 

@@ -9,7 +9,8 @@ extern "C" {
 #include <unordered_set>
 
 typedef class Server* Server_ptr;
-struct Keyboard {
+
+typedef struct Keyboard {
     Server_ptr mp_server;
 
     struct wl_list m_link;
@@ -17,7 +18,7 @@ struct Keyboard {
 
     struct wl_listener ml_modifiers;
     struct wl_listener ml_key;
-};
+}* Keyboard_ptr;
 
 struct KeyboardInput {
 	uint32_t mod;

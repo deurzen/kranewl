@@ -23,9 +23,11 @@ Model::Model(
     : m_config{config},
       m_running{true},
       m_outputs{{}, true},
+      m_keyboards{{}, false},
       m_contexts{{}, true},
       m_workspaces{{}, true},
       mp_output{nullptr},
+      mp_fallback_output{nullptr},
       mp_context{nullptr},
       mp_workspace{nullptr},
       mp_prev_output{nullptr},
@@ -95,7 +97,6 @@ Model::register_server(Server_ptr server)
 
 Output_ptr
 Model::create_output(
-    Server_ptr server,
     struct wlr_output* wlr_output,
     struct wlr_scene_output* wlr_scene_output
 )
@@ -104,6 +105,7 @@ Model::create_output(
 
     Output_ptr output = new Output(
         mp_server,
+        this,
         wlr_output,
         wlr_scene_output
     );

@@ -35,6 +35,7 @@ add_compile_options(
     -O0
     # debug options
     -g
+    # -DTRACING_DISABLED
     # -finstrument-functions -finstrument-functions-exclude-file-list=/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/backward,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/x86_64-pc-linux-gnu,/usr/local/include -ldl -Wl,--export-dynamic
 
 )
