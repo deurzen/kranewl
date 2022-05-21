@@ -98,7 +98,8 @@ Model::register_server(Server_ptr server)
 Output_ptr
 Model::create_output(
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output
+    struct wlr_scene_output* wlr_scene_output,
+    bool fallback
 )
 {
     TRACE();
@@ -107,7 +108,8 @@ Model::create_output(
         mp_server,
         this,
         wlr_output,
-        wlr_scene_output
+        wlr_scene_output,
+        fallback
     );
 
     register_output(output);
@@ -129,6 +131,7 @@ Model::unregister_output(Output_ptr output)
     TRACE();
 
     m_outputs.remove_element(output);
+    delete output;
 }
 
 Client_ptr
@@ -154,4 +157,6 @@ Model::register_client(Client_ptr client)
 
 void
 Model::unregister_client(Client_ptr client)
-{}
+{
+    delete client;
+}

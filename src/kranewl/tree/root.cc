@@ -17,13 +17,13 @@ Root::Root(
       mp_server(server),
       mp_model(model),
       mp_output_layout(wlr_output_layout),
+      ml_output_layout_change({ .notify = Root::handle_output_layout_change }),
       m_outputs({}, true),
       m_scratchpad({}, true),
       mp_fallback_output(fallback_output)
 {
     TRACE();
 
-    ml_output_layout_change.notify = Root::handle_output_layout_change;
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
 
     wl_signal_init(&m_events.new_node);

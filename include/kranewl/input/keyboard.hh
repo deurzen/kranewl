@@ -9,15 +9,25 @@ extern "C" {
 #include <unordered_set>
 
 typedef class Server* Server_ptr;
+typedef class Seat* Seat_ptr;
 
 typedef struct Keyboard {
-    Server_ptr mp_server;
+    Keyboard(Server_ptr, Seat_ptr, struct wlr_input_device*);
+    ~Keyboard();
 
-    struct wl_list m_link;
+    static void handle_destroy(struct wl_listener*, void*);
+    static void handle_modifiers(struct wl_listener*, void*);
+    static void handle_key(struct wl_listener*, void*);
+
+    Server_ptr mp_server;
+	Seat_ptr mp_seat;
+
 	struct wlr_input_device* mp_device;
 
+    struct wl_listener ml_destroy;
     struct wl_listener ml_modifiers;
     struct wl_listener ml_key;
+
 }* Keyboard_ptr;
 
 struct KeyboardInput {
