@@ -1,7 +1,4 @@
-#ifndef NDEBUG
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#endif
-
+#include <trace.hh>
 #include <version.hh>
 
 #include <kranewl/conf/config.hh>
@@ -23,6 +20,13 @@ main(int argc, char** argv)
 {
 #ifndef NDEBUG
     /* wlr_log_init(WLR_DEBUG, NULL); */
+#ifdef TRACING_ENABLED
+    spdlog::set_level(spdlog::level::trace);
+#else
+    spdlog::set_level(spdlog::level::debug);
+#endif
+#else
+    spdlog::set_level(spdlog::level::info);
 #endif
 
     const Options options = parse_options(argc, argv);
@@ -32,10 +36,7 @@ main(int argc, char** argv)
     const Config config = config_parser.generate_config();
 
     Model model{config, options.autostart_path};
-    Server server{model};
-
-    model.register_server(server);
-    model.run();
+    Server{&model}.start();
 
     return EXIT_SUCCESS;
 }

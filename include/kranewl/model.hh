@@ -22,12 +22,10 @@ public:
     Model(Config const&, std::optional<std::string>);
     ~Model();
 
-    void register_server(Server&);
-
-    void run();
+    void register_server(Server_ptr);
     void exit();
 
-    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
+    Output_ptr create_output(Server_ptr, struct wlr_output*, struct wlr_scene_output*);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 

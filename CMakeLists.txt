@@ -12,7 +12,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
-    -g
     -fdiagnostics-show-option
     # -Weffc++
     -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
@@ -33,6 +32,11 @@ add_compile_options(
     -Wdouble-promotion
     -Wformat=2
     -DXWAYLAND
+    -O0
+    # debug options
+    -g
+    # -finstrument-functions -finstrument-functions-exclude-file-list=/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/backward,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/x86_64-pc-linux-gnu,/usr/local/include -ldl -Wl,--export-dynamic
+
 )
 
 find_program(CCACHE ccache)

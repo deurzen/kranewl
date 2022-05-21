@@ -59,8 +59,6 @@ ConfigParser::parse_decorations(Config& config) const noexcept
     static_cast<void>(config);
 
     lua_getglobal(m_state.get(), "decorations");
-    if (lua_istable(m_state.get(), -1))
-        print_table(m_state.get());
 
     return true;
 }
@@ -72,8 +70,6 @@ ConfigParser::parse_outputs(Config& config) const noexcept
     static_cast<void>(config);
 
     lua_getglobal(m_state.get(), "outputs");
-    if (lua_istable(m_state.get(), -1))
-        print_table(m_state.get());
 
     return true;
 }
@@ -85,8 +81,6 @@ ConfigParser::parse_commands(Config& config) const noexcept
     static_cast<void>(config);
 
     lua_getglobal(m_state.get(), "commands");
-    if (lua_istable(m_state.get(), -1))
-        print_table(m_state.get());
 
     return true;
 }
@@ -98,8 +92,6 @@ ConfigParser::parse_bindings(Config& config) const noexcept
     static_cast<void>(config);
 
     lua_getglobal(m_state.get(), "bindings");
-    if (lua_istable(m_state.get(), -1))
-        print_table(m_state.get());
 
     return true;
 }

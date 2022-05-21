@@ -11,7 +11,7 @@ extern "C" {
 #include <cstdint>
 #include <string>
 
-class Model;
+typedef class Model* Model_ptr;
 typedef struct Client* Client_ptr;
 typedef class Server* Server_ptr;
 typedef class Server final {
@@ -22,18 +22,18 @@ typedef class Server final {
     };
 
 public:
-    Server(Model&);
+    Server(Model_ptr);
     ~Server();
 
     void start() noexcept;
 
 private:
     static void new_output(struct wl_listener*, void*);
+    static void output_destroy(struct wl_listener*, void*);
     static void output_layout_change(struct wl_listener*, void*);
     static void output_manager_apply(struct wl_listener*, void*);
     static void output_manager_test(struct wl_listener*, void*);
     static void output_frame(struct wl_listener*, void*);
-    static void output_destroy(struct wl_listener*, void*);
 
     static void new_xdg_surface(struct wl_listener*, void*);
     static void new_layer_shell_surface(struct wl_listener*, void*);
@@ -83,7 +83,7 @@ private:
     static void xwayland_set_hints(struct wl_listener*, void*);
 #endif
 
-    Model& m_model;
+    Model_ptr mp_model;
 
     struct wl_display* mp_display;
     struct wl_event_loop* mp_event_loop;

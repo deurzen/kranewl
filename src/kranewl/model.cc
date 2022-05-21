@@ -1,3 +1,5 @@
+#include <trace.hh>
+
 #include <kranewl/model.hh>
 
 #include <kranewl/common.hh>
@@ -38,6 +40,8 @@ Model::Model(
       m_key_bindings{},
       m_mouse_bindings{}
 {
+    TRACE();
+
 #ifdef NDEBUG
     if (autostart_path) {
         spdlog::info("Executing autostart file at " + *autostart_path);
@@ -82,23 +86,22 @@ Model::~Model()
 {}
 
 void
-Model::register_server(Server& server)
+Model::register_server(Server_ptr server)
 {
-    mp_server = &server;
-}
+    TRACE();
 
-void
-Model::run()
-{
-    mp_server->start();
+    mp_server = server;
 }
 
 Output_ptr
 Model::create_output(
+    Server_ptr server,
     struct wlr_output* wlr_output,
     struct wlr_scene_output* wlr_scene_output
 )
 {
+    TRACE();
+
     Output_ptr output = new Output(
         mp_server,
         wlr_output,
@@ -111,15 +114,19 @@ Model::create_output(
 }
 
 void
-Model::register_output(Output_ptr)
+Model::register_output(Output_ptr output)
 {
+    TRACE();
 
+    m_outputs.insert_at_back(output);
 }
 
 void
-Model::unregister_output(Output_ptr)
+Model::unregister_output(Output_ptr output)
 {
+    TRACE();
 
+    m_outputs.remove_element(output);
 }
 
 Client_ptr

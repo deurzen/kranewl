@@ -38,7 +38,7 @@ public:
 
     Index size() const;
     Index length() const;
-    Index main_count() const;
+    int main_count() const;
 
     Context_ptr context() const;
 
@@ -90,8 +90,8 @@ public:
     void reset_margin();
     void reset_layout_data();
 
-    void save_layout(Index) const;
-    void load_layout(Index);
+    void save_layout(int) const;
+    void load_layout(int);
 
     void toggle_layout();
     void set_layout(LayoutHandler::LayoutKind);
