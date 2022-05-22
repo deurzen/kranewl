@@ -10,17 +10,17 @@ typedef class Root* Root_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
-typedef class Container* Container_ptr;
-
-enum class NodeType {
-    Root,
-    Output,
-    Context,
-    Workspace,
-    Container,
-};
+typedef struct Container* Container_ptr;
 
 typedef struct Node {
+    enum class Type {
+        Root,
+        Output,
+        Context,
+        Workspace,
+        Container,
+    };
+
 protected:
     Node(Root_ptr);
     Node(Output_ptr);
@@ -32,7 +32,7 @@ protected:
 public:
     Uid m_uid;
 
-    NodeType m_type;
+    Type m_type;
     union {
         Root_ptr m_root;
         Output_ptr m_output;

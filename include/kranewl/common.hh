@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 
-typedef unsigned Pid;
 typedef std::uintptr_t Uid;
 typedef std::size_t Ident;
 typedef std::size_t Index;

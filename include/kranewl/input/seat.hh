@@ -32,8 +32,10 @@ public:
     Seat(Server_ptr, Model_ptr, struct wlr_seat*, struct wlr_cursor*);
     ~Seat();
 
-    static void handle_new_node(struct wl_listener*, void*);
-    static void handle_new_input(struct wl_listener*, void*);
+    Keyboard_ptr create_keyboard(struct wlr_input_device*);
+    void register_keyboard(Keyboard_ptr);
+    void unregister_keyboard(Keyboard_ptr);
+
     static void handle_destroy(struct wl_listener*, void*);
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
@@ -52,6 +54,7 @@ public:
 
     struct wlr_seat* mp_seat;
     struct wlr_cursor* mp_cursor;
+    struct wlr_xcursor_manager* mp_cursor_manager;
     CursorMode m_cursor_mode;
 
     std::vector<Keyboard_ptr> m_keyboards;
@@ -65,8 +68,6 @@ public:
 
     struct wl_client* mp_exclusive_client;
 
-    struct wl_listener ml_new_node;
-    struct wl_listener ml_new_input;
     struct wl_listener ml_destroy;
     struct wl_listener ml_cursor_motion;
     struct wl_listener ml_cursor_motion_absolute;

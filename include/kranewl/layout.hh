@@ -10,7 +10,7 @@
 #include <unordered_map>
 
 class LayoutHandler final {
-    typedef std::deque<Client_ptr>::const_iterator client_iter;
+    typedef std::deque<View_ptr>::const_iterator view_iter;
     typedef std::vector<Placement>& placement_vector;
 
 public:
@@ -104,7 +104,7 @@ public:
     LayoutHandler();
     ~LayoutHandler();
 
-    void arrange(Region, placement_vector, client_iter, client_iter) const;
+    void arrange(Region, placement_vector, view_iter, view_iter) const;
 
     LayoutKind kind() const;
     void set_kind(LayoutKind);
@@ -147,22 +147,22 @@ private:
     Layout_ptr mp_layout;
     Layout_ptr mp_prev_layout;
 
-    void arrange_float(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_frameless_float(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_single_float(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_frameless_single_float(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_center(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_monocle(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_main_deck(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_stack_deck(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_double_deck(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_paper(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_compact_paper(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_double_stack(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_compact_double_stack(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_horizontal_stack(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_compact_horizontal_stack(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_vertical_stack(Region, placement_vector, client_iter, client_iter) const;
-    void arrange_compact_vertical_stack(Region, placement_vector, client_iter, client_iter) const;
+    void arrange_float(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_frameless_float(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_single_float(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_frameless_single_float(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_center(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_monocle(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_main_deck(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_stack_deck(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_double_deck(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_paper(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_compact_paper(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_double_stack(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_compact_double_stack(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_horizontal_stack(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_compact_horizontal_stack(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_vertical_stack(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_compact_vertical_stack(Region, placement_vector, view_iter, view_iter) const;
 
 };

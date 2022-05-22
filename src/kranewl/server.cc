@@ -51,7 +51,6 @@ extern "C" {
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_virtual_pointer_v1.h>
-#include <wlr/types/wlr_xcursor_manager.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
@@ -83,7 +82,6 @@ Server::Server(Model_ptr model)
       mp_renderer([](struct wl_display* display, struct wlr_backend* backend) {
           struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
           wlr_renderer_init_wl_display(renderer, display);
-
           return renderer;
       }(mp_display, mp_backend)),
       mp_allocator(wlr_allocator_autocreate(mp_backend, mp_renderer)),
@@ -91,7 +89,7 @@ Server::Server(Model_ptr model)
       mp_data_device_manager(wlr_data_device_manager_create(mp_display)),
       mp_output_layout([this]() {
           struct wlr_output_layout* output_layout = wlr_output_layout_create();
-          /* wlr_xdg_output_manager_v1_create(mp_display, output_layout); */
+          wlr_xdg_output_manager_v1_create(mp_display, output_layout);
           return output_layout;
       }()),
       mp_scene([this]() {
@@ -99,16 +97,6 @@ Server::Server(Model_ptr model)
           wlr_scene_attach_output_layout(scene, mp_output_layout);
           return scene;
       }()),
-      /* m_root([this](struct wl_display* display) { */
-      /*     struct wlr_output_layout* wlr_output_layout = wlr_output_layout_create(); */
-      /*     wlr_xdg_output_manager_v1_create(display, wlr_output_layout); */
-
-      /*     return Root( */
-      /*         this, */
-      /*         mp_model, */
-      /*         wlr_output_layout */
-      /*     ); */
-      /* }(mp_display)), */
       m_seat([this]() {
           struct wlr_cursor* cursor = wlr_cursor_create();
           wlr_cursor_attach_output_layout(cursor, mp_output_layout);
@@ -119,7 +107,6 @@ Server::Server(Model_ptr model)
 #endif
       mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
       mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
-      mp_cursor_manager(wlr_xcursor_manager_create(NULL, 24)),
       mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
       mp_idle(wlr_idle_create(mp_display)),
       mp_idle_inhibit_manager(wlr_idle_inhibit_v1_create(mp_display)),
@@ -133,7 +120,7 @@ Server::Server(Model_ptr model)
       mp_virtual_pointer_manager(wlr_virtual_pointer_manager_v1_create(mp_display)),
       mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
       ml_new_output({ .notify = Server::handle_new_output }),
-      ml_output_layout_change({ .notify = Root::handle_output_layout_change }),
+      ml_output_layout_change({ .notify = Server::handle_output_layout_change }),
       ml_output_manager_apply({ .notify = Server::handle_output_manager_apply }),
       ml_output_manager_test({ .notify = Server::handle_output_manager_test }),
       ml_new_xdg_surface({ .notify = Server::handle_new_xdg_surface }),
@@ -166,7 +153,6 @@ Server::Server(Model_ptr model)
     wlr_gamma_control_manager_v1_create(mp_display);
     wlr_primary_selection_v1_device_manager_create(mp_display);
 
-    wlr_xcursor_manager_load(mp_cursor_manager, 1);
     wlr_server_decoration_manager_set_default_mode(
         mp_server_decoration_manager,
         WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
@@ -305,10 +291,41 @@ Server::handle_xdg_activation(struct wl_listener*, void*)
 }
 
 void
-Server::handle_new_input(struct wl_listener*, void*)
+Server::handle_new_input(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Server_ptr server = wl_container_of(listener, server, ml_new_input);
+    struct wlr_input_device* device
+        = reinterpret_cast<struct wlr_input_device*>(data);
+
+    switch (device->type) {
+    case WLR_INPUT_DEVICE_KEYBOARD:
+        {
+            Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
+
+            struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+            struct xkb_keymap* keymap
+                = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+            wlr_keyboard_set_keymap(device->keyboard, keymap);
+            xkb_keymap_unref(keymap);
+            xkb_context_unref(context);
+            wlr_keyboard_set_repeat_info(device->keyboard, 200, 100);
+            wlr_seat_set_keyboard(server->m_seat.mp_seat, device);
+        }
+        break;
+    case WLR_INPUT_DEVICE_POINTER:
+        wlr_cursor_attach_input_device(server->m_seat.mp_cursor, device);
+        break;
+    default: break;
+    }
+
+    uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
+    if (!server->m_seat.m_keyboards.empty())
+        caps |= WL_SEAT_CAPABILITY_KEYBOARD;
+
+    wlr_seat_set_capabilities(server->m_seat.mp_seat, caps);
 }
 
 void

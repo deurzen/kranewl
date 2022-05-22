@@ -1,7 +1,6 @@
 #pragma once
 
 #include <kranewl/geometry.hh>
-#include <kranewl/tree/root.hh>
 #include <kranewl/input/seat.hh>
 
 extern "C" {
@@ -85,7 +84,6 @@ private:
     struct wlr_idle* mp_idle;
     struct wlr_server_decoration_manager* mp_server_decoration_manager;
     struct wlr_xdg_decoration_manager_v1* mp_xdg_decoration_manager;
-    struct wlr_xcursor_manager* mp_cursor_manager;
     struct wlr_pointer_constraints_v1* mp_pointer_constraints;
     struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
     struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;

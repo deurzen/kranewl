@@ -2,7 +2,7 @@
 
 #include <kranewl/context.hh>
 #include <kranewl/cycle.t.hh>
-#include <kranewl/tree/client.hh>
+#include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
 
 #include <algorithm>
@@ -11,13 +11,13 @@
 bool
 Workspace::empty() const
 {
-    return m_clients.empty();
+    return m_views.empty();
 }
 
 bool
-Workspace::contains(Client_ptr client) const
+Workspace::contains(View_ptr view) const
 {
-    return m_clients.contains(client);
+    return m_views.contains(view);
 }
 
 bool
@@ -71,13 +71,13 @@ Workspace::layout_wraps() const
 std::size_t
 Workspace::size() const
 {
-    return m_clients.size();
+    return m_views.size();
 }
 
 std::size_t
 Workspace::length() const
 {
-    return m_clients.length();
+    return m_views.length();
 }
 
 int
@@ -119,23 +119,23 @@ Workspace::identifier() const
         + std::to_string(m_index);
 }
 
-Client_ptr
+View_ptr
 Workspace::active() const
 {
     return mp_active;
 }
 
 
-Cycle<Client_ptr> const&
-Workspace::clients() const
+Cycle<View_ptr> const&
+Workspace::views() const
 {
-    return m_clients;
+    return m_views;
 }
 
-std::vector<Client_ptr>
+std::vector<View_ptr>
 Workspace::stack_after_focus() const
 {
-    std::vector<Client_ptr> stack = m_clients.stack();
+    std::vector<View_ptr> stack = m_views.stack();
 
     if (mp_active) {
         Util::erase_remove(stack, mp_active);
@@ -145,26 +145,26 @@ Workspace::stack_after_focus() const
     return stack;
 }
 
-Client_ptr
-Workspace::next_client() const
+View_ptr
+Workspace::next_view() const
 {
-    std::optional<Client_ptr> client
-        = m_clients.next_element(Direction::Forward);
+    std::optional<View_ptr> view
+        = m_views.next_element(Direction::Forward);
 
-    if (client != mp_active)
-        return *client;
+    if (view != mp_active)
+        return *view;
 
     return nullptr;
 }
 
-Client_ptr
-Workspace::prev_client() const
+View_ptr
+Workspace::prev_view() const
 {
-    std::optional<Client_ptr> client
-        = m_clients.next_element(Direction::Backward);
+    std::optional<View_ptr> view
+        = m_views.next_element(Direction::Backward);
 
-    if (client != mp_active)
-        return *client;
+    if (view != mp_active)
+        return *view;
 
     return nullptr;
 }
@@ -175,22 +175,22 @@ Workspace::cycle(Direction direction)
     switch (direction) {
     case Direction::Forward:
     {
-        if (!layout_wraps() && m_clients.active_index() == m_clients.last_index())
+        if (!layout_wraps() && m_views.active_index() == m_views.last_index())
             return;
 
         break;
     }
     case Direction::Backward:
     {
-        if (!layout_wraps() && m_clients.active_index() == 0)
+        if (!layout_wraps() && m_views.active_index() == 0)
             return;
 
         break;
     }
     }
 
-    m_clients.cycle_active(direction);
-    mp_active = m_clients.active_element().value_or(nullptr);
+    m_views.cycle_active(direction);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
@@ -199,174 +199,174 @@ Workspace::drag(Direction direction)
     switch (direction) {
     case Direction::Forward:
     {
-        if (!layout_wraps() && m_clients.active_index() == m_clients.last_index())
+        if (!layout_wraps() && m_views.active_index() == m_views.last_index())
             return;
 
         break;
     }
     case Direction::Backward:
     {
-        if (!layout_wraps() && m_clients.active_index() == 0)
+        if (!layout_wraps() && m_views.active_index() == 0)
             return;
 
         break;
     }
     }
 
-    m_clients.drag_active(direction);
-    mp_active = m_clients.active_element().value_or(nullptr);
+    m_views.drag_active(direction);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
 Workspace::reverse()
 {
-    m_clients.reverse();
-    mp_active = m_clients.active_element().value_or(nullptr);
+    m_views.reverse();
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
 Workspace::rotate(Direction direction)
 {
-    m_clients.rotate(direction);
-    mp_active = m_clients.active_element().value_or(nullptr);
+    m_views.rotate(direction);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
 Workspace::shuffle_main(Direction direction)
 {
-    m_clients.rotate_range(
+    m_views.rotate_range(
         direction,
         0,
         static_cast<Index>(m_layout_handler.main_count())
     );
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
 Workspace::shuffle_stack(Direction direction)
 {
-    m_clients.rotate_range(
+    m_views.rotate_range(
         direction,
         static_cast<Index>(m_layout_handler.main_count()),
-        m_clients.size()
+        m_views.size()
     );
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::activate_client(Client_ptr client)
+Workspace::activate_view(View_ptr view)
 {
-    if (m_clients.contains(client)) {
-        m_clients.activate_element(client);
-        mp_active = client;
+    if (m_views.contains(view)) {
+        m_views.activate_element(view);
+        mp_active = view;
     }
 }
 
 void
-Workspace::add_client(Client_ptr client)
+Workspace::add_view(View_ptr view)
 {
-    if (m_clients.contains(client))
+    if (m_views.contains(view))
         return;
 
-    m_clients.insert_at_back(client);
-    mp_active = client;
+    m_views.insert_at_back(view);
+    mp_active = view;
 }
 
 void
-Workspace::remove_client(Client_ptr client)
+Workspace::remove_view(View_ptr view)
 {
-    m_clients.remove_element(client);
-    mp_active = m_clients.active_element().value_or(nullptr);
+    m_views.remove_element(view);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::replace_client(Client_ptr client, Client_ptr replacement)
+Workspace::replace_view(View_ptr view, View_ptr replacement)
 {
     bool was_active
-        = m_clients.active_element().value_or(nullptr) == client;
+        = m_views.active_element().value_or(nullptr) == view;
 
-    m_clients.replace_element(client, replacement);
+    m_views.replace_element(view, replacement);
 
     if (was_active) {
-        m_clients.activate_element(replacement);
+        m_views.activate_element(replacement);
         mp_active = replacement;
     }
 }
 
 void
-Workspace::client_to_icon(Client_ptr client)
+Workspace::view_to_icon(View_ptr view)
 {
-    if (m_clients.remove_element(client))
-        m_icons.insert_at_back(client);
+    if (m_views.remove_element(view))
+        m_iconified_views.insert_at_back(view);
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::icon_to_client(Client_ptr client)
+Workspace::icon_to_view(View_ptr view)
 {
-    if (m_icons.remove_element(client))
-        m_clients.insert_at_back(client);
+    if (m_iconified_views.remove_element(view))
+        m_views.insert_at_back(view);
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::add_icon(Client_ptr client)
+Workspace::add_icon(View_ptr view)
 {
-    if (m_icons.contains(client))
+    if (m_iconified_views.contains(view))
         return;
 
-    m_icons.insert_at_back(client);
+    m_iconified_views.insert_at_back(view);
 }
 
 void
-Workspace::remove_icon(Client_ptr client)
+Workspace::remove_icon(View_ptr view)
 {
-    m_icons.remove_element(client);
+    m_iconified_views.remove_element(view);
 }
 
-std::optional<Client_ptr>
+std::optional<View_ptr>
 Workspace::pop_icon()
 {
-    return m_icons.empty()
+    return m_iconified_views.empty()
         ? std::nullopt
-        : std::optional(m_icons[m_icons.size() - 1]);
+        : std::optional(m_iconified_views[m_iconified_views.size() - 1]);
 }
 
 void
-Workspace::client_to_disowned(Client_ptr client)
+Workspace::view_to_disowned(View_ptr view)
 {
-    if (m_clients.remove_element(client))
-        m_disowned.insert_at_back(client);
+    if (m_views.remove_element(view))
+        m_disowned_views.insert_at_back(view);
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::disowned_to_client(Client_ptr client)
+Workspace::disowned_to_view(View_ptr view)
 {
-    if (m_disowned.remove_element(client))
-        m_clients.insert_at_back(client);
+    if (m_disowned_views.remove_element(view))
+        m_views.insert_at_back(view);
 
-    mp_active = m_clients.active_element().value_or(nullptr);
+    mp_active = m_views.active_element().value_or(nullptr);
 }
 
 void
-Workspace::add_disowned(Client_ptr client)
+Workspace::add_disowned(View_ptr view)
 {
-    if (m_disowned.contains(client))
+    if (m_disowned_views.contains(view))
         return;
 
-    m_disowned.insert_at_back(client);
+    m_disowned_views.insert_at_back(view);
 }
 
 void
-Workspace::remove_disowned(Client_ptr client)
+Workspace::remove_disowned(View_ptr view)
 {
-    m_disowned.remove_element(client);
+    m_disowned_views.remove_element(view);
 }
 
 void
@@ -464,34 +464,34 @@ Workspace::set_layout(LayoutHandler::LayoutKind layout)
 std::vector<Placement>
 Workspace::arrange(Region region) const
 {
-    std::deque<Client_ptr> clients = m_clients.as_deque();
+    std::deque<View_ptr> views = m_views.as_deque();
     std::vector<Placement> placements;
-    placements.reserve(clients.size());
+    placements.reserve(views.size());
 
     auto fullscreen_iter = std::stable_partition(
-        clients.begin(),
-        clients.end(),
-        [](const Client_ptr client) -> bool {
-            return client->m_fullscreen && !client->m_contained;
+        views.begin(),
+        views.end(),
+        [](const View_ptr view) -> bool {
+            return view->m_fullscreen && !view->m_contained;
         }
     );
 
     auto free_iter = std::stable_partition(
         fullscreen_iter,
-        clients.end(),
-        [=,this](const Client_ptr client) -> bool {
-            return !layout_is_free() && Client::is_free(client);
+        views.end(),
+        [=,this](const View_ptr view) -> bool {
+            return !layout_is_free() && View::is_free(view);
         }
     );
 
     std::transform(
-        clients.begin(),
+        views.begin(),
         fullscreen_iter,
         std::back_inserter(placements),
-        [region](const Client_ptr client) -> Placement {
+        [region](const View_ptr view) -> Placement {
             return Placement {
                 Placement::PlacementMethod::Tile,
-                client,
+                view,
                 NO_DECORATION,
                 region
             };
@@ -502,12 +502,12 @@ Workspace::arrange(Region region) const
         fullscreen_iter,
         free_iter,
         std::back_inserter(placements),
-        [](const Client_ptr client) -> Placement {
+        [](const View_ptr view) -> Placement {
             return Placement {
                 Placement::PlacementMethod::Free,
-                client,
+                view,
                 FREE_DECORATION,
-                client->m_free_region
+                view->m_free_region
             };
         }
     );
@@ -516,7 +516,7 @@ Workspace::arrange(Region region) const
         region,
         placements,
         free_iter,
-        clients.end()
+        views.end()
     );
 
     if (layout_is_single()) {
@@ -524,7 +524,7 @@ Workspace::arrange(Region region) const
             placements.begin(),
             placements.end(),
             [](Placement& placement) {
-                if (!placement.client->m_focused)
+                if (!placement.view->m_focused)
                     placement.region = std::nullopt;
             }
         );

@@ -2,7 +2,7 @@
 
 Node::Node(Root_ptr root)
     : m_uid(reinterpret_cast<Uid>(root)),
-      m_type(NodeType::Root),
+      m_type(Type::Root),
       m_root(root),
       m_destroying(false),
       m_dirty(false),
@@ -11,7 +11,7 @@ Node::Node(Root_ptr root)
 
 Node::Node(Output_ptr output)
     : m_uid(reinterpret_cast<Uid>(output)),
-      m_type(NodeType::Output),
+      m_type(Type::Output),
       m_output(output),
       m_destroying(false),
       m_dirty(false),
@@ -20,7 +20,7 @@ Node::Node(Output_ptr output)
 
 Node::Node(Context_ptr context)
     : m_uid(reinterpret_cast<Uid>(context)),
-      m_type(NodeType::Context),
+      m_type(Type::Context),
       m_context(context),
       m_destroying(false),
       m_dirty(false),
@@ -29,7 +29,7 @@ Node::Node(Context_ptr context)
 
 Node::Node(Workspace_ptr workspace)
     : m_uid(reinterpret_cast<Uid>(workspace)),
-      m_type(NodeType::Workspace),
+      m_type(Type::Workspace),
       m_workspace(workspace),
       m_destroying(false),
       m_dirty(false),
@@ -38,7 +38,7 @@ Node::Node(Workspace_ptr workspace)
 
 Node::Node(Container_ptr container)
     : m_uid(reinterpret_cast<Uid>(container)),
-      m_type(NodeType::Container),
+      m_type(Type::Container),
       m_container(container),
       m_destroying(false),
       m_dirty(false),

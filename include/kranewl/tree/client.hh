@@ -20,6 +20,7 @@ typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
 typedef struct Client* Client_ptr;
+
 typedef struct Client final {
     static constexpr Dim MIN_CLIENT_DIM = Dim{25, 10};
     static constexpr Dim PREFERRED_INIT_CLIENT_DIM = Dim{480, 260};

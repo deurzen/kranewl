@@ -8,7 +8,6 @@
 #include <kranewl/context.hh>
 #include <kranewl/cycle.t.hh>
 #include <kranewl/exec.hh>
-#include <kranewl/input/keyboard.hh>
 #include <kranewl/input/mouse.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
@@ -23,7 +22,6 @@ Model::Model(
     : m_config{config},
       m_running{true},
       m_outputs{{}, true},
-      m_keyboards{{}, false},
       m_contexts{{}, true},
       m_workspaces{{}, true},
       mp_output{nullptr},
@@ -33,11 +31,11 @@ Model::Model(
       mp_prev_output{nullptr},
       mp_prev_context{nullptr},
       mp_prev_workspace{nullptr},
-      m_client_map{},
+      m_view_map{},
       m_pid_map{},
       m_fullscreen_map{},
-      m_sticky_clients{},
-      m_unmanaged_clients{},
+      m_sticky_views{},
+      m_unmanaged_views{},
       mp_focus(nullptr),
       m_key_bindings{},
       m_mouse_bindings{}
@@ -132,29 +130,29 @@ Model::unregister_output(Output_ptr output)
     delete output;
 }
 
-Client_ptr
-Model::create_client(Surface surface)
+View_ptr
+Model::create_view(Surface surface)
 {
-    Client_ptr client = new Client(
-        mp_server,
-        surface,
-        mp_output,
-        mp_context,
-        mp_workspace
-    );
+    /* View_ptr view = new View( */
+    /*     mp_server, */
+    /*     surface, */
+    /*     mp_output, */
+    /*     mp_context, */
+    /*     mp_workspace */
+    /* ); */
 
-    register_client(client);
+    /* register_view(view); */
 
-    return client;
+    /* return view; */
 }
 
 void
-Model::register_client(Client_ptr client)
+Model::register_view(View_ptr view)
 {
 }
 
 void
-Model::unregister_client(Client_ptr client)
+Model::unregister_view(View_ptr view)
 {
-    delete client;
+    delete view;
 }

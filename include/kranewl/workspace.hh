@@ -7,7 +7,7 @@
 #include <kranewl/placement.hh>
 #include <kranewl/util.hh>
 
-typedef class Client* Client_ptr;
+typedef class View* View_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace final {
 public:
@@ -17,14 +17,15 @@ public:
           m_layout_handler({}),
           mp_context(context),
           mp_active(nullptr),
-          m_clients({}, true),
-          m_icons({}, true),
-          m_disowned({}, true),
+          m_views({}, true),
+          m_free_views({}, true),
+          m_iconified_views({}, true),
+          m_disowned_views({}, true),
           m_focus_follows_mouse(false)
     {}
 
     bool empty() const;
-    bool contains(Client_ptr) const;
+    bool contains(View_ptr) const;
 
     bool focus_follows_mouse() const;
     void set_focus_follows_mouse(bool);
@@ -45,13 +46,13 @@ public:
     Index index() const;
     std::string const& name() const;
     std::string identifier() const;
-    Client_ptr active() const;
+    View_ptr active() const;
 
-    Cycle<Client_ptr> const& clients() const;
-    std::vector<Client_ptr> stack_after_focus() const;
+    Cycle<View_ptr> const& views() const;
+    std::vector<View_ptr> stack_after_focus() const;
 
-    Client_ptr next_client() const;
-    Client_ptr prev_client() const;
+    View_ptr next_view() const;
+    View_ptr prev_view() const;
 
     void cycle(Direction);
     void drag(Direction);
@@ -60,22 +61,22 @@ public:
     void shuffle_main(Direction);
     void shuffle_stack(Direction);
 
-    void activate_client(Client_ptr);
+    void activate_view(View_ptr);
 
-    void add_client(Client_ptr);
-    void remove_client(Client_ptr);
-    void replace_client(Client_ptr, Client_ptr);
+    void add_view(View_ptr);
+    void remove_view(View_ptr);
+    void replace_view(View_ptr, View_ptr);
 
-    void client_to_icon(Client_ptr);
-    void icon_to_client(Client_ptr);
-    void add_icon(Client_ptr);
-    void remove_icon(Client_ptr);
-    std::optional<Client_ptr> pop_icon();
+    void view_to_icon(View_ptr);
+    void icon_to_view(View_ptr);
+    void add_icon(View_ptr);
+    void remove_icon(View_ptr);
+    std::optional<View_ptr> pop_icon();
 
-    void client_to_disowned(Client_ptr);
-    void disowned_to_client(Client_ptr);
-    void add_disowned(Client_ptr);
-    void remove_disowned(Client_ptr);
+    void view_to_disowned(View_ptr);
+    void disowned_to_view(View_ptr);
+    void add_disowned(View_ptr);
+    void remove_disowned(View_ptr);
 
     void toggle_layout_data();
     void cycle_layout_data(Direction);
@@ -97,52 +98,52 @@ public:
     void set_layout(LayoutHandler::LayoutKind);
     std::vector<Placement> arrange(Region) const;
 
-    std::deque<Client_ptr>::iterator
+    std::deque<View_ptr>::iterator
     begin()
     {
-        return m_clients.begin();
+        return m_views.begin();
     }
 
-    std::deque<Client_ptr>::const_iterator
+    std::deque<View_ptr>::const_iterator
     begin() const
     {
-        return m_clients.begin();
+        return m_views.begin();
     }
 
-    std::deque<Client_ptr>::const_iterator
+    std::deque<View_ptr>::const_iterator
     cbegin() const
     {
-        return m_clients.cbegin();
+        return m_views.cbegin();
     }
 
-    std::deque<Client_ptr>::iterator
+    std::deque<View_ptr>::iterator
     end()
     {
-        return m_clients.end();
+        return m_views.end();
     }
 
-    std::deque<Client_ptr>::const_iterator
+    std::deque<View_ptr>::const_iterator
     end() const
     {
-        return m_clients.end();
+        return m_views.end();
     }
 
-    std::deque<Client_ptr>::const_iterator
+    std::deque<View_ptr>::const_iterator
     cend() const
     {
-        return m_clients.cend();
+        return m_views.cend();
     }
 
-    Client_ptr
+    View_ptr
     operator[](Index i)
     {
-        return m_clients[i];
+        return m_views[i];
     }
 
-    Client_ptr
+    View_ptr
     operator[](Index i) const
     {
-        return m_clients[i];
+        return m_views[i];
     }
 
 private:
@@ -153,10 +154,11 @@ private:
 
     Context_ptr mp_context;
 
-    Client_ptr mp_active;
-    Cycle<Client_ptr> m_clients;
-    Cycle<Client_ptr> m_icons;
-    Cycle<Client_ptr> m_disowned;
+    View_ptr mp_active;
+    Cycle<View_ptr> m_views;
+    Cycle<View_ptr> m_free_views;
+    Cycle<View_ptr> m_iconified_views;
+    Cycle<View_ptr> m_disowned_views;
 
     bool m_focus_follows_mouse;
 

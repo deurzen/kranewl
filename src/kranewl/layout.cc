@@ -1,7 +1,7 @@
 #include <kranewl/layout.hh>
 
 #include <kranewl/cycle.t.hh>
-#include <kranewl/tree/client.hh>
+#include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
 
 #include <spdlog/spdlog.h>
@@ -68,8 +68,8 @@ void
 LayoutHandler::arrange(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     if (mp_layout->config.margin) {
@@ -177,13 +177,13 @@ LayoutHandler::arrange(
             placements.begin(),
             placements.end(),
             [data](Placement& placement) {
-                if (placement.region && !Client::is_free(placement.client)) {
+                if (placement.region && !View::is_free(placement.view)) {
                     placement.region->pos.x += data->gap_size;
                     placement.region->pos.y += data->gap_size;
                     placement.region->dim.w -= 2 * data->gap_size;
                     placement.region->dim.h -= 2 * data->gap_size;
 
-                    placement.region->apply_minimum_dim(Client::MIN_CLIENT_DIM);
+                    placement.region->apply_minimum_dim(View::MIN_VIEW_DIM);
                 }
             }
         );
@@ -499,20 +499,20 @@ void
 LayoutHandler::arrange_float(
     Region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     std::transform(
         begin,
         end,
         std::back_inserter(placements),
-        [this](Client_ptr client) -> Placement {
+        [this](View_ptr view) -> Placement {
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
-                client->m_free_region
+                view->m_free_region
             };
         }
     );
@@ -522,8 +522,8 @@ void
 LayoutHandler::arrange_frameless_float(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_float(screen_region, placements, begin, end);
@@ -533,20 +533,20 @@ void
 LayoutHandler::arrange_single_float(
     Region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     std::transform(
         begin,
         end,
         std::back_inserter(placements),
-        [this](Client_ptr client) -> Placement {
+        [this](View_ptr view) -> Placement {
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
-                client->m_focused ? std::optional(client->m_free_region) : std::nullopt
+                view->m_focused ? std::optional(view->m_free_region) : std::nullopt
             };
         }
     );
@@ -556,8 +556,8 @@ void
 LayoutHandler::arrange_frameless_single_float(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_single_float(screen_region, placements, begin, end);
@@ -567,8 +567,8 @@ void
 LayoutHandler::arrange_center(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
@@ -582,7 +582,7 @@ LayoutHandler::arrange_center(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this](Client_ptr client) -> Placement {
+        [=,this](View_ptr view) -> Placement {
             Region region = screen_region;
 
             int w = static_cast<int>(static_cast<float>(region.dim.w) * w_ratio);
@@ -598,7 +598,7 @@ LayoutHandler::arrange_center(
 
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
                 region
             };
@@ -610,18 +610,18 @@ void
 LayoutHandler::arrange_monocle(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     std::transform(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this](Client_ptr client) {
+        [=,this](View_ptr view) {
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
                 screen_region
             };
@@ -633,8 +633,8 @@ void
 LayoutHandler::arrange_main_deck(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
@@ -680,12 +680,12 @@ LayoutHandler::arrange_main_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             if (i < data->main_count) {
                 ++i;
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -701,7 +701,7 @@ LayoutHandler::arrange_main_deck(
             } else {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -724,8 +724,8 @@ void
 LayoutHandler::arrange_stack_deck(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
@@ -769,11 +769,11 @@ LayoutHandler::arrange_stack_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             if (i < data->main_count) {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -791,7 +791,7 @@ LayoutHandler::arrange_stack_deck(
                 ++i;
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -813,8 +813,8 @@ void
 LayoutHandler::arrange_double_deck(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
@@ -858,11 +858,11 @@ LayoutHandler::arrange_double_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             if (i++ < data->main_count) {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -878,7 +878,7 @@ LayoutHandler::arrange_double_deck(
             } else {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -900,8 +900,8 @@ void
 LayoutHandler::arrange_paper(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     static const float MIN_W_RATIO = 0.5;
@@ -934,7 +934,7 @@ LayoutHandler::arrange_paper(
     const auto last_active = std::max_element(
         begin,
         end,
-        [&contains_active](const Client_ptr lhs, const Client_ptr rhs) {
+        [&contains_active](const View_ptr lhs, const View_ptr rhs) {
             if (lhs->m_focused) {
                 contains_active = true;
                 return false;
@@ -954,15 +954,15 @@ LayoutHandler::arrange_paper(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&after_active,&i](Client_ptr client) -> Placement {
+        [=,this,&after_active,&i](View_ptr view) -> Placement {
             int x = screen_region.pos.x + static_cast<int>(i++ * w);
 
-            if ((!contains_active && *last_active == client) || client->m_focused) {
+            if ((!contains_active && *last_active == view) || view->m_focused) {
                 after_active = true;
 
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -981,7 +981,7 @@ LayoutHandler::arrange_paper(
 
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -1003,8 +1003,8 @@ void
 LayoutHandler::arrange_compact_paper(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_paper(screen_region, placements, begin, end);
@@ -1014,8 +1014,8 @@ void
 LayoutHandler::arrange_double_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
@@ -1059,11 +1059,11 @@ LayoutHandler::arrange_double_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             if (i < data->main_count) {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -1080,7 +1080,7 @@ LayoutHandler::arrange_double_stack(
             } else {
                 return Placement {
                     mp_layout->config.method,
-                    client,
+                    view,
                     mp_layout->config.decoration,
                     Region {
                         Pos {
@@ -1103,8 +1103,8 @@ void
 LayoutHandler::arrange_compact_double_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_double_stack(screen_region, placements, begin, end);
@@ -1114,8 +1114,8 @@ void
 LayoutHandler::arrange_horizontal_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     int n = static_cast<int>(end - begin);
@@ -1138,10 +1138,10 @@ LayoutHandler::arrange_horizontal_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
                 Region {
                     Pos {
@@ -1162,8 +1162,8 @@ void
 LayoutHandler::arrange_compact_horizontal_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_horizontal_stack(screen_region, placements, begin, end);
@@ -1173,8 +1173,8 @@ void
 LayoutHandler::arrange_vertical_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     int n = static_cast<int>(end - begin);
@@ -1197,10 +1197,10 @@ LayoutHandler::arrange_vertical_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](Client_ptr client) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement {
             return Placement {
                 mp_layout->config.method,
-                client,
+                view,
                 mp_layout->config.decoration,
                 Region {
                     Pos {
@@ -1221,8 +1221,8 @@ void
 LayoutHandler::arrange_compact_vertical_stack(
     Region screen_region,
     placement_vector placements,
-    client_iter begin,
-    client_iter end
+    view_iter begin,
+    view_iter end
 ) const
 {
     arrange_vertical_stack(screen_region, placements, begin, end);

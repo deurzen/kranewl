@@ -32,18 +32,18 @@ Output::Output(
       mp_wlr_scene_output(wlr_scene_output),
       m_subpixel(wlr_output->subpixel),
       ml_frame({ .notify = Output::handle_frame }),
-      ml_destroy({ .notify = Output::handle_destroy }),
+      ml_commit({ .notify = Output::handle_commit }),
       ml_present({ .notify = Output::handle_present }),
       ml_mode({ .notify = Output::handle_mode }),
-      ml_commit({ .notify = Output::handle_commit })
+      ml_destroy({ .notify = Output::handle_destroy })
 {
     TRACE();
 
-    wl_signal_add(&mp_wlr_output->events.destroy, &ml_destroy);
     wl_signal_add(&mp_wlr_output->events.frame, &ml_frame);
+    wl_signal_add(&mp_wlr_output->events.commit, &ml_commit);
     wl_signal_add(&mp_wlr_output->events.present, &ml_present);
     wl_signal_add(&mp_wlr_output->events.mode, &ml_mode);
-    wl_signal_add(&mp_wlr_output->events.commit, &ml_commit);
+    wl_signal_add(&mp_wlr_output->events.destroy, &ml_destroy);
 
     wl_signal_init(&m_events.disable);
 }
@@ -75,6 +75,20 @@ Output::handle_commit(struct wl_listener*, void*)
 }
 
 void
+Output::handle_present(struct wl_listener*, void*)
+{
+    TRACE();
+
+}
+
+void
+Output::handle_mode(struct wl_listener*, void*)
+{
+    TRACE();
+
+}
+
+void
 Output::handle_destroy(struct wl_listener*, void* data)
 {
     TRACE();
@@ -92,20 +106,6 @@ Output::handle_destroy(struct wl_listener*, void* data)
     wlr_output_layout_remove(output->mp_server->mp_output_layout, output->mp_wlr_output);
 
     output->mp_model->unregister_output(output);
-}
-
-void
-Output::handle_present(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Output::handle_mode(struct wl_listener*, void*)
-{
-    TRACE();
-
 }
 
 void

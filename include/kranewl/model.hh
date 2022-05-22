@@ -4,12 +4,16 @@
 #include <kranewl/common.hh>
 #include <kranewl/cycle.hh>
 #include <kranewl/geometry.hh>
-#include <kranewl/tree/client.hh>
+#include <kranewl/tree/view.hh>
 
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
+
+extern "C" {
+#include <sys/types.h>
+}
 
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
@@ -25,17 +29,13 @@ public:
     void register_server(Server_ptr);
     void exit();
 
-    Keyboard_ptr create_keyboard(struct wlr_output*, struct wlr_scene_output*);
-    void register_keyboard(Keyboard_ptr);
-    void unregister_keyboard(Keyboard_ptr);
-
     Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 
-    Client_ptr create_client(Surface);
-    void register_client(Client_ptr);
-    void unregister_client(Client_ptr);
+    View_ptr create_view(Surface);
+    void register_view(View_ptr);
+    void unregister_view(View_ptr);
 
     void spawn_external(std::string&&) const;
 
@@ -46,7 +46,6 @@ private:
     bool m_running;
 
     Cycle<Output_ptr> m_outputs;
-    Cycle<Keyboard_ptr> m_keyboards;
     Cycle<Context_ptr> m_contexts;
     Cycle<Workspace_ptr> m_workspaces;
 
@@ -59,14 +58,14 @@ private:
     Context_ptr mp_prev_context;
     Workspace_ptr mp_prev_workspace;
 
-    std::unordered_map<Uid, Client_ptr> m_client_map;
-    std::unordered_map<Pid, Client_ptr> m_pid_map;
-    std::unordered_map<Client_ptr, Region> m_fullscreen_map;
+    std::unordered_map<Uid, View_ptr> m_view_map;
+    std::unordered_map<pid_t, View_ptr> m_pid_map;
+    std::unordered_map<View_ptr, Region> m_fullscreen_map;
 
-    std::vector<Client_ptr> m_sticky_clients;
-    std::vector<Client_ptr> m_unmanaged_clients;
+    std::vector<View_ptr> m_sticky_views;
+    std::vector<View_ptr> m_unmanaged_views;
 
-    Client_ptr mp_focus;
+    View_ptr mp_focus;
 
     KeyBindings m_key_bindings;
     MouseBindings m_mouse_bindings;

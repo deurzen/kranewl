@@ -26,9 +26,9 @@ public:
 
     static void handle_frame(struct wl_listener*, void*);
     static void handle_commit(struct wl_listener*, void*);
-    static void handle_destroy(struct wl_listener*, void*);
     static void handle_present(struct wl_listener*, void*);
     static void handle_mode(struct wl_listener*, void*);
+    static void handle_destroy(struct wl_listener*, void*);
 
     void set_context(Context_ptr context);
     Context_ptr context() const;
@@ -55,9 +55,9 @@ public:
 
     struct wl_listener ml_frame;
     struct wl_listener ml_commit;
-    struct wl_listener ml_destroy;
     struct wl_listener ml_present;
     struct wl_listener ml_mode;
+    struct wl_listener ml_destroy;
 
     struct {
         struct wl_signal disable;

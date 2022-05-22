@@ -19,6 +19,17 @@ operator<<(std::ostream& os, Dim const& dim)
     return os << "(" << dim.w << "×" << dim.h << ")";
 }
 
+struct DDim final {
+    double w;
+    double h;
+};
+
+inline std::ostream&
+operator<<(std::ostream& os, DDim const& dim)
+{
+    return os << "(" << dim.w << "×" << dim.h << ")";
+}
+
 struct Pos final {
     int x;
     int y;
@@ -87,6 +98,62 @@ operator-(Pos const& pos, Dim const& dim)
     };
 }
 
+struct DPos final {
+    double x;
+    double y;
+
+    static DPos
+    from_center_of_dim(DDim dim) noexcept
+    {
+        return DPos {
+            dim.w / 2.0,
+            dim.h / 2.0
+        };
+    }
+};
+
+inline std::ostream&
+operator<<(std::ostream& os, DPos const& pos)
+{
+    return os << "(" << pos.x << ", " << pos.y << ")";
+}
+
+inline DPos
+operator+(DPos const& pos1, DPos const& pos2)
+{
+    return DPos{
+        pos1.x + pos2.x,
+        pos1.y + pos2.y
+    };
+}
+
+inline DPos
+operator-(DPos const& pos1, DPos const& pos2)
+{
+    return DPos{
+        pos1.x - pos2.x,
+        pos1.y - pos2.y
+    };
+}
+
+inline DPos
+operator+(DPos const& pos, DDim const& dim)
+{
+    return DPos{
+        pos.x + dim.w,
+        pos.y + dim.h
+    };
+}
+
+inline DPos
+operator-(DPos const& pos, DDim const& dim)
+{
+    return DPos{
+        pos.x - dim.w,
+        pos.y - dim.h
+    };
+}
+
 struct Padding final {
     int left;
     int right;
@@ -131,6 +198,26 @@ operator<<(std::ostream& os, Region const& region)
     return os << "[" << region.pos << " " << region.dim << "]";
 }
 
+struct DRegion final {
+    DPos pos;
+    DDim dim;
+
+    void apply_minimum_dim(DDim const&);
+    void apply_extents(Extents const&);
+    void remove_extents(Extents const&);
+
+    bool contains(DPos) const;
+    bool contains(DRegion const&) const;
+
+    Pos center() const;
+};
+
+inline std::ostream&
+operator<<(std::ostream& os, DRegion const& region)
+{
+    return os << "[" << region.pos << " " << region.dim << "]";
+}
+
 struct Distance final {
     int dx;
     int dy;
@@ -138,6 +225,17 @@ struct Distance final {
 
 inline std::ostream&
 operator<<(std::ostream& os, Distance const& dist)
+{
+    return os << "𝛿(" << dist.dx << ", " << dist.dy << ")";
+}
+
+struct DDistance final {
+    double dx;
+    double dy;
+};
+
+inline std::ostream&
+operator<<(std::ostream& os, DDistance const& dist)
 {
     return os << "𝛿(" << dist.dx << ", " << dist.dy << ")";
 }

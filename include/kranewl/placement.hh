@@ -6,11 +6,11 @@
 #include <cstdlib>
 #include <optional>
 
-typedef class Client* Client_ptr;
+typedef class View* View_ptr;
 struct PlacementTarget final {
     enum class TargetType
     {
-        Client,
+        View,
         Tab,
         Layout
     };
@@ -18,7 +18,7 @@ struct PlacementTarget final {
     TargetType type;
     union
     {
-        Client_ptr client;
+        View_ptr view;
         std::size_t tab;
     };
 };
@@ -31,7 +31,7 @@ struct Placement final {
     };
 
     PlacementMethod method;
-    Client_ptr client;
+    View_ptr view;
     Decoration decoration;
     std::optional<Region> region;
 };
