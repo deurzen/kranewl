@@ -7,7 +7,6 @@
 
 extern "C" {
 #include <wayland-server-core.h>
-#include <wlr/backend.h>
 }
 
 typedef class Server* Server_ptr;
@@ -15,7 +14,7 @@ typedef class Model* Model_ptr;
 
 typedef class Root final : public Node {
 public:
-    Root(Server_ptr, Model_ptr, struct wlr_output_layout*, Output_ptr);
+    Root(Server_ptr, Model_ptr, struct wlr_output_layout*);
     ~Root();
 
     static void handle_output_layout_change(struct wl_listener*, void*);
@@ -37,7 +36,6 @@ public:
     Cycle<Output_ptr> m_outputs;
     Cycle<Container_ptr> m_scratchpad;
 
-    Output_ptr mp_fallback_output;
     Container_ptr mp_fullscreen_global;
 
 }* Root_ptr;

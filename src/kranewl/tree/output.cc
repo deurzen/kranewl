@@ -22,8 +22,7 @@ Output::Output(
     Server_ptr server,
     Model_ptr model,
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output,
-    bool fallback
+    struct wlr_scene_output* wlr_scene_output
 )
     : Node(this),
       mp_context(nullptr),
@@ -41,15 +40,12 @@ Output::Output(
     TRACE();
 
     wl_signal_add(&mp_wlr_output->events.destroy, &ml_destroy);
+    wl_signal_add(&mp_wlr_output->events.frame, &ml_frame);
+    wl_signal_add(&mp_wlr_output->events.present, &ml_present);
+    wl_signal_add(&mp_wlr_output->events.mode, &ml_mode);
+    wl_signal_add(&mp_wlr_output->events.commit, &ml_commit);
 
-    if (fallback) {
-        wl_signal_add(&mp_wlr_output->events.frame, &ml_frame);
-        wl_signal_add(&mp_wlr_output->events.present, &ml_present);
-        wl_signal_add(&mp_wlr_output->events.mode, &ml_mode);
-        wl_signal_add(&mp_wlr_output->events.commit, &ml_commit);
-
-        wl_signal_init(&m_events.disable);
-    }
+    wl_signal_init(&m_events.disable);
 }
 
 Output::~Output()
@@ -86,14 +82,14 @@ Output::handle_destroy(struct wl_listener*, void* data)
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
     Output_ptr output = reinterpret_cast<Output_ptr>(wlr_output->data);
 
-    wlr_output_layout_remove(output->mp_server->m_root.mp_output_layout, output->mp_wlr_output);
-    wlr_scene_output_destroy(output->mp_wlr_scene_output);
-
     wl_list_remove(&output->ml_frame.link);
     wl_list_remove(&output->ml_destroy.link);
     wl_list_remove(&output->ml_present.link);
     wl_list_remove(&output->ml_mode.link);
     wl_list_remove(&output->ml_commit.link);
+
+    wlr_scene_output_destroy(output->mp_wlr_scene_output);
+    wlr_output_layout_remove(output->mp_server->mp_output_layout, output->mp_wlr_output);
 
     output->mp_model->unregister_output(output);
 }

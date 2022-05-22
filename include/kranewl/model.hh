@@ -29,7 +29,7 @@ public:
     void register_keyboard(Keyboard_ptr);
     void unregister_keyboard(Keyboard_ptr);
 
-    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, bool = false);
+    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 

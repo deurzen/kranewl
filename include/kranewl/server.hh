@@ -63,17 +63,17 @@ public:
     struct wl_event_loop* mp_event_loop;
 
     struct wlr_backend* mp_backend;
-    struct wlr_backend* mp_headless_backend;
     struct wlr_renderer* mp_renderer;
     struct wlr_allocator* mp_allocator;
     struct wlr_compositor* mp_compositor;
     struct wlr_data_device_manager* mp_data_device_manager;
+    struct wlr_output_layout* mp_output_layout;
     struct wlr_scene* mp_scene;
 #ifdef XWAYLAND
     struct wlr_xwayland* mp_xwayland;
 #endif
 
-    Root m_root;
+    /* Root m_root; */
     Seat m_seat;
 
 private:

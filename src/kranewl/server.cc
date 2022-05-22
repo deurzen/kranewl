@@ -20,7 +20,6 @@
 #define static
 extern "C" {
 #include <wlr/backend.h>
-#include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
@@ -81,7 +80,6 @@ Server::Server(Model_ptr model)
       mp_display(wl_display_create()),
       mp_event_loop(wl_display_get_event_loop(mp_display)),
       mp_backend(wlr_backend_autocreate(mp_display)),
-      mp_headless_backend(wlr_headless_backend_create(mp_display)),
       mp_renderer([](struct wl_display* display, struct wlr_backend* backend) {
           struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
           wlr_renderer_init_wl_display(renderer, display);
@@ -91,27 +89,31 @@ Server::Server(Model_ptr model)
       mp_allocator(wlr_allocator_autocreate(mp_backend, mp_renderer)),
       mp_compositor(wlr_compositor_create(mp_display, mp_renderer)),
       mp_data_device_manager(wlr_data_device_manager_create(mp_display)),
-      mp_scene(wlr_scene_create()),
-      m_root([this](struct wl_display* display) {
-          struct wlr_output_layout* wlr_output_layout = wlr_output_layout_create();
-          wlr_xdg_output_manager_v1_create(display, wlr_output_layout);
+      mp_output_layout([this]() {
+          struct wlr_output_layout* output_layout = wlr_output_layout_create();
+          /* wlr_xdg_output_manager_v1_create(mp_display, output_layout); */
+          return output_layout;
+      }()),
+      mp_scene([this]() {
+          struct wlr_scene* scene = wlr_scene_create();
+          wlr_scene_attach_output_layout(scene, mp_output_layout);
+          return scene;
+      }()),
+      /* m_root([this](struct wl_display* display) { */
+      /*     struct wlr_output_layout* wlr_output_layout = wlr_output_layout_create(); */
+      /*     wlr_xdg_output_manager_v1_create(display, wlr_output_layout); */
 
-          struct wlr_output* wlr_output =
-              wlr_headless_add_output(mp_headless_backend, 800, 600);
-          wlr_output_set_name(wlr_output, "FALLBACK");
-
-          return Root(
-              this,
-              mp_model,
-              wlr_output_layout,
-              mp_model->create_output(
-                  wlr_output,
-                  wlr_scene_output_create(mp_scene, wlr_output),
-                  true
-              )
-          );
-      }(mp_display)),
-      m_seat(this, mp_model, wlr_seat_create(mp_display, "seat0"), wlr_cursor_create()),
+      /*     return Root( */
+      /*         this, */
+      /*         mp_model, */
+      /*         wlr_output_layout */
+      /*     ); */
+      /* }(mp_display)), */
+      m_seat([this]() {
+          struct wlr_cursor* cursor = wlr_cursor_create();
+          wlr_cursor_attach_output_layout(cursor, mp_output_layout);
+          return Seat{this, mp_model, wlr_seat_create(mp_display, "seat0"), cursor};
+      }()),
 #ifdef XWAYLAND
       mp_xwayland(wlr_xwayland_create(mp_display, mp_compositor, 1)),
 #endif
@@ -131,6 +133,7 @@ Server::Server(Model_ptr model)
       mp_virtual_pointer_manager(wlr_virtual_pointer_manager_v1_create(mp_display)),
       mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
       ml_new_output({ .notify = Server::handle_new_output }),
+      ml_output_layout_change({ .notify = Root::handle_output_layout_change }),
       ml_output_manager_apply({ .notify = Server::handle_output_manager_apply }),
       ml_output_manager_test({ .notify = Server::handle_output_manager_test }),
       ml_new_xdg_surface({ .notify = Server::handle_new_xdg_surface }),
@@ -151,30 +154,26 @@ Server::Server(Model_ptr model)
 
     if (m_socket.empty()) {
         wlr_backend_destroy(mp_backend);
-        wlr_backend_destroy(mp_headless_backend);
         wl_display_destroy(mp_display);
         std::exit(1);
         spdlog::critical("Could not set up server socket");
         return;
     }
 
-    wlr_multi_backend_add(mp_backend, mp_headless_backend);
     wlr_export_dmabuf_manager_v1_create(mp_display);
     wlr_screencopy_manager_v1_create(mp_display);
     wlr_data_control_manager_v1_create(mp_display);
     wlr_gamma_control_manager_v1_create(mp_display);
     wlr_primary_selection_v1_device_manager_create(mp_display);
 
-    wlr_scene_attach_output_layout(mp_scene, m_root.mp_output_layout);
-    wlr_cursor_attach_output_layout(m_seat.mp_cursor, m_root.mp_output_layout);
     wlr_xcursor_manager_load(mp_cursor_manager, 1);
-    wlr_scene_set_presentation(mp_scene, wlr_presentation_create(mp_display, mp_backend));
     wlr_server_decoration_manager_set_default_mode(
         mp_server_decoration_manager,
         WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
     );
 
     wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
+    wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
     wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
     wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
@@ -203,7 +202,6 @@ Server::Server(Model_ptr model)
 
     if (!wlr_backend_start(mp_backend)) {
         wlr_backend_destroy(mp_backend);
-        wlr_backend_destroy(mp_headless_backend);
         wl_display_destroy(mp_display);
         spdlog::critical("Could not start backend");
         std::exit(1);
@@ -240,9 +238,6 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
     Server_ptr server = wl_container_of(listener, server, ml_new_output);
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
 
-    if (wlr_output == server->m_root.mp_fallback_output->mp_wlr_output)
-        return;
-
     if (!wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer)) {
         spdlog::error("Could not initialize rendering to output");
         spdlog::warn("Ignoring output " + std::string(wlr_output->name));
@@ -264,7 +259,7 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
     );
 
     wlr_output->data = output;
-    wlr_output_layout_add_auto(server->m_root.mp_output_layout, wlr_output);
+    wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
 }
 
 void

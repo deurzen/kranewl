@@ -10,8 +10,7 @@ extern "C" {
 Root::Root(
     Server_ptr server,
     Model_ptr model,
-    struct wlr_output_layout* wlr_output_layout,
-    Output_ptr fallback_output
+    struct wlr_output_layout* wlr_output_layout
 )
     : Node(this),
       mp_server(server),
@@ -19,13 +18,11 @@ Root::Root(
       mp_output_layout(wlr_output_layout),
       ml_output_layout_change({ .notify = Root::handle_output_layout_change }),
       m_outputs({}, true),
-      m_scratchpad({}, true),
-      mp_fallback_output(fallback_output)
+      m_scratchpad({}, true)
 {
     TRACE();
 
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
-
     wl_signal_init(&m_events.new_node);
 }
 

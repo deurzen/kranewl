@@ -98,8 +98,7 @@ Model::register_server(Server_ptr server)
 Output_ptr
 Model::create_output(
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output,
-    bool fallback
+    struct wlr_scene_output* wlr_scene_output
 )
 {
     TRACE();
@@ -108,8 +107,7 @@ Model::create_output(
         mp_server,
         this,
         wlr_output,
-        wlr_scene_output,
-        fallback
+        wlr_scene_output
     );
 
     register_output(output);

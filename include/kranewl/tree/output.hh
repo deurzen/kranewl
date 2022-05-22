@@ -20,8 +20,7 @@ public:
         Server_ptr,
         Model_ptr,
         struct wlr_output*,
-        struct wlr_scene_output*,
-        bool fallback = false
+        struct wlr_scene_output*
     );
     ~Output();
 
