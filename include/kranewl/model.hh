@@ -19,7 +19,13 @@ typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
 typedef class Server* Server_ptr;
+typedef struct View* View_ptr;
+typedef struct XDGView* XDGView_ptr;
+#ifdef XWAYLAND
+typedef struct XWaylandView* XWaylandView_ptr;
+#endif
 class Config;
+
 class Model final
 {
 public:
@@ -33,7 +39,10 @@ public:
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 
-    View_ptr create_view(Surface);
+    XDGView_ptr create_xdg_shell_view(struct wlr_xdg_surface*, Seat_ptr);
+#ifdef XWAYLAND
+    XWaylandView_ptr create_xwayland_view(struct wlr_xwayland_surface*, Seat_ptr);
+#endif
     void register_view(View_ptr);
     void unregister_view(View_ptr);
 

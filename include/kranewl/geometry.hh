@@ -2,6 +2,10 @@
 
 #include <ostream>
 
+extern "C" {
+#include <wlr/util/box.h>
+}
+
 struct Dim final {
     int w;
     int h;
@@ -175,6 +179,18 @@ operator<<(std::ostream& os, Padding const& padding)
 struct Region final {
     Pos pos;
     Dim dim;
+
+    operator struct wlr_box() const
+    {
+        struct wlr_box box;
+
+        box.x = this->pos.x;
+        box.y = this->pos.y;
+        box.width = this->dim.w;
+        box.height = this->dim.h;
+
+        return box;
+    }
 
     void apply_minimum_dim(Dim const&);
     void apply_extents(Extents const&);

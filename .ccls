@@ -21,3 +21,4 @@ c++
 -Wdouble-promotion
 -Wformat=2
 -Weffc++
+-DXWAYLAND

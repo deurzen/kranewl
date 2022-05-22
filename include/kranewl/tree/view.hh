@@ -3,6 +3,9 @@
 #include <kranewl/common.hh>
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
+#include <kranewl/context.hh>
+#include <kranewl/workspace.hh>
+#include <kranewl/model.hh>
 #include <kranewl/tree/surface.hh>
 
 #include <vector>
@@ -36,14 +39,40 @@ typedef struct View {
 #endif
     };
 
-protected:
-    View(XDGView_ptr);
+    View(
+        XDGView_ptr,
+        Uid,
+        Server_ptr,
+        Model_ptr,
+        Seat_ptr,
+        Output_ptr,
+        Context_ptr,
+        Workspace_ptr,
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*)
+    );
 #if XWAYLAND
-    View(XWaylandView_ptr);
+    View(
+        XWaylandView_ptr,
+        Uid,
+        Server_ptr,
+        Model_ptr,
+        Seat_ptr,
+        Output_ptr,
+        Context_ptr,
+        Workspace_ptr,
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*),
+        void(*)(wl_listener*, void*)
+    );
 #endif
 
-public:
-    ~View();
+    virtual ~View();
 
     static bool
     is_free(View_ptr view)
@@ -131,7 +160,8 @@ typedef struct ViewChild {
 protected:
     ViewChild(SubsurfaceViewChild_ptr);
     ViewChild(PopupViewChild_ptr);
-    ~ViewChild();
+
+    virtual ~ViewChild();
 
 public:
     Uid m_uid;

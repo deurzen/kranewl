@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <optional>
 
-typedef class View* View_ptr;
+typedef struct View* View_ptr;
 struct PlacementTarget final {
     enum class TargetType
     {

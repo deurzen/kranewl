@@ -56,19 +56,19 @@ Seat::~Seat()
 
 }
 
-static void
+static inline void
 process_cursor_move(Seat_ptr seat, uint32_t time)
 {
 
 }
 
-static void
+static inline void
 process_cursor_resize(Seat_ptr seat, uint32_t time)
 {
 
 }
 
-static void
+static inline void
 process_cursor_motion(Seat_ptr seat, uint32_t time)
 {
     switch (seat->m_cursor_mode) {

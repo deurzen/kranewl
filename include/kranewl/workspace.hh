@@ -7,7 +7,7 @@
 #include <kranewl/placement.hh>
 #include <kranewl/util.hh>
 
-typedef class View* View_ptr;
+typedef struct View* View_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace final {
 public:

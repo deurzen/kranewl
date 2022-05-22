@@ -7,6 +7,9 @@
 #include <kranewl/model.hh>
 #include <kranewl/tree/client.hh>
 #include <kranewl/tree/output.hh>
+#include <kranewl/tree/view.hh>
+#include <kranewl/tree/xdg_view.hh>
+#include <kranewl/tree/xwayland_view.hh>
 
 #include <spdlog/spdlog.h>
 
@@ -197,7 +200,7 @@ Server::Server(Model_ptr model)
     setenv("WAYLAND_DISPLAY", m_socket.c_str(), true);
     setenv("XDG_CURRENT_DESKTOP", "kranewl", true);
 
-    spdlog::info("Server initiated on WAYLAND_DISPLAY=" + m_socket);
+    spdlog::info("Server initiated on WAYLAND_DISPLAY={}", m_socket);
 }
 
 Server::~Server()
@@ -226,7 +229,7 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
 
     if (!wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer)) {
         spdlog::error("Could not initialize rendering to output");
-        spdlog::warn("Ignoring output " + std::string(wlr_output->name));
+        spdlog::warn("Ignoring output {}", std::string(wlr_output->name));
         return;
     }
 
@@ -269,11 +272,74 @@ Server::handle_output_manager_test(struct wl_listener*, void*)
 
 }
 
+static inline View_ptr
+view_from_popup(struct wlr_xdg_popup* popup)
+{
+    struct wlr_xdg_surface* surface = popup->base;
+
+    for (;;)
+        switch (surface->role) {
+        case WLR_XDG_SURFACE_ROLE_POPUP:
+            if (!wlr_surface_is_xdg_surface(surface->popup->parent))
+                return nullptr;
+
+            surface = wlr_xdg_surface_from_wlr_surface(surface->popup->parent);
+            break;
+        case WLR_XDG_SURFACE_ROLE_TOPLEVEL: return reinterpret_cast<View_ptr>(surface->data);
+        case WLR_XDG_SURFACE_ROLE_NONE:     return nullptr;
+        }
+}
+
 void
-Server::handle_new_xdg_surface(struct wl_listener*, void*)
+Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    View_ptr view;
+    Server_ptr server = wl_container_of(listener, server, ml_new_xdg_surface);
+    struct wlr_xdg_surface* xdg_surface
+        = reinterpret_cast<struct wlr_xdg_surface*>(data);
+
+    switch (xdg_surface->role) {
+    case WLR_XDG_SURFACE_ROLE_POPUP:
+        {
+            struct wlr_box mappable_box;
+
+            struct wlr_xdg_surface* parent
+                = wlr_xdg_surface_from_wlr_surface(xdg_surface->popup->parent);
+
+            struct wlr_scene_node* parent_node
+                = reinterpret_cast<struct wlr_scene_node*>(parent->data);
+
+            xdg_surface->data
+                = wlr_scene_xdg_surface_create(parent_node, xdg_surface);
+
+            if (!(view = view_from_popup(xdg_surface->popup)) || !view->mp_output)
+                return;
+
+            mappable_box = view->mp_output->placeable_region();
+            mappable_box.x -= view->m_active_region.pos.x;
+            mappable_box.y -= view->m_active_region.pos.y;
+
+            wlr_xdg_popup_unconstrain_from_box(xdg_surface->popup, &mappable_box);
+        }
+        return;
+    case WLR_XDG_SURFACE_ROLE_NONE: return;
+    default: break;
+    }
+
+    xdg_surface->data = view = server->mp_model->create_xdg_shell_view(
+        xdg_surface,
+        &server->m_seat
+    );
+
+    view->mp_scene = wlr_scene_xdg_surface_create(
+        &server->mp_scene->node,
+        xdg_surface
+    );
+
+    view->mp_scene->data = view;
+    xdg_surface->data = view->mp_scene;
 }
 
 void

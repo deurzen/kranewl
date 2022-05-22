@@ -11,9 +11,15 @@
 #include <kranewl/input/mouse.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
+#include <kranewl/tree/view.hh>
+#include <kranewl/tree/xdg_view.hh>
+#include <kranewl/tree/xwayland_view.hh>
 #include <kranewl/workspace.hh>
 
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/bin_to_hex.h>
+
+#include <iomanip>
 
 Model::Model(
     Config const& config,
@@ -44,7 +50,7 @@ Model::Model(
 
 #ifdef NDEBUG
     if (autostart_path) {
-        spdlog::info("Executing autostart file at " + *autostart_path);
+        spdlog::info("Executing autostart file at {}", *autostart_path);
         exec_external(*autostart_path);
     }
 #endif
@@ -130,29 +136,74 @@ Model::unregister_output(Output_ptr output)
     delete output;
 }
 
-View_ptr
-Model::create_view(Surface surface)
+XDGView_ptr
+Model::create_xdg_shell_view(
+    struct wlr_xdg_surface* wlr_xdg_surface,
+    Seat_ptr seat
+)
 {
-    /* View_ptr view = new View( */
-    /*     mp_server, */
-    /*     surface, */
-    /*     mp_output, */
-    /*     mp_context, */
-    /*     mp_workspace */
-    /* ); */
+    TRACE();
 
-    /* register_view(view); */
+    XDGView_ptr view = new XDGView(
+        wlr_xdg_surface,
+        mp_server,
+        this,
+        seat,
+        mp_output,
+        mp_context,
+        mp_workspace
+    );
 
-    /* return view; */
+    register_view(view);
+
+    return view;
+}
+
+XWaylandView_ptr
+Model::create_xwayland_view(
+    struct wlr_xwayland_surface* wlr_xwayland_surface,
+    Seat_ptr seat
+)
+{
+    TRACE();
+
+    XWaylandView_ptr view = new XWaylandView(
+        wlr_xwayland_surface,
+        mp_server,
+        this,
+        seat,
+        mp_output,
+        mp_context,
+        mp_workspace
+    );
+
+    register_view(view);
+
+    return view;
 }
 
 void
 Model::register_view(View_ptr view)
 {
+    TRACE();
+
+    m_view_map[view->m_uid] = view;
+
+    std::stringstream uid_stream;
+    uid_stream << std::hex << view->m_uid;
+    spdlog::info("Registered view 0x{}", uid_stream.str());
 }
 
 void
 Model::unregister_view(View_ptr view)
 {
+    TRACE();
+
+    std::stringstream uid_stream;
+    uid_stream << std::hex << view->m_uid;
+
+    m_view_map.erase(view->m_uid);
     delete view;
+
+    spdlog::info("Unegistered view 0x{}", uid_stream.str());
 }
