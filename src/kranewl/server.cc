@@ -9,7 +9,9 @@
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
+#ifdef XWAYLAND
 #include <kranewl/tree/xwayland_view.hh>
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -134,6 +136,7 @@ Server::Server(Model_ptr model)
       ml_inhibit_deactivate({ .notify = Server::handle_inhibit_deactivate }),
       ml_idle_inhibitor_create({ .notify = Server::handle_idle_inhibitor_create }),
       ml_idle_inhibitor_destroy({ .notify = Server::handle_idle_inhibitor_destroy }),
+      ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
 #ifdef XWAYLAND
       ml_xwayland_ready({ .notify = Server::handle_xwayland_ready }),
       ml_new_xwayland_surface({ .notify = Server::handle_new_xwayland_surface }),
@@ -166,6 +169,7 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
     wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
     wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
+    wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_xdg_new_toplevel_decoration);
     wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
@@ -420,6 +424,20 @@ Server::handle_idle_inhibitor_destroy(struct wl_listener*, void*)
 {
     TRACE();
 
+}
+
+void
+Server::handle_xdg_new_toplevel_decoration(struct wl_listener*, void* data)
+{
+    TRACE();
+
+    struct wlr_xdg_toplevel_decoration_v1* decoration
+        = reinterpret_cast<struct wlr_xdg_toplevel_decoration_v1*>(data);
+
+    wlr_xdg_toplevel_decoration_v1_set_mode(
+        decoration,
+        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
+    );
 }
 
 void

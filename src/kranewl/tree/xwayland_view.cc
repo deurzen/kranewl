@@ -1,9 +1,21 @@
+#ifdef XWAYLAND
 #include <trace.hh>
 
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xwayland_view.hh>
 
-#if XWAYLAND
+// https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
+#define class class_
+#define namespace namespace_
+#define static
+extern "C" {
+#include <wlr/xwayland.h>
+}
+#undef static
+#undef class
+#undef namespace
+
 XWaylandView::XWaylandView(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Server_ptr server,
@@ -22,6 +34,7 @@ XWaylandView::XWaylandView(
           output,
           context,
           workspace,
+          wlr_xwayland_surface->surface,
           XWaylandView::handle_foreign_activate_request,
           XWaylandView::handle_foreign_fullscreen_request,
           XWaylandView::handle_foreign_close_request,

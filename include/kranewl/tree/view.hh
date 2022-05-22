@@ -23,7 +23,7 @@ typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
 typedef struct XDGView* XDGView_ptr;
-#if XWAYLAND
+#ifdef XWAYLAND
 typedef struct XWaylandView* XWaylandView_ptr;
 #endif
 typedef struct View* View_ptr;
@@ -34,7 +34,7 @@ typedef struct View {
 
     enum class Type {
         XDGShell,
-#if XWAYLAND
+#ifdef XWAYLAND
         XWayland,
 #endif
     };
@@ -48,13 +48,14 @@ typedef struct View {
         Output_ptr,
         Context_ptr,
         Workspace_ptr,
+        struct wlr_surface*,
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*)
     );
-#if XWAYLAND
+#ifdef XWAYLAND
     View(
         XWaylandView_ptr,
         Uid,
@@ -64,6 +65,7 @@ typedef struct View {
         Output_ptr,
         Context_ptr,
         Workspace_ptr,
+        struct wlr_surface*,
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
@@ -73,6 +75,8 @@ typedef struct View {
 #endif
 
     virtual ~View();
+
+    static void map_view(View_ptr, struct wlr_surface*, bool, struct wlr_output*, bool);
 
     static bool
     is_free(View_ptr view)
@@ -93,6 +97,7 @@ typedef struct View {
     Context_ptr mp_context;
     Workspace_ptr mp_workspace;
 
+    struct wlr_surface* mp_wlr_surface;
     struct wlr_scene_node* mp_scene;
     struct wlr_scene_node* mp_scene_surface;
     struct wlr_scene_rect* m_protrusions[4]; // top, bottom, left, right
@@ -109,7 +114,7 @@ typedef struct View {
     Decoration m_free_decoration;
     Decoration m_active_decoration;
 
-    Region m_preferred_region;
+    Dim m_preferred_dim;
     Region m_free_region;
     Region m_tile_region;
     Region m_active_region;

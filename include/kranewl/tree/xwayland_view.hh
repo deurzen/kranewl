@@ -10,7 +10,7 @@ typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
 
-#if XWAYLAND
+#ifdef XWAYLAND
 typedef struct XWaylandView final : public View {
     XWaylandView(
         struct wlr_xwayland_surface*,

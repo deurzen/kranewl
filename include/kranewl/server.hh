@@ -41,6 +41,7 @@ private:
     static void handle_inhibit_deactivate(struct wl_listener*, void*);
     static void handle_idle_inhibitor_create(struct wl_listener*, void*);
     static void handle_idle_inhibitor_destroy(struct wl_listener*, void*);
+    static void handle_xdg_new_toplevel_decoration(struct wl_listener*, void*);
     static void handle_xdg_toplevel_map(struct wl_listener*, void*);
     static void handle_xdg_toplevel_unmap(struct wl_listener*, void*);
     static void handle_xdg_toplevel_destroy(struct wl_listener*, void*);
@@ -104,6 +105,7 @@ private:
     struct wl_listener ml_inhibit_deactivate;
     struct wl_listener ml_idle_inhibitor_create;
     struct wl_listener ml_idle_inhibitor_destroy;
+    struct wl_listener ml_xdg_new_toplevel_decoration;
 #ifdef XWAYLAND
     struct wl_listener ml_xwayland_ready;
     struct wl_listener ml_new_xwayland_surface;

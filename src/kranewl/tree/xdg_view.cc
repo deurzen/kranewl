@@ -25,6 +25,7 @@ XDGView::XDGView(
           output,
           context,
           workspace,
+          wlr_xdg_surface->surface,
           XDGView::handle_foreign_activate_request,
           XDGView::handle_foreign_fullscreen_request,
           XDGView::handle_foreign_close_request,
@@ -141,6 +142,35 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_map);
+    struct wlr_xdg_toplevel* wlr_xdg_toplevel = view->mp_wlr_xdg_toplevel;
+
+    view->m_mapped = true;
+    view->m_preferred_dim = Dim{
+        .w = wlr_xdg_toplevel->base->current.geometry.width,
+        .h = wlr_xdg_toplevel->base->current.geometry.height,
+    };
+
+    if (!view->m_preferred_dim.w && !view->m_preferred_dim.h) {
+        view->m_preferred_dim.w = wlr_xdg_toplevel->base->surface->current.width;
+        view->m_preferred_dim.h = wlr_xdg_toplevel->base->surface->current.height;
+    }
+
+    View::map_view(
+        view,
+        wlr_xdg_toplevel->base->surface,
+        wlr_xdg_toplevel->requested.fullscreen,
+        wlr_xdg_toplevel->requested.fullscreen_output,
+        false // TODO: determine if client has decorations
+    );
+
+    wl_signal_add(&wlr_xdg_toplevel->base->surface->events.commit, &view->ml_commit);
+    wl_signal_add(&wlr_xdg_toplevel->base->events.new_popup, &view->ml_new_popup);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_fullscreen, &view->ml_request_fullscreen);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_move, &view->ml_request_move);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_resize, &view->ml_request_resize);
+    wl_signal_add(&wlr_xdg_toplevel->events.set_title, &view->ml_set_title);
+    wl_signal_add(&wlr_xdg_toplevel->events.set_app_id, &view->ml_set_app_id);
 }
 
 void
