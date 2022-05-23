@@ -102,6 +102,15 @@ Server::Server(Model_ptr model)
           wlr_scene_attach_output_layout(scene, mp_output_layout);
           return scene;
       }()),
+      m_layers{
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node
+      },
       m_seat([this]() {
           struct wlr_cursor* cursor = wlr_cursor_create();
           wlr_cursor_attach_output_layout(cursor, mp_output_layout);

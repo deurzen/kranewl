@@ -1,11 +1,23 @@
 #include <trace.hh>
 
+#include <kranewl/layers.hh>
+#include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
+#include <kranewl/tree/xdg_view.hh>
 
+// https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
+#define class class_
+#define namespace namespace_
+#define static
 extern "C" {
 #include <sys/types.h>
 #include <wlr/types/wlr_xdg_shell.h>
+#include <wlr/types/wlr_scene.h>
 }
+#undef static
+#undef class
+#undef namespace
 
 View::View(
     XDGView_ptr,
@@ -104,7 +116,7 @@ View::~View()
 {}
 
 static inline void
-retrieve_view_pid(View_ptr view)
+set_view_pid(View_ptr view)
 {
     switch (view->m_type) {
     case View::Type::XDGShell:
@@ -142,7 +154,20 @@ View::map_view(
     TRACE();
 
     view->mp_wlr_surface = wlr_surface;
-    retrieve_view_pid(view);
+    set_view_pid(view);
+
+    view->mp_scene = &wlr_scene_tree_create(view->mp_server->m_layers[Layer::Tile])->node;
+    view->mp_wlr_surface->data = view->mp_scene_surface = view->m_type == View::Type::XDGShell
+        ? wlr_scene_xdg_surface_create(
+            view->mp_scene,
+            reinterpret_cast<XDGView_ptr>(view)->mp_wlr_xdg_surface
+        )
+        : wlr_scene_subsurface_tree_create(view->mp_scene, view->mp_wlr_surface);
+    view->mp_scene_surface->data = view;
+
+    if (fullscreen_output && fullscreen_output->data) {
+        Output_ptr output = reinterpret_cast<Output_ptr>(fullscreen_output->data);
+    }
 }
 
 ViewChild::ViewChild(SubsurfaceViewChild_ptr)

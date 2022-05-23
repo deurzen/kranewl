@@ -69,12 +69,14 @@ public:
     struct wlr_data_device_manager* mp_data_device_manager;
     struct wlr_output_layout* mp_output_layout;
     struct wlr_scene* mp_scene;
+    struct wlr_scene_node* m_layers[7];
 #ifdef XWAYLAND
     struct wlr_xwayland* mp_xwayland;
 #endif
 
     /* Root m_root; */
     Seat m_seat;
+
 
 private:
     struct wlr_xdg_shell* mp_xdg_shell;
