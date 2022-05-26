@@ -12,25 +12,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
-    -fdiagnostics-show-option
+    -w
+    # -fdiagnostics-show-option
     # -Weffc++
-    -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
-    -Wnon-virtual-dtor
-    -Wold-style-cast
-    -Wcast-align
-    -Wunused
-    -Woverloaded-virtual
-    -Wpedantic
-    -Wconversion
-    -Wsign-conversion
-    -Wmisleading-indentation
-    -Wduplicated-cond
-    -Wduplicated-branches
-    -Wlogical-op
-    -Wnull-dereference
-    -Wuseless-cast
-    -Wdouble-promotion
-    -Wformat=2
+    # -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
+    # -Wnon-virtual-dtor
+    # -Wold-style-cast
+    # -Wcast-align
+    # -Wunused
+    # -Woverloaded-virtual
+    # -Wpedantic
+    # -Wconversion
+    # -Wsign-conversion
+    # -Wmisleading-indentation
+    # -Wduplicated-cond
+    # -Wduplicated-branches
+    # -Wlogical-op
+    # -Wnull-dereference
+    # -Wuseless-cast
+    # -Wdouble-promotion
+    # -Wformat=2
     -DXWAYLAND
     -O0
     # debug options
