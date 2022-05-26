@@ -5,7 +5,6 @@
 #include <kranewl/common.hh>
 #include <kranewl/conf/config.hh>
 #include <kranewl/context.hh>
-#include <kranewl/context.hh>
 #include <kranewl/cycle.t.hh>
 #include <kranewl/exec.hh>
 #include <kranewl/input/mouse.hh>
@@ -19,6 +18,19 @@
 #include <spdlog/spdlog.h>
 
 #include <iomanip>
+#include <optional>
+
+// https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
+#define class class_
+#define namespace namespace_
+#define static
+extern "C" {
+#include <wlr/types/wlr_surface.h>
+}
+#undef static
+#undef class
+#undef namespace
 
 Model::Model(
     Config const& config,
@@ -94,14 +106,14 @@ void
 Model::register_server(Server_ptr server)
 {
     TRACE();
-
     mp_server = server;
 }
 
 Output_ptr
 Model::create_output(
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output
+    struct wlr_scene_output* wlr_scene_output,
+    Region const&& output_region
 )
 {
     TRACE();
@@ -110,8 +122,29 @@ Model::create_output(
         mp_server,
         this,
         wlr_output,
-        wlr_scene_output
+        wlr_scene_output,
+        std::forward<Region const&&>(output_region)
     );
+
+    std::optional<Context_ptr> context
+        = m_contexts.first_element_with_condition([](Context_ptr context) {
+            return !context->output();
+        });
+
+    if (context) {
+        output->set_context(*context);
+        (*context)->set_output(output);
+
+        spdlog::info("Assigned context {} to output {}",
+            (*context)->index(),
+            output->mp_wlr_output->name
+        );
+    } else
+        // TODO: dynamically generate new context
+        spdlog::error("Depleted allocatable contexts,"
+            " output {} will not house any workspaces",
+            output->mp_wlr_output->name
+        );
 
     register_output(output);
 
@@ -124,6 +157,9 @@ Model::register_output(Output_ptr output)
     TRACE();
 
     m_outputs.insert_at_back(output);
+    mp_output = *m_outputs.active_element();
+    mp_context = mp_output->context();
+    mp_workspace = mp_context->workspace();
 }
 
 void
@@ -133,6 +169,265 @@ Model::unregister_output(Output_ptr output)
 
     m_outputs.remove_element(output);
     delete output;
+}
+
+void
+Model::map_view(View_ptr view)
+{
+    TRACE();
+}
+
+void
+Model::unmap_view(View_ptr view)
+{
+    TRACE();
+}
+
+void
+Model::iconify_view(View_ptr)
+{
+    TRACE();
+}
+
+void
+Model::deiconify_view(View_ptr)
+{
+    TRACE();
+}
+
+void
+Model::disown_view(View_ptr)
+{
+    TRACE();
+}
+
+void
+Model::reclaim_view(View_ptr)
+{
+    TRACE();
+}
+
+void
+Model::focus_view(View_ptr)
+{
+    TRACE();
+}
+
+void
+Model::place_view(Placement& placement)
+{
+    TRACE();
+
+    View_ptr view = placement.view;
+
+    if (!placement.region) {
+        switch (placement.method) {
+        case Placement::PlacementMethod::Free:
+        {
+            view->set_free_decoration(placement.decoration);
+            break;
+        }
+        case Placement::PlacementMethod::Tile:
+        {
+            view->set_free_decoration(FREE_DECORATION);
+            view->set_tile_decoration(placement.decoration);
+            break;
+        }
+        }
+
+        unmap_view(view);
+        return;
+    }
+
+    switch (placement.method) {
+    case Placement::PlacementMethod::Free:
+    {
+        view->set_free_decoration(placement.decoration);
+        view->set_free_region(*placement.region);
+        break;
+    }
+    case Placement::PlacementMethod::Tile:
+    {
+        view->set_free_decoration(FREE_DECORATION);
+        view->set_tile_decoration(placement.decoration);
+        view->set_tile_region(*placement.region);
+        break;
+    }
+    }
+
+    spdlog::info("Placing view {} at {}", view->m_uid, std::to_string(view->m_active_region));
+
+    map_view(view);
+    mp_server->moveresize_view(
+        view,
+        view->m_active_region,
+        view->m_active_decoration.extents(),
+        false
+    );
+}
+
+void
+Model::move_view_to_workspace(View_ptr view, Index index)
+{
+    TRACE();
+
+    if (index < m_workspaces.size())
+        move_view_to_workspace(view, m_workspaces[index]);
+}
+
+void
+Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
+{
+    TRACE();
+
+    Workspace_ptr workspace_from = view->mp_workspace;
+
+    if (!workspace_to || workspace_to == workspace_from)
+        return;
+
+    view->mp_workspace = workspace_to;
+
+    Context_ptr context_from = workspace_from->context();
+    Output_ptr output_from = context_from->output();
+
+    Context_ptr context_to = workspace_to->context();
+    Output_ptr output_to = context_to->output();
+
+    view->mp_context = context_to;
+    if (output_to != output_from)
+        view->mp_output = output_to;
+
+    workspace_to->add_view(view);
+    workspace_from->remove_view(view);
+
+    apply_layout(workspace_to);
+    apply_layout(workspace_from);
+
+    if (!output_to)
+        unmap_view(view);
+    else
+        map_view(view);
+}
+
+void
+Model::move_view_to_context(View_ptr view, Index index)
+{
+    TRACE();
+
+    if (index < m_workspaces.size())
+        move_view_to_context(view, m_contexts[index]);
+}
+
+void
+Model::move_view_to_context(View_ptr view, Context_ptr context_to)
+{
+    TRACE();
+
+    Context_ptr context_from = view->mp_context;
+
+    if (!context_to || context_to == context_from)
+        return;
+
+    view->mp_context = context_to;
+
+    Workspace_ptr workspace_from = view->mp_workspace;
+    Output_ptr output_from = context_from->output();
+
+    Workspace_ptr workspace_to = context_to->workspace();
+    Output_ptr output_to = context_to->output();
+
+    view->mp_workspace = workspace_to;
+    view->mp_output = output_to;
+
+    workspace_to->add_view(view);
+    workspace_from->remove_view(view);
+
+    apply_layout(workspace_to);
+    apply_layout(workspace_from);
+
+    if (!output_to)
+        unmap_view(view);
+    else
+        map_view(view);
+}
+
+void
+Model::move_view_to_output(View_ptr view, Index index)
+{
+    TRACE();
+
+    if (index < m_outputs.size())
+        move_view_to_output(view, m_outputs[index]);
+}
+
+void
+Model::move_view_to_output(View_ptr view, Output_ptr output_to)
+{
+    TRACE();
+
+    Output_ptr output_from = view->mp_output;
+
+    if (!output_to || output_to == output_from)
+        return;
+
+    if (output_from) {
+        Workspace_ptr workspace_from = view->mp_workspace;
+
+        if (workspace_from) {
+            workspace_from->remove_view(view);
+            apply_layout(workspace_from);
+        }
+    }
+
+    Context_ptr context_to = output_to->context();
+    Workspace_ptr workspace_to = context_to->workspace();
+
+    view->mp_output = output_to;
+    view->mp_context = context_to;
+    view->mp_workspace = workspace_to;
+
+    workspace_to->add_view(view);
+    apply_layout(workspace_to);
+
+    if (output_from)
+        wlr_surface_send_leave(view->mp_wlr_surface, output_from->mp_wlr_output);
+
+    if (output_to) {
+        wlr_surface_send_enter(view->mp_wlr_surface, output_to->mp_wlr_output);
+        map_view(view);
+    } else
+        unmap_view(view);
+}
+
+void
+Model::move_view_to_focused_output(View_ptr view)
+{
+    TRACE();
+    move_view_to_output(view, mp_output);
+}
+
+void
+Model::apply_layout(Index index)
+{
+    TRACE();
+
+    if (index < m_workspaces.size())
+        apply_layout(m_workspaces[index]);
+}
+
+void
+Model::apply_layout(Workspace_ptr workspace)
+{
+    TRACE();
+
+    Context_ptr context = workspace->context();
+    Output_ptr output = context->output();
+
+    if (!output)
+        return;
+
+    for (Placement placement : workspace->arrange(output->placeable_region()))
+        place_view(placement);
 }
 
 XDGView_ptr
@@ -147,10 +442,7 @@ Model::create_xdg_shell_view(
         wlr_xdg_surface,
         mp_server,
         this,
-        seat,
-        mp_output,
-        mp_context,
-        mp_workspace
+        seat
     );
 
     register_view(view);
@@ -170,10 +462,7 @@ Model::create_xwayland_view(
         wlr_xwayland_surface,
         mp_server,
         this,
-        seat,
-        mp_output,
-        mp_context,
-        mp_workspace
+        seat
     );
 
     register_view(view);

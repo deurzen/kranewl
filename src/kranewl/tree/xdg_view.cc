@@ -1,20 +1,28 @@
 #include <trace.hh>
 
+#include <kranewl/layers.hh>
+#include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
 
+// https://github.com/swaywm/wlroots/issues/682
+#include <pthread.h>
+#define class class_
+#define namespace namespace_
+#define static
 extern "C" {
+#include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_xdg_shell.h>
 }
+#undef static
+#undef class
+#undef namespace
 
 XDGView::XDGView(
     struct wlr_xdg_surface* wlr_xdg_surface,
     Server_ptr server,
     Model_ptr model,
-    Seat_ptr seat,
-    Output_ptr output,
-    Context_ptr context,
-    Workspace_ptr workspace
+    Seat_ptr seat
 )
     : View(
           this,
@@ -22,9 +30,6 @@ XDGView::XDGView(
           server,
           model,
           seat,
-          output,
-          context,
-          workspace,
           wlr_xdg_surface->surface,
           XDGView::handle_foreign_activate_request,
           XDGView::handle_foreign_fullscreen_request,
@@ -143,6 +148,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     TRACE();
 
     XDGView_ptr view = wl_container_of(listener, view, ml_map);
+    struct wlr_xdg_surface* wlr_xdg_surface = view->mp_wlr_xdg_surface;
     struct wlr_xdg_toplevel* wlr_xdg_toplevel = view->mp_wlr_xdg_toplevel;
 
     view->m_mapped = true;
@@ -156,12 +162,52 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         view->m_preferred_dim.h = wlr_xdg_toplevel->base->surface->current.height;
     }
 
+    Extents const& extents = view->m_free_decoration.extents();
+    struct wlr_box geometry;
+    wlr_xdg_surface_get_geometry(wlr_xdg_surface, &geometry);
+    view->m_preferred_dim.w = extents.left + extents.right + geometry.width;
+    view->m_preferred_dim.h = extents.top + extents.bottom + geometry.height;
+
+    view->set_free_region(Region{
+        .pos = {0, 0},
+        .dim = view->m_preferred_dim
+    });
+
+    view->set_tile_region(Region{
+        .pos = {0, 0},
+        .dim = view->m_preferred_dim
+    });
+
+    view->m_app_id = wlr_xdg_toplevel->app_id
+        ? std::string(wlr_xdg_toplevel->app_id)
+        : "N/a";
+    view->m_title = wlr_xdg_toplevel->title
+        ? std::string(wlr_xdg_toplevel->title)
+        : "N/a";
+    view->m_title_formatted = view->m_title; // TODO: format title
+
+    struct wlr_xdg_toplevel_state state = wlr_xdg_toplevel->current;
+    view->m_floating = wlr_xdg_toplevel->parent
+        || (state.min_width != 0 && state.min_height != 0
+                && (state.min_width == state.max_width || state.min_height == state.max_height));
+
+    view->m_minimum_dim = Dim{
+        .w = state.min_width,
+        .h = state.min_height
+    };
+
     View::map_view(
         view,
         wlr_xdg_toplevel->base->surface,
         wlr_xdg_toplevel->requested.fullscreen,
         wlr_xdg_toplevel->requested.fullscreen_output,
         false // TODO: determine if client has decorations
+    );
+
+    wlr_xdg_toplevel_set_tiled(
+        wlr_xdg_surface,
+        // TODO: determine from view decorations
+        view->free_decoration_to_wlr_edges()
     );
 
     wl_signal_add(&wlr_xdg_toplevel->base->surface->events.commit, &view->ml_commit);
@@ -178,6 +224,9 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_unmap);
+
+    View::unmap_view(view);
 }
 
 void
@@ -185,4 +234,15 @@ XDGView::handle_destroy(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_destroy);
+
+    view->mp_model->unregister_view(view);
+
+    wl_list_remove(&view->ml_commit.link);
+    wl_list_remove(&view->ml_new_popup.link);
+    wl_list_remove(&view->ml_request_fullscreen.link);
+    wl_list_remove(&view->ml_request_move.link);
+    wl_list_remove(&view->ml_request_resize.link);
+    wl_list_remove(&view->ml_set_title.link);
+    wl_list_remove(&view->ml_set_app_id.link);
 }

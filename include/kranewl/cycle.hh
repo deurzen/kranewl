@@ -71,6 +71,21 @@ public:
     std::optional<T> element_at_front(T) const;
     std::optional<T> element_at_back(T) const;
 
+    template<typename UnaryPredicate>
+    std::optional<T> first_element_with_condition(UnaryPredicate predicate)
+    {
+        auto it = std::find_if(
+            m_elements.begin(),
+            m_elements.end(),
+            predicate
+        );
+
+        if (it != m_elements.end())
+            return *it;
+
+        return {};
+    }
+
     void activate_first();
     void activate_last();
     void activate_at_index(Index);

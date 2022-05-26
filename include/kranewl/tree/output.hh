@@ -20,7 +20,8 @@ public:
         Server_ptr,
         Model_ptr,
         struct wlr_output*,
-        struct wlr_scene_output*
+        struct wlr_scene_output*,
+        Region const&&
     );
     ~Output();
 
@@ -30,12 +31,12 @@ public:
     static void handle_mode(struct wl_listener*, void*);
     static void handle_destroy(struct wl_listener*, void*);
 
-    void set_context(Context_ptr context);
+    void set_context(Context_ptr);
     Context_ptr context() const;
     Region full_region() const;
     Region placeable_region() const;
-    bool contains(Pos pos) const;
-    bool contains(Region region) const;
+    bool contains(Pos) const;
+    bool contains(Region) const;
 
 private:
     Context_ptr mp_context;
@@ -45,6 +46,8 @@ private:
 public:
     Server_ptr mp_server;
     Model_ptr mp_model;
+
+    bool m_dirty;
 
     struct wlr_output* mp_wlr_output;
     struct wlr_scene_output* mp_wlr_scene_output;

@@ -233,6 +233,23 @@ Server::run() noexcept
 }
 
 void
+Server::moveresize_view(View_ptr view, Region const& region, Extents const& extents, bool interactive)
+{
+    TRACE();
+
+    wlr_scene_node_set_position(view->mp_scene, region.pos.x, region.pos.y);
+    wlr_scene_node_set_position(view->mp_scene_surface, extents.left, extents.top);
+    wlr_scene_rect_set_size(view->m_protrusions[0], region.dim.w, extents.top);
+    wlr_scene_rect_set_size(view->m_protrusions[1], region.dim.w, extents.bottom);
+    wlr_scene_rect_set_size(view->m_protrusions[2], extents.left, region.dim.h - extents.top - extents.bottom);
+    wlr_scene_rect_set_size(view->m_protrusions[3], extents.right, region.dim.h - extents.top - extents.bottom);
+    wlr_scene_node_set_position(&view->m_protrusions[0]->node, 0, 0);
+    wlr_scene_node_set_position(&view->m_protrusions[1]->node, 0, region.dim.h - extents.bottom);
+    wlr_scene_node_set_position(&view->m_protrusions[2]->node, 0, extents.top);
+    wlr_scene_node_set_position(&view->m_protrusions[3]->node, region.dim.w - extents.right, extents.top);
+}
+
+void
 Server::handle_new_output(struct wl_listener* listener, void* data)
 {
     TRACE();
@@ -255,13 +272,26 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
             return;
     }
 
+    wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
+    struct wlr_box output_box
+        = *wlr_output_layout_get_box(server->mp_output_layout, wlr_output);
+
     Output_ptr output = server->mp_model->create_output(
         wlr_output,
-        wlr_scene_output_create(server->mp_scene, wlr_output)
+        wlr_scene_output_create(server->mp_scene, wlr_output),
+        Region{
+            .pos = Pos{
+                .x = output_box.x,
+                .y = output_box.y
+            },
+            .dim = Dim{
+                .w = output_box.width,
+                .h = output_box.height
+            }
+        }
     );
 
     wlr_output->data = output;
-    wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
 }
 
 void
@@ -293,11 +323,13 @@ view_from_popup(struct wlr_xdg_popup* popup)
     for (;;)
         switch (surface->role) {
         case WLR_XDG_SURFACE_ROLE_POPUP:
+        {
             if (!wlr_surface_is_xdg_surface(surface->popup->parent))
                 return nullptr;
 
             surface = wlr_xdg_surface_from_wlr_surface(surface->popup->parent);
             break;
+        }
         case WLR_XDG_SURFACE_ROLE_TOPLEVEL: return reinterpret_cast<View_ptr>(surface->data);
         case WLR_XDG_SURFACE_ROLE_NONE:     return nullptr;
         }
@@ -315,28 +347,29 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
 
     switch (xdg_surface->role) {
     case WLR_XDG_SURFACE_ROLE_POPUP:
-        {
-            struct wlr_box mappable_box;
+    {
+        struct wlr_box mappable_box;
 
-            struct wlr_xdg_surface* parent
-                = wlr_xdg_surface_from_wlr_surface(xdg_surface->popup->parent);
+        struct wlr_xdg_surface* parent
+            = wlr_xdg_surface_from_wlr_surface(xdg_surface->popup->parent);
 
-            struct wlr_scene_node* parent_node
-                = reinterpret_cast<struct wlr_scene_node*>(parent->data);
+        struct wlr_scene_node* parent_node
+            = reinterpret_cast<struct wlr_scene_node*>(parent->data);
 
-            xdg_surface->data
-                = wlr_scene_xdg_surface_create(parent_node, xdg_surface);
+        xdg_surface->data
+            = wlr_scene_xdg_surface_create(parent_node, xdg_surface);
 
-            if (!(view = view_from_popup(xdg_surface->popup)) || !view->mp_output)
-                return;
+        if (!(view = view_from_popup(xdg_surface->popup)) || !view->mp_output)
+            return;
 
-            mappable_box = view->mp_output->placeable_region();
-            mappable_box.x -= view->m_active_region.pos.x;
-            mappable_box.y -= view->m_active_region.pos.y;
+        mappable_box = view->mp_output->placeable_region();
+        mappable_box.x -= view->m_active_region.pos.x;
+        mappable_box.y -= view->m_active_region.pos.y;
 
-            wlr_xdg_popup_unconstrain_from_box(xdg_surface->popup, &mappable_box);
-        }
+        wlr_xdg_popup_unconstrain_from_box(xdg_surface->popup, &mappable_box);
+
         return;
+    }
     case WLR_XDG_SURFACE_ROLE_NONE: return;
     default: break;
     }
@@ -380,23 +413,26 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
 
     switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD:
-        {
-            Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
+    {
+        Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
 
-            struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-            struct xkb_keymap* keymap
-                = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+        struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+        struct xkb_keymap* keymap
+            = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
-            wlr_keyboard_set_keymap(device->keyboard, keymap);
-            xkb_keymap_unref(keymap);
-            xkb_context_unref(context);
-            wlr_keyboard_set_repeat_info(device->keyboard, 200, 100);
-            wlr_seat_set_keyboard(server->m_seat.mp_seat, device);
-        }
+        wlr_keyboard_set_keymap(device->keyboard, keymap);
+        xkb_keymap_unref(keymap);
+        xkb_context_unref(context);
+        wlr_keyboard_set_repeat_info(device->keyboard, 200, 100);
+        wlr_seat_set_keyboard(server->m_seat.mp_seat, device);
+
         break;
+    }
     case WLR_INPUT_DEVICE_POINTER:
+    {
         wlr_cursor_attach_input_device(server->m_seat.mp_cursor, device);
         break;
+    }
     default: break;
     }
 
@@ -485,7 +521,7 @@ Server::handle_xdg_toplevel_request_resize(struct wl_listener*, void*)
 }
 
 void
-Server::handle_xdg_toplevel_handle_moveresize(Client_ptr, CursorMode, uint32_t)
+Server::handle_xdg_toplevel_handle_moveresize(View_ptr, CursorMode, uint32_t)
 {
     TRACE();
 

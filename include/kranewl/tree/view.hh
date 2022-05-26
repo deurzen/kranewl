@@ -3,8 +3,6 @@
 #include <kranewl/common.hh>
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
-#include <kranewl/context.hh>
-#include <kranewl/workspace.hh>
 #include <kranewl/model.hh>
 #include <kranewl/tree/surface.hh>
 
@@ -45,9 +43,6 @@ typedef struct View {
         Server_ptr,
         Model_ptr,
         Seat_ptr,
-        Output_ptr,
-        Context_ptr,
-        Workspace_ptr,
         struct wlr_surface*,
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
@@ -62,9 +57,6 @@ typedef struct View {
         Server_ptr,
         Model_ptr,
         Seat_ptr,
-        Output_ptr,
-        Context_ptr,
-        Workspace_ptr,
         struct wlr_surface*,
         void(*)(wl_listener*, void*),
         void(*)(wl_listener*, void*),
@@ -77,6 +69,7 @@ typedef struct View {
     virtual ~View();
 
     static void map_view(View_ptr, struct wlr_surface*, bool, struct wlr_output*, bool);
+    static void unmap_view(View_ptr);
 
     static bool
     is_free(View_ptr view)
@@ -85,6 +78,15 @@ typedef struct View {
             || !view->m_managed
             || view->m_disowned;
     }
+
+    uint32_t free_decoration_to_wlr_edges() const;
+    uint32_t tile_decoration_to_wlr_edges() const;
+
+    void set_free_region(Region const&);
+    void set_tile_region(Region const&);
+
+    void set_free_decoration(Decoration const&);
+    void set_tile_decoration(Decoration const&);
 
     Uid m_uid;
     Type m_type;
@@ -104,6 +106,7 @@ typedef struct View {
 
     std::string m_title;
     std::string m_title_formatted;
+    std::string m_app_id;
 
     float m_alpha;
     uint32_t m_resize;
@@ -114,6 +117,7 @@ typedef struct View {
     Decoration m_free_decoration;
     Decoration m_active_decoration;
 
+    Dim m_minimum_dim;
     Dim m_preferred_dim;
     Region m_free_region;
     Region m_tile_region;
@@ -137,6 +141,10 @@ typedef struct View {
 
     std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
     std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
+
+private:
+    void set_inner_region(Region const&);
+    void set_active_region(Region const&);
 
     struct wlr_foreign_toplevel_handle_v1* foreign_toplevel;
 

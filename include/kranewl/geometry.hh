@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <sstream>
 
 extern "C" {
 #include <wlr/util/box.h>
@@ -212,6 +213,17 @@ inline std::ostream&
 operator<<(std::ostream& os, Region const& region)
 {
     return os << "[" << region.pos << " " << region.dim << "]";
+}
+
+namespace std {
+
+    inline std::string
+    to_string(Region const& region) {
+        std::ostringstream oss;
+        oss << region;
+        return oss.str();
+    }
+
 }
 
 struct DRegion final {

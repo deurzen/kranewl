@@ -16,10 +16,7 @@ typedef struct XWaylandView final : public View {
         struct wlr_xwayland_surface*,
         Server_ptr,
         Model_ptr,
-        Seat_ptr,
-        Output_ptr,
-        Context_ptr,
-        Workspace_ptr
+        Seat_ptr
     );
 
     ~XWaylandView();

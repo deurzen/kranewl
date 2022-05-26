@@ -4,6 +4,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/cycle.hh>
 #include <kranewl/geometry.hh>
+#include <kranewl/placement.hh>
 #include <kranewl/tree/view.hh>
 
 #include <optional>
@@ -35,7 +36,7 @@ public:
     void register_server(Server_ptr);
     void exit();
 
-    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*);
+    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
 
@@ -45,6 +46,27 @@ public:
 #endif
     void register_view(View_ptr);
     void unregister_view(View_ptr);
+
+    void map_view(View_ptr);
+    void unmap_view(View_ptr);
+    void iconify_view(View_ptr);
+    void deiconify_view(View_ptr);
+    void disown_view(View_ptr);
+    void reclaim_view(View_ptr);
+    void focus_view(View_ptr);
+    void place_view(Placement&);
+
+    void move_view_to_workspace(View_ptr, Index);
+    void move_view_to_workspace(View_ptr, Workspace_ptr);
+    void move_view_to_context(View_ptr, Index);
+    void move_view_to_context(View_ptr, Context_ptr);
+    void move_view_to_output(View_ptr, Index);
+    void move_view_to_output(View_ptr, Output_ptr);
+
+    void move_view_to_focused_output(View_ptr);
+
+    void apply_layout(Index);
+    void apply_layout(Workspace_ptr);
 
     void spawn_external(std::string&&) const;
 

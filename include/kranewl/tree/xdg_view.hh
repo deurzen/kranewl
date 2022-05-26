@@ -3,6 +3,8 @@
 #include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
 
+#include <cstdint>
+
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
 typedef class Seat* Seat_ptr;
@@ -15,10 +17,7 @@ typedef struct XDGView final : public View {
         struct wlr_xdg_surface*,
         Server_ptr,
         Model_ptr,
-        Seat_ptr,
-        Output_ptr,
-        Context_ptr,
-        Workspace_ptr
+        Seat_ptr
     );
 
     ~XDGView();

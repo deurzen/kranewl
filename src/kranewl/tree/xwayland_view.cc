@@ -20,10 +20,7 @@ XWaylandView::XWaylandView(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Server_ptr server,
     Model_ptr model,
-    Seat_ptr seat,
-    Output_ptr output,
-    Context_ptr context,
-    Workspace_ptr workspace
+    Seat_ptr seat
 )
     : View(
           this,
@@ -31,9 +28,6 @@ XWaylandView::XWaylandView(
           server,
           model,
           seat,
-          output,
-          context,
-          workspace,
           wlr_xwayland_surface->surface,
           XWaylandView::handle_foreign_activate_request,
           XWaylandView::handle_foreign_fullscreen_request,

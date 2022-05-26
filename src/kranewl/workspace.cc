@@ -1,3 +1,5 @@
+#include <trace.hh>
+
 #include <kranewl/workspace.hh>
 
 #include <kranewl/context.hh>
@@ -464,6 +466,8 @@ Workspace::set_layout(LayoutHandler::LayoutKind layout)
 std::vector<Placement>
 Workspace::arrange(Region region) const
 {
+    TRACE();
+
     std::deque<View_ptr> views = m_views.as_deque();
     std::vector<Placement> placements;
     placements.reserve(views.size());

@@ -13,8 +13,9 @@ extern "C" {
 #include <string>
 
 typedef class Model* Model_ptr;
-typedef class Client* Client_ptr;
+typedef class View* View_ptr;
 typedef class Server* Server_ptr;
+
 typedef class Server final {
     enum class CursorMode {
         Passthrough,
@@ -27,6 +28,8 @@ public:
     ~Server();
 
     void run() noexcept;
+
+    void moveresize_view(View_ptr, Region const&, Extents const&, bool);
 
 private:
     static void handle_new_output(struct wl_listener*, void*);
@@ -47,7 +50,7 @@ private:
     static void handle_xdg_toplevel_destroy(struct wl_listener*, void*);
     static void handle_xdg_toplevel_request_move(struct wl_listener*, void*);
     static void handle_xdg_toplevel_request_resize(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_handle_moveresize(Client_ptr, CursorMode, uint32_t);
+    static void handle_xdg_toplevel_handle_moveresize(View_ptr, CursorMode, uint32_t);
 #ifdef XWAYLAND
     static void handle_xwayland_ready(struct wl_listener*, void*);
     static void handle_new_xwayland_surface(struct wl_listener*, void*);
@@ -74,7 +77,6 @@ public:
     struct wlr_xwayland* mp_xwayland;
 #endif
 
-    /* Root m_root; */
     Seat m_seat;
 
 

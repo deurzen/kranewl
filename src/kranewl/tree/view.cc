@@ -2,6 +2,7 @@
 
 #include <kranewl/layers.hh>
 #include <kranewl/server.hh>
+#include <kranewl/model.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
 
@@ -14,6 +15,8 @@ extern "C" {
 #include <sys/types.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/util/box.h>
+#include <wlr/util/edges.h>
 }
 #undef static
 #undef class
@@ -25,9 +28,6 @@ View::View(
     Server_ptr server,
     Model_ptr model,
     Seat_ptr seat,
-    Output_ptr output,
-    Context_ptr context,
-    Workspace_ptr workspace,
     struct wlr_surface* wlr_surface,
     void(*handle_foreign_activate_request)(wl_listener*, void*),
     void(*handle_foreign_fullscreen_request)(wl_listener*, void*),
@@ -40,14 +40,15 @@ View::View(
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
-      mp_output(output),
-      mp_context(context),
-      mp_workspace(workspace),
+      mp_output(nullptr),
+      mp_context(nullptr),
+      mp_workspace(nullptr),
       mp_wlr_surface(wlr_surface),
       m_alpha(1.f),
       m_tile_decoration(FREE_DECORATION),
       m_free_decoration(FREE_DECORATION),
       m_active_decoration(FREE_DECORATION),
+      m_minimum_dim({}),
       m_preferred_dim({}),
       m_free_region({}),
       m_tile_region({}),
@@ -85,9 +86,6 @@ View::View(
     Server_ptr server,
     Model_ptr model,
     Seat_ptr seat,
-    Output_ptr output,
-    Context_ptr context,
-    Workspace_ptr workspace,
     struct wlr_surface* wlr_surface,
     void(*handle_foreign_activate_request)(wl_listener*, void*),
     void(*handle_foreign_fullscreen_request)(wl_listener*, void*),
@@ -100,9 +98,6 @@ View::View(
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
-      mp_output(output),
-      mp_context(context),
-      mp_workspace(workspace),
       mp_wlr_surface(wlr_surface),
       ml_foreign_activate_request({ .notify = handle_foreign_activate_request }),
       ml_foreign_fullscreen_request({ .notify = handle_foreign_fullscreen_request }),
@@ -120,23 +115,25 @@ set_view_pid(View_ptr view)
 {
     switch (view->m_type) {
     case View::Type::XDGShell:
-        {
-            pid_t pid;
-            struct wl_client* client
-                = wl_resource_get_client(view->mp_wlr_surface->resource);
+    {
+        pid_t pid;
+        struct wl_client* client
+            = wl_resource_get_client(view->mp_wlr_surface->resource);
 
-            wl_client_get_credentials(client, &pid, NULL, NULL);
-            view->m_pid = pid;
-        }
+        wl_client_get_credentials(client, &pid, NULL, NULL);
+        view->m_pid = pid;
+
         break;
+    }
 #if HAVE_XWAYLAND
     case View::Type::XWayland:
-        {
-            struct wlr_xwayland_surface* wlr_xwayland_surface
-                = wlr_xwayland_surface_from_wlr_surface(view->mp_wlr_surface);
-            view->m_pid = wlr_xwayland_surface->pid;
-        }
+    {
+        struct wlr_xwayland_surface* wlr_xwayland_surface
+            = wlr_xwayland_surface_from_wlr_surface(view->mp_wlr_surface);
+        view->m_pid = wlr_xwayland_surface->pid;
+
         break;
+    }
 #endif
     default: break;
     }
@@ -153,6 +150,9 @@ View::map_view(
 {
     TRACE();
 
+    Server_ptr server = view->mp_server;
+    Model_ptr model = view->mp_model;
+
     view->mp_wlr_surface = wlr_surface;
     set_view_pid(view);
 
@@ -165,8 +165,119 @@ View::map_view(
         : wlr_scene_subsurface_tree_create(view->mp_scene, view->mp_wlr_surface);
     view->mp_scene_surface->data = view;
 
+    wlr_scene_node_reparent(
+        view->mp_scene,
+        server->m_layers[view->m_floating ? Layer::Free : Layer::Tile]
+    );
+
+    // TODO: globalize
+    static const float border_rgba[4] = {0.5, 0.5, 0.5, 1.0};
+
+    for (std::size_t i = 0; i < 4; ++i) {
+        view->m_protrusions[i] = wlr_scene_rect_create(view->mp_scene, 0, 0, border_rgba);
+        view->m_protrusions[i]->node.data = view;
+        wlr_scene_rect_set_color(view->m_protrusions[i], border_rgba);
+        wlr_scene_node_lower_to_bottom(&view->m_protrusions[i]->node);
+    }
+
     if (fullscreen_output && fullscreen_output->data) {
         Output_ptr output = reinterpret_cast<Output_ptr>(fullscreen_output->data);
+    }
+
+    model->move_view_to_focused_output(view);
+}
+
+
+void
+View::unmap_view(View_ptr view)
+{
+    TRACE();
+
+    wlr_scene_node_destroy(view->mp_scene);
+}
+
+static uint32_t
+extents_to_wlr_edges(Extents const& extents)
+{
+    uint32_t wlr_edges = WLR_EDGE_NONE;
+
+    if (extents.top)
+        wlr_edges |= WLR_EDGE_TOP;
+
+    if (extents.bottom)
+        wlr_edges |= WLR_EDGE_BOTTOM;
+
+    if (extents.left)
+        wlr_edges |= WLR_EDGE_LEFT;
+
+    if (extents.right)
+        wlr_edges |= WLR_EDGE_RIGHT;
+
+    return wlr_edges;
+}
+
+uint32_t
+View::free_decoration_to_wlr_edges() const
+{
+    return extents_to_wlr_edges(m_free_decoration.extents());
+}
+
+uint32_t
+View::tile_decoration_to_wlr_edges() const
+{
+    return extents_to_wlr_edges(m_tile_decoration.extents());
+}
+
+void
+View::set_free_region(Region const& region)
+{
+    m_free_region = region;
+    set_active_region(region);
+}
+
+void
+View::set_tile_region(Region const& region)
+{
+    m_tile_region = region;
+    set_active_region(region);
+}
+
+void
+View::set_free_decoration(Decoration const& decoration)
+{
+    m_free_decoration = decoration;
+    m_active_decoration = decoration;
+}
+
+void
+View::set_tile_decoration(Decoration const& decoration)
+{
+    m_tile_decoration = decoration;
+    m_active_decoration = decoration;
+}
+
+void
+View::set_active_region(Region const& region)
+{
+    m_previous_region = m_active_region;
+    set_inner_region(region);
+    m_active_region = region;
+}
+
+void
+View::set_inner_region(Region const& region)
+{
+    if (m_active_decoration.frame) {
+        Frame const& frame = *m_active_decoration.frame;
+
+        m_inner_region.pos.x = frame.extents.left;
+        m_inner_region.pos.y = frame.extents.top;
+        m_inner_region.dim.w = region.dim.w - frame.extents.left - frame.extents.right;
+        m_inner_region.dim.h = region.dim.h - frame.extents.top - frame.extents.bottom;
+    } else {
+        m_inner_region.pos.x = 0;
+        m_inner_region.pos.y = 0;
+        m_inner_region.dim = region.dim;
     }
 }
 

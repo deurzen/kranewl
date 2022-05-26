@@ -22,12 +22,16 @@ Output::Output(
     Server_ptr server,
     Model_ptr model,
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output
+    struct wlr_scene_output* wlr_scene_output,
+    Region const&& output_region
 )
     : Node(this),
       mp_context(nullptr),
+      m_full_region(output_region),
+      m_placeable_region(output_region),
       mp_server(server),
       mp_model(model),
+      m_dirty(true),
       mp_wlr_output(wlr_output),
       mp_wlr_scene_output(wlr_scene_output),
       m_subpixel(wlr_output->subpixel),

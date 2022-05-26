@@ -58,12 +58,13 @@ struct Frame final {
 struct Decoration final {
     std::optional<Frame> frame;
 
-    const Extents extents() const
+    Extents const& extents() const
     {
+        static Extents NO_EXTENTS{0, 0, 0, 0};
         if (frame)
             return frame->extents;
 
-        return Extents{0, 0, 0, 0};
+        return NO_EXTENTS;
     }
 };
 
