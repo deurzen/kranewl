@@ -71,6 +71,8 @@ typedef struct View {
     void map(struct wlr_surface*, bool, struct wlr_output*, bool);
     void unmap();
 
+    void touch();
+
     virtual void focus(bool) = 0;
     virtual void moveresize(Region const&, Extents const&, bool) = 0;
 
@@ -143,9 +145,10 @@ typedef struct View {
     bool m_disowned;
 
     std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
     std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
 
-private:
+protected:
     void set_inner_region(Region const&);
     void set_active_region(Region const&);
 

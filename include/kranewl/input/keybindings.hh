@@ -32,22 +32,155 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_Q, MODKEY | CTRL | SHIFT },
     CALL(exit())
 },
+
+// view state modifiers
+{ { XKB_KEY_c, MODKEY },
+    CALL(kill_focus())
+},
+{ { XKB_KEY_space, MODKEY | SHIFT },
+    CALL(set_floating_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_f, MODKEY },
+    CALL(set_fullscreen_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_x, MODKEY },
+    CALL(set_sticky_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_f, MODKEY | SECKEY | CTRL },
+    CALL(set_contained_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_i, MODKEY | SECKEY | CTRL },
+    CALL(set_invincible_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_y, MODKEY },
+    CALL(set_iconify_focus(Toggle::Reverse))
+},
+{ { XKB_KEY_u, MODKEY },
+    CALL(pop_deiconify())
+},
+{ { XKB_KEY_u, MODKEY | SECKEY },
+    CALL(deiconify_all())
+},
+
+// view arrangers
+{ { XKB_KEY_space, MODKEY | CTRL },
+    CALL(center_focus())
+},
+{ { XKB_KEY_h, MODKEY | CTRL },
+    [](Model& model) {
+        View_ptr focus = model.focused_view();
+
+        if (focus && model.is_free(focus))
+            model.nudge_focus(Edge::Left, 15);
+        else
+            model.shuffle_main(Direction::Backward);
+    }
+},
+{ { XKB_KEY_j, MODKEY | CTRL },
+    [](Model& model) {
+        View_ptr focus = model.focused_view();
+
+        if (focus && model.is_free(focus))
+            model.nudge_focus(Edge::Bottom, 15);
+        else
+            model.shuffle_stack(Direction::Forward);
+    }
+},
+{ { XKB_KEY_k, MODKEY | CTRL },
+    [](Model& model) {
+        View_ptr focus = model.focused_view();
+
+        if (focus && model.is_free(focus))
+            model.nudge_focus(Edge::Top, 15);
+        else
+            model.shuffle_stack(Direction::Backward);
+    }
+},
+{ { XKB_KEY_l, MODKEY | CTRL },
+    [](Model& model) {
+        View_ptr focus = model.focused_view();
+
+        if (focus && model.is_free(focus))
+            model.nudge_focus(Edge::Right, 15);
+        else
+            model.shuffle_main(Direction::Forward);
+    }
+},
+{ { XKB_KEY_H, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Left, 15))
+},
+{ { XKB_KEY_J, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Bottom, 15))
+},
+{ { XKB_KEY_K, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Top, 15))
+},
+{ { XKB_KEY_L, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Right, 15))
+},
+{ { XKB_KEY_Y, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Left, -15))
+},
+{ { XKB_KEY_U, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Bottom, -15))
+},
+{ { XKB_KEY_I, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Top, -15))
+},
+{ { XKB_KEY_O, MODKEY | CTRL | SHIFT },
+    CALL(stretch_focus(Edge::Right, -15))
+},
+{ { XKB_KEY_leftarrow, MODKEY | CTRL },
+    CALL(snap_focus(Edge::Left))
+},
+{ { XKB_KEY_downarrow, MODKEY | CTRL },
+    CALL(snap_focus(Edge::Bottom))
+},
+{ { XKB_KEY_uparrow, MODKEY | CTRL },
+    CALL(snap_focus(Edge::Top))
+},
+{ { XKB_KEY_rightarrow, MODKEY | CTRL },
+    CALL(snap_focus(Edge::Right))
+},
+{ { XKB_KEY_j, MODKEY },
+    CALL(cycle_focus(Direction::Forward))
+},
+{ { XKB_KEY_k, MODKEY },
+    CALL(cycle_focus(Direction::Backward))
+},
+{ { XKB_KEY_J, MODKEY | SHIFT },
+    CALL(drag_focus(Direction::Forward))
+},
+{ { XKB_KEY_K, MODKEY | SHIFT },
+    CALL(drag_focus(Direction::Backward))
+},
+{ { XKB_KEY_r, MODKEY },
+    CALL(reverse_views())
+},
+{ { XKB_KEY_semicolon, MODKEY | SHIFT },
+    CALL(rotate_views(Direction::Forward))
+},
+{ { XKB_KEY_comma, MODKEY | SHIFT },
+    CALL(rotate_views(Direction::Backward))
+},
+
+// workspace layout modifiers
 { { XKB_KEY_F, MODKEY | SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::Float))
 },
 { { XKB_KEY_L, MODKEY | SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::FramelessFloat))
 },
-{ { XKB_KEY_Z, MODKEY },
+{ { XKB_KEY_z, MODKEY },
     CALL(set_layout(LayoutHandler::LayoutKind::SingleFloat))
 },
 { { XKB_KEY_Z, MODKEY | SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::FramelessSingleFloat))
 },
-{ { XKB_KEY_M, MODKEY },
+{ { XKB_KEY_m, MODKEY },
     CALL(set_layout(LayoutHandler::LayoutKind::Monocle))
 },
-{ { XKB_KEY_D, MODKEY | CTRL },
+{ { XKB_KEY_d, MODKEY | CTRL },
     CALL(set_layout(LayoutHandler::LayoutKind::MainDeck))
 },
 { { XKB_KEY_D, MODKEY | SHIFT },
@@ -56,10 +189,10 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_D, MODKEY | CTRL | SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::DoubleDeck))
 },
-{ { XKB_KEY_G, MODKEY },
+{ { XKB_KEY_g, MODKEY },
     CALL(set_layout(LayoutHandler::LayoutKind::Center))
 },
-{ { XKB_KEY_T, MODKEY },
+{ { XKB_KEY_t, MODKEY },
     CALL(set_layout(LayoutHandler::LayoutKind::DoubleStack))
 },
 { { XKB_KEY_T, MODKEY | SHIFT },
@@ -74,7 +207,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_Y, MODKEY | SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::HorizontalStack))
 },
-{ { XKB_KEY_Y, MODKEY | CTRL },
+{ { XKB_KEY_y, MODKEY | CTRL },
     CALL(set_layout(LayoutHandler::LayoutKind::CompactHorizontalStack))
 },
 { { XKB_KEY_V, MODKEY | SHIFT },

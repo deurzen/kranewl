@@ -37,6 +37,8 @@ public:
     void register_server(Server_ptr);
     void exit();
 
+    const View_ptr focused_view() const;
+
     KeyBindings const& key_bindings() const;
 
     Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
@@ -61,6 +63,13 @@ public:
     void place_view(Placement&);
 
     void sync_focus();
+    void cycle_focus(Direction);
+    void drag_focus(Direction);
+
+    void reverse_views();
+    void rotate_views(Direction);
+    void shuffle_main(Direction);
+    void shuffle_stack(Direction);
 
     void move_view_to_workspace(View_ptr, Index);
     void move_view_to_workspace(View_ptr, Workspace_ptr);
@@ -81,8 +90,56 @@ public:
     void set_layout(LayoutHandler::LayoutKind);
     void set_layout_retain_region(LayoutHandler::LayoutKind);
 
+    void toggle_layout_data();
+    void cycle_layout_data(Direction);
+    void copy_data_from_prev_layout();
+
+    void change_gap_size(Util::Change<int>);
+    void change_main_count(Util::Change<int>);
+    void change_main_factor(Util::Change<float>);
+    void change_margin(Util::Change<int>);
+    void change_margin(Edge, Util::Change<int>);
+    void reset_gap_size();
+    void reset_margin();
+    void reset_layout_data();
+
+    void save_layout(std::size_t) const;
+    void load_layout(std::size_t);
+
     void apply_layout(Index);
     void apply_layout(Workspace_ptr);
+
+    void kill_focus();
+    void kill_view(View_ptr);
+
+    void set_floating_focus(Toggle);
+    void set_floating_view(Toggle, View_ptr);
+    void set_fullscreen_focus(Toggle);
+    void set_fullscreen_view(Toggle, View_ptr);
+    void set_sticky_focus(Toggle);
+    void set_sticky_view(Toggle, View_ptr);
+    void set_contained_focus(Toggle);
+    void set_contained_view(Toggle, View_ptr);
+    void set_invincible_focus(Toggle);
+    void set_invincible_view(Toggle, View_ptr);
+    void set_iconifyable_focus(Toggle);
+    void set_iconifyable_view(Toggle, View_ptr);
+    void set_iconify_focus(Toggle);
+    void set_iconify_view(Toggle, View_ptr);
+
+    void center_focus();
+    void center_view(View_ptr);
+    void nudge_focus(Edge, Util::Change<std::size_t>);
+    void nudge_view(Edge, Util::Change<std::size_t>, View_ptr);
+    void stretch_focus(Edge, Util::Change<int>);
+    void stretch_view(Edge, Util::Change<int>, View_ptr);
+    void inflate_focus(Util::Change<int>);
+    void inflate_view(Util::Change<int>, View_ptr);
+    void snap_focus(Edge);
+    void snap_view(Edge, View_ptr);
+
+    void pop_deiconify();
+    void deiconify_all();
 
     bool is_free(View_ptr) const;
 

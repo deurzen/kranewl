@@ -2,6 +2,7 @@
 
 #include <kranewl/model.hh>
 #include <kranewl/server.hh>
+#include <kranewl/workspace.hh>
 #include <kranewl/tree/output.hh>
 
 // https://github.com/swaywm/wlroots/issues/682

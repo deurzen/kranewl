@@ -50,8 +50,9 @@ Client::Client(
       m_disowned(false),
       m_producing(true),
       m_attaching(false),
-      m_last_focused{std::chrono::steady_clock::now()},
-      m_managed_since{std::chrono::steady_clock::now()},
+      m_last_focused(std::chrono::steady_clock::now()),
+      m_last_touched(std::chrono::steady_clock::now()),
+      m_managed_since(std::chrono::steady_clock::now()),
       m_outside_state{OutsideState::Unfocused}
 {}
 

@@ -18,6 +18,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <iomanip>
 #include <optional>
 
@@ -117,6 +118,12 @@ Model::exit()
 
     m_running = false;
     mp_server->terminate();
+}
+
+const View_ptr
+Model::focused_view() const
+{
+    return mp_focus;
 }
 
 KeyBindings const&
@@ -310,6 +317,8 @@ Model::place_view(Placement& placement)
 void
 Model::sync_focus()
 {
+    TRACE();
+
     View_ptr active = mp_workspace->active();
 
     if (active && active != mp_focus)
@@ -318,6 +327,136 @@ Model::sync_focus()
         mp_server->relinquish_focus();
         mp_focus = nullptr;
     }
+}
+
+void
+Model::cycle_focus(Direction direction)
+{
+    TRACE();
+
+    if (mp_workspace->size() <= 1)
+        return;
+
+    mp_workspace->cycle(direction);
+    sync_focus();
+}
+
+void
+Model::drag_focus(Direction direction)
+{
+    TRACE();
+
+    if (mp_workspace->size() <= 1)
+        return;
+
+    mp_workspace->drag(direction);
+    sync_focus();
+
+    apply_layout(mp_workspace);
+}
+
+void
+Model::reverse_views()
+{
+    TRACE();
+
+    if (mp_workspace->size() <= 1)
+        return;
+
+    mp_workspace->reverse();
+    mp_workspace->active()->focus(true);
+    sync_focus();
+
+    apply_layout(mp_workspace);
+}
+
+void
+Model::rotate_views(Direction direction)
+{
+    TRACE();
+
+    if (mp_workspace->size() <= 1)
+        return;
+
+    mp_workspace->rotate(direction);
+    mp_workspace->active()->focus(true);
+    sync_focus();
+
+    apply_layout(mp_workspace);
+}
+
+void
+Model::shuffle_main(Direction direction)
+{
+    TRACE();
+
+    std::size_t main_count
+        = std::min(static_cast<std::size_t>(mp_workspace->main_count()), mp_workspace->size());
+
+    if (main_count <= 1)
+        return;
+
+    Index focus_index = *mp_workspace->views().index();
+    std::optional<Index> last_touched_index = std::nullopt;
+
+    if (focus_index >= main_count) {
+        View_ptr last_touched = *std::max_element(
+            mp_workspace->begin(),
+            mp_workspace->begin() + main_count,
+            [](View_ptr view1, View_ptr view2) -> bool {
+                return view1->m_last_touched < view2->m_last_touched;
+            }
+        );
+
+        last_touched_index
+            = mp_workspace->views().index_of_element(last_touched);
+    }
+
+    mp_workspace->shuffle_main(direction);
+    mp_workspace->active()->focus(true);
+    sync_focus();
+
+    if (last_touched_index)
+        (*mp_workspace)[*last_touched_index]->touch();
+
+    apply_layout(mp_workspace);
+}
+
+void
+Model::shuffle_stack(Direction direction)
+{
+    TRACE();
+
+    std::size_t main_count
+        = std::min(static_cast<std::size_t>(mp_workspace->main_count()), mp_workspace->size());
+
+    if ((mp_workspace->size() - main_count) <= 1)
+        return;
+
+    Index focus_index = *mp_workspace->views().index();
+    std::optional<Index> last_touched_index = std::nullopt;
+
+    if (focus_index < main_count) {
+        View_ptr last_touched = *std::max_element(
+            mp_workspace->begin() + main_count,
+            mp_workspace->end(),
+            [](View_ptr view1, View_ptr view2) -> bool {
+                return view1->m_last_touched < view2->m_last_touched;
+            }
+        );
+
+        last_touched_index
+            = mp_workspace->views().index_of_element(last_touched);
+    }
+
+    mp_workspace->shuffle_stack(direction);
+    mp_workspace->active()->focus(true);
+    sync_focus();
+
+    if (last_touched_index)
+        (*mp_workspace)[*last_touched_index]->touch();
+
+    apply_layout(mp_workspace);
 }
 
 void
@@ -529,6 +668,8 @@ Model::set_layout(LayoutHandler::LayoutKind layout)
 void
 Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
 {
+    TRACE();
+
     Cycle<View_ptr> const& views = mp_workspace->views();
     std::vector<Region> regions;
 
@@ -560,6 +701,122 @@ Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
 }
 
 void
+Model::toggle_layout_data()
+{
+    TRACE();
+
+    mp_workspace->toggle_layout_data();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::cycle_layout_data(Direction direction)
+{
+    TRACE();
+
+    mp_workspace->cycle_layout_data(direction);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::copy_data_from_prev_layout()
+{
+    TRACE();
+
+    mp_workspace->copy_data_from_prev_layout();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::change_gap_size(Util::Change<int> change)
+{
+    TRACE();
+
+    mp_workspace->change_gap_size(change);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::change_main_count(Util::Change<int> change)
+{
+    TRACE();
+
+    mp_workspace->change_main_count(change);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::change_main_factor(Util::Change<float> change)
+{
+    TRACE();
+
+    mp_workspace->change_main_factor(change);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::change_margin(Util::Change<int> change)
+{
+    TRACE();
+
+    mp_workspace->change_margin(change);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::change_margin(Edge edge, Util::Change<int> change)
+{
+    TRACE();
+
+    mp_workspace->change_margin(edge, change);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::reset_gap_size()
+{
+    TRACE();
+
+    mp_workspace->reset_gap_size();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::reset_margin()
+{
+    TRACE();
+
+    mp_workspace->reset_margin();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::reset_layout_data()
+{
+    TRACE();
+
+    mp_workspace->reset_layout_data();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::save_layout(std::size_t number) const
+{
+    TRACE();
+
+    mp_workspace->save_layout(number);
+}
+
+void
+Model::load_layout(std::size_t number)
+{
+    TRACE();
+
+    mp_workspace->load_layout(number);
+    apply_layout(mp_workspace);
+}
+
+void
 Model::apply_layout(Index index)
 {
     TRACE();
@@ -581,6 +838,702 @@ Model::apply_layout(Workspace_ptr workspace)
 
     for (Placement placement : workspace->arrange(output->placeable_region()))
         place_view(placement);
+}
+
+void
+Model::kill_focus()
+{
+    TRACE();
+
+    if (mp_focus)
+        kill_view(mp_focus);
+}
+
+void
+Model::kill_view(View_ptr view)
+{
+    TRACE();
+
+    if (!view->m_invincible) {
+        // TODO: kill view
+    }
+}
+
+void
+Model::set_floating_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_floating_view(toggle, mp_focus);
+}
+
+void
+Model::set_floating_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:      view->m_floating = true;            break;
+    case Toggle::Off:     view->m_floating = false;           break;
+    case Toggle::Reverse: view->m_floating = !view->m_floating; break;
+    default: return;
+    }
+
+    apply_layout(view->mp_workspace);
+}
+
+void
+Model::set_fullscreen_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_fullscreen_view(toggle, mp_focus);
+}
+
+void
+Model::set_fullscreen_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        if (view->m_fullscreen)
+            return;
+
+        view->m_fullscreen = true;
+
+        // TODO: set fullscreen state
+
+        Workspace_ptr workspace = view->mp_workspace;
+        apply_layout(workspace);
+
+        m_fullscreen_map[view] = view->m_free_region;
+
+        return;
+    }
+    case Toggle::Off:
+    {
+        if (!view->m_fullscreen)
+            return;
+
+        if (!view->m_contained)
+            view->set_free_region(m_fullscreen_map.at(view));
+
+        view->m_fullscreen = false;
+
+        // TODO: unset fullscreen state
+
+        Workspace_ptr workspace = view->mp_workspace;
+        apply_layout(workspace);
+
+        m_fullscreen_map.erase(view);
+
+        return;
+    }
+    case Toggle::Reverse:
+    {
+        set_fullscreen_view(
+            view->m_fullscreen
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+
+        return;
+    }
+    default: return;
+    }
+}
+
+void
+Model::set_sticky_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_sticky_view(toggle, mp_focus);
+}
+
+void
+Model::set_sticky_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        if (view->m_sticky)
+            return;
+
+        if (view->m_iconified)
+            set_iconify_view(Toggle::Off, view);
+
+        std::for_each(
+            m_workspaces.begin(),
+            m_workspaces.end(),
+            [view](Workspace_ptr workspace) {
+                if (workspace != view->mp_workspace)
+                    workspace->add_view(view);
+            }
+        );
+
+        // TODO: set sticky state
+
+        Workspace_ptr workspace = view->mp_workspace;
+
+        // TODO: view->stick();
+        apply_layout(workspace);
+
+        return;
+    }
+    case Toggle::Off:
+    {
+        if (!view->m_sticky)
+            return;
+
+        std::for_each(
+            m_workspaces.begin(),
+            m_workspaces.end(),
+            [=,this](Workspace_ptr workspace) {
+                if (workspace != mp_workspace) {
+                    workspace->remove_view(view);
+                    workspace->remove_icon(view);
+                    workspace->remove_disowned(view);
+                } else
+                    view->mp_workspace = workspace;
+            }
+        );
+
+        // TODO: unset sticky state
+
+        // TODO: view->unstick();
+        apply_layout(mp_workspace);
+
+        return;
+    }
+    case Toggle::Reverse:
+    {
+        set_sticky_view(
+            view->m_sticky
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+
+        return;
+    }
+    default: return;
+    }
+}
+
+void
+Model::set_contained_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_contained_view(toggle, mp_focus);
+}
+
+void
+Model::set_contained_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        view->m_contained = true;
+
+        Workspace_ptr workspace = view->mp_workspace;
+
+        apply_layout(workspace);
+        return;
+    }
+    case Toggle::Off:
+    {
+        view->m_contained = false;
+
+        Workspace_ptr workspace = view->mp_workspace;
+
+        apply_layout(workspace);
+        return;
+    }
+    case Toggle::Reverse:
+    {
+        set_contained_view(
+            view->m_contained
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+
+        return;
+    }
+    default: return;
+    }
+}
+
+void
+Model::set_invincible_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_invincible_view(toggle, mp_focus);
+}
+
+void
+Model::set_invincible_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    if (toggle == Toggle::Reverse)
+        set_invincible_view(
+            view->m_invincible
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+    else
+        view->m_invincible
+            = toggle == Toggle::On ? true : false;
+}
+
+void
+Model::set_iconifyable_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_iconifyable_view(toggle, mp_focus);
+}
+
+void
+Model::set_iconifyable_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    if (toggle == Toggle::Reverse)
+        set_iconifyable_view(
+            view->m_iconifyable
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+    else
+        view->m_iconifyable
+            = toggle == Toggle::On ? true : false;
+}
+
+void
+Model::set_iconify_focus(Toggle toggle)
+{
+    TRACE();
+
+    if (mp_focus)
+        set_iconify_view(toggle, mp_focus);
+}
+
+void
+Model::set_iconify_view(Toggle toggle, View_ptr view)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        if (view->m_iconified || view->m_sticky)
+            return;
+
+        Workspace_ptr workspace = view->mp_workspace;
+        workspace->view_to_icon(view);
+
+        // TODO: set iconify state
+
+        unmap_view(view);
+
+        apply_layout(workspace);
+        sync_focus();
+
+        view->m_iconified = true;
+
+        return;
+    }
+    case Toggle::Off:
+    {
+        if (!view->m_iconified)
+            return;
+
+        Workspace_ptr workspace = view->mp_workspace;
+        workspace->icon_to_view(view);
+
+        // TODO: unset iconify state
+
+        view->m_iconified = false;
+
+        apply_layout(workspace);
+        sync_focus();
+
+        return;
+    }
+    case Toggle::Reverse:
+    {
+        set_iconify_view(
+            view->m_iconified
+            ? Toggle::Off
+            : Toggle::On,
+            view
+        );
+
+        return;
+    }
+    default: return;
+    }
+}
+
+void
+Model::center_focus()
+{
+    TRACE();
+
+    if (mp_focus)
+        center_view(mp_focus);
+}
+
+void
+Model::center_view(View_ptr view)
+{
+    TRACE();
+
+    if (!is_free(view))
+        return;
+
+    Region region = view->m_free_region;
+    const Region screen_region
+        = view->mp_context->output()->placeable_region();
+
+    region.pos.x = screen_region.pos.x
+        + (screen_region.dim.w - region.dim.w) / 2;
+
+    region.pos.y = screen_region.pos.y
+        + (screen_region.dim.h - region.dim.h) / 2;
+
+    Placement placement = Placement {
+        Placement::PlacementMethod::Free,
+        view,
+        view->m_free_decoration,
+        region
+    };
+
+    place_view(placement);
+}
+
+void
+Model::nudge_focus(Edge edge, Util::Change<std::size_t> change)
+{
+    TRACE();
+
+    if (mp_focus)
+        nudge_view(edge, change, mp_focus);
+}
+
+void
+Model::nudge_view(Edge edge, Util::Change<std::size_t> change, View_ptr view)
+{
+    TRACE();
+
+    if (!is_free(view))
+        return;
+
+    Region region = view->m_free_region;
+
+    switch (edge) {
+    case Edge::Left:
+    {
+        region.pos.x -= change;
+        break;
+    }
+    case Edge::Top:
+    {
+        region.pos.y -= change;
+        break;
+    }
+    case Edge::Right:
+    {
+        region.pos.x += change;
+        break;
+    }
+    case Edge::Bottom:
+    {
+        region.pos.y += change;
+        break;
+    }
+    default: return;
+    }
+
+    Placement placement = Placement {
+        Placement::PlacementMethod::Free,
+        view,
+        view->m_free_decoration,
+        region
+    };
+
+    place_view(placement);
+}
+
+void
+Model::stretch_focus(Edge edge, Util::Change<int> change)
+{
+    if (mp_focus)
+        stretch_view(edge, change, mp_focus);
+}
+
+void
+Model::stretch_view(Edge edge, Util::Change<int> change, View_ptr view)
+{
+    TRACE();
+
+    if (!is_free(view))
+        return;
+
+    Decoration decoration = view->m_free_decoration;
+    Extents extents = Extents { 0, 0, 0, 0 };
+
+    if (decoration.frame) {
+        extents.left   += decoration.frame->extents.left;
+        extents.top    += decoration.frame->extents.top;
+        extents.right  += decoration.frame->extents.right;
+        extents.bottom += decoration.frame->extents.bottom;
+    }
+
+    Region region = view->m_free_region;
+    region.remove_extents(extents);
+
+    switch (edge) {
+    case Edge::Left:
+    {
+        if (!(change < 0 && -change >= region.dim.h)) {
+            if (region.dim.w + change <= View::MIN_VIEW_DIM.w) {
+                region.pos.x -= View::MIN_VIEW_DIM.w - region.dim.w;
+                region.dim.w = View::MIN_VIEW_DIM.w;
+            } else {
+                region.pos.x -= change;
+                region.dim.w += change;
+            }
+        }
+
+        break;
+    }
+    case Edge::Top:
+    {
+        if (!(change < 0 && -change >= region.dim.h)) {
+            if (region.dim.h + change <= View::MIN_VIEW_DIM.h) {
+                region.pos.y -= View::MIN_VIEW_DIM.h - region.dim.h;
+                region.dim.h = View::MIN_VIEW_DIM.h;
+            } else {
+                region.pos.y -= change;
+                region.dim.h += change;
+            }
+        }
+
+        break;
+    }
+    case Edge::Right:
+    {
+        if (!(change < 0 && -change >= region.dim.w)) {
+            if (region.dim.w + change <= View::MIN_VIEW_DIM.w)
+                region.dim.w = View::MIN_VIEW_DIM.w;
+            else
+                region.dim.w += change;
+        }
+
+        break;
+    }
+    case Edge::Bottom:
+    {
+        if (!(change < 0 && -change >= region.dim.h)) {
+            if (region.dim.h + change <= View::MIN_VIEW_DIM.h)
+                region.dim.h = View::MIN_VIEW_DIM.h;
+            else
+                region.dim.h += change;
+        }
+
+        break;
+    }
+    default: return;
+    }
+
+    region.apply_extents(extents);
+
+    Placement placement = Placement {
+        Placement::PlacementMethod::Free,
+        view,
+        view->m_free_decoration,
+        region
+    };
+
+    place_view(placement);
+}
+
+void
+Model::inflate_focus(Util::Change<int> change)
+{
+    TRACE();
+
+    if (mp_focus)
+        inflate_view(change, mp_focus);
+}
+
+void
+Model::inflate_view(Util::Change<int> change, View_ptr view)
+{
+    TRACE();
+
+    if (!is_free(view))
+        return;
+
+    Decoration decoration = view->m_free_decoration;
+    Extents extents = Extents { 0, 0, 0, 0 };
+
+    if (decoration.frame) {
+        extents.left   += decoration.frame->extents.left;
+        extents.top    += decoration.frame->extents.top;
+        extents.right  += decoration.frame->extents.right;
+        extents.bottom += decoration.frame->extents.bottom;
+    }
+
+    Region region = view->m_free_region;
+    region.remove_extents(extents);
+
+    double ratio = static_cast<double>(region.dim.w)
+        / static_cast<double>(region.dim.w + region.dim.h);
+
+    double width_inc = ratio * change;
+    double height_inc = change - width_inc;
+
+    int dw = std::lround(width_inc);
+    int dh = std::lround(height_inc);
+
+    if ((dw < 0 && -dw >= region.dim.w)
+        || (dh < 0 && -dh >= region.dim.h)
+        || (region.dim.w + dw <= View::MIN_VIEW_DIM.w)
+        || (region.dim.h + dh <= View::MIN_VIEW_DIM.h))
+    {
+        return;
+    }
+
+    region.dim.w += dw;
+    region.dim.h += dh;
+
+    region.apply_extents(extents);
+
+    int dx = region.dim.w - view->m_free_region.dim.w;
+    int dy = region.dim.h - view->m_free_region.dim.h;
+
+    dx = std::lround(dx / static_cast<double>(2));
+    dy = std::lround(dy / static_cast<double>(2));
+
+    region.pos.x -= dx;
+    region.pos.y -= dy;
+
+    view->set_free_region(region);
+
+    Placement placement = Placement {
+        Placement::PlacementMethod::Free,
+        view,
+        view->m_free_decoration,
+        region
+    };
+
+    place_view(placement);
+}
+
+void
+Model::snap_focus(Edge edge)
+{
+    TRACE();
+
+    if (mp_focus)
+        snap_view(edge, mp_focus);
+}
+
+void
+Model::snap_view(Edge edge, View_ptr view)
+{
+    TRACE();
+
+    if (!is_free(view))
+        return;
+
+    Region region = view->m_free_region;
+    const Region screen_region
+        = view->mp_context->output()->placeable_region();
+
+    switch (edge) {
+    case Edge::Left:
+    {
+        region.pos.x = screen_region.pos.x;
+
+        break;
+    }
+    case Edge::Top:
+    {
+        region.pos.y = screen_region.pos.y;
+
+        break;
+    }
+    case Edge::Right:
+    {
+        region.pos.x = std::max(
+            0,
+            (screen_region.dim.w + screen_region.pos.x) - region.dim.w
+        );
+
+        break;
+    }
+    case Edge::Bottom:
+    {
+        region.pos.y = std::max(
+            0,
+            (screen_region.dim.h + screen_region.pos.y) - region.dim.h
+        );
+
+        break;
+    }
+    }
+
+    Placement placement = Placement {
+        Placement::PlacementMethod::Free,
+        view,
+        view->m_free_decoration,
+        region
+    };
+
+    place_view(placement);
+}
+
+void
+Model::pop_deiconify()
+{
+    TRACE();
+
+    std::optional<View_ptr> icon = mp_workspace->pop_icon();
+
+    if (icon)
+        set_iconify_view(Toggle::Off, *icon);
+}
+
+void
+Model::deiconify_all()
+{
+    TRACE();
+
+    for (std::size_t i = 0; i < mp_workspace->size(); ++i)
+        pop_deiconify();
 }
 
 XDGView_ptr

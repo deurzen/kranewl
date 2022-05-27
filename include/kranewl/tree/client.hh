@@ -122,6 +122,7 @@ typedef struct Client final {
     bool m_attaching;
 
     std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
     std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
 
     struct wl_listener ml_commit;

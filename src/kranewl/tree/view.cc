@@ -45,9 +45,9 @@ View::View(
       mp_workspace(nullptr),
       mp_wlr_surface(wlr_surface),
       m_alpha(1.f),
-      m_tile_decoration{FREE_DECORATION},
-      m_free_decoration{FREE_DECORATION},
-      m_active_decoration{FREE_DECORATION},
+      m_tile_decoration(FREE_DECORATION),
+      m_free_decoration(FREE_DECORATION),
+      m_active_decoration(FREE_DECORATION),
       m_minimum_dim({}),
       m_preferred_dim({}),
       m_free_region({}),
@@ -69,6 +69,7 @@ View::View(
       m_iconified(false),
       m_disowned(false),
       m_last_focused(std::chrono::steady_clock::now()),
+      m_last_touched(std::chrono::steady_clock::now()),
       m_managed_since(std::chrono::steady_clock::now()),
       ml_foreign_activate_request({ .notify = handle_foreign_activate_request }),
       ml_foreign_fullscreen_request({ .notify = handle_foreign_fullscreen_request }),
@@ -200,8 +201,13 @@ View::unmap()
 {
     TRACE();
 
-    wlr_scene_node_destroy(mp_scene_surface);
     wlr_scene_node_destroy(mp_scene);
+}
+
+void
+View::touch()
+{
+    m_last_touched = std::chrono::steady_clock::now();
 }
 
 static uint32_t
