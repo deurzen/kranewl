@@ -167,6 +167,12 @@ XDGView::moveresize(Region const& region, Extents const& extents, bool interacti
 }
 
 void
+XDGView::kill()
+{
+    wlr_xdg_toplevel_send_close(mp_wlr_xdg_surface);
+}
+
+void
 XDGView::handle_foreign_activate_request(struct wl_listener* listener, void* data)
 {
     TRACE();
@@ -279,6 +285,8 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         view->m_preferred_dim.h = wlr_xdg_toplevel->base->surface->current.height;
     }
 
+    view->mp_wlr_surface = wlr_xdg_toplevel->base->surface;
+
     Extents const& extents = view->m_free_decoration.extents();
     struct wlr_box geometry;
     wlr_xdg_surface_get_geometry(wlr_xdg_surface, &geometry);
@@ -342,8 +350,18 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
 
     XDGView_ptr view = wl_container_of(listener, view, ml_unmap);
 
-    view->unmap();
     view->mp_model->unmap_view(view);
+
+    wl_list_remove(&view->ml_commit.link);
+    wl_list_remove(&view->ml_new_popup.link);
+    wl_list_remove(&view->ml_request_fullscreen.link);
+    wl_list_remove(&view->ml_request_move.link);
+    wl_list_remove(&view->ml_request_resize.link);
+    wl_list_remove(&view->ml_set_title.link);
+    wl_list_remove(&view->ml_set_app_id.link);
+
+    view->unmap();
+    view->mp_model->unregister_view(view);
 }
 
 void
@@ -353,18 +371,13 @@ XDGView::handle_destroy(struct wl_listener* listener, void* data)
 
     XDGView_ptr view = wl_container_of(listener, view, ml_destroy);
 
-	view->mp_wlr_xdg_toplevel = nullptr;
-    view->mp_model->unregister_view(view);
-
-	wl_list_remove(&view->m_events.unmap.listener_list);
-    wl_list_remove(&view->ml_commit.link);
-    wl_list_remove(&view->ml_new_popup.link);
-    wl_list_remove(&view->ml_request_fullscreen.link);
-    wl_list_remove(&view->ml_request_move.link);
-    wl_list_remove(&view->ml_request_resize.link);
-    wl_list_remove(&view->ml_set_title.link);
-    wl_list_remove(&view->ml_set_app_id.link);
     wl_list_remove(&view->ml_map.link);
     wl_list_remove(&view->ml_unmap.link);
     wl_list_remove(&view->ml_destroy.link);
+
+	view->mp_wlr_xdg_toplevel = nullptr;
+	view->mp_wlr_xdg_surface = nullptr;
+    view->mp_model->destroy_view(view);
+
+	wl_list_remove(&view->m_events.unmap.listener_list);
 }

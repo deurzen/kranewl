@@ -23,6 +23,7 @@ typedef struct XWaylandView final : public View {
 
     void focus(bool) override;
     void moveresize(Region const&, Extents const&, bool) override;
+    void kill() override;
 
     static void handle_foreign_activate_request(struct wl_listener*, void*);
     static void handle_foreign_fullscreen_request(struct wl_listener*, void*);

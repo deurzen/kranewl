@@ -202,6 +202,7 @@ View::unmap()
     TRACE();
 
     wlr_scene_node_destroy(mp_scene);
+	mp_wlr_surface = nullptr;
 }
 
 void

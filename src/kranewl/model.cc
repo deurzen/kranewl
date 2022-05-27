@@ -854,9 +854,8 @@ Model::kill_view(View_ptr view)
 {
     TRACE();
 
-    if (!view->m_invincible) {
-        // TODO: kill view
-    }
+    if (!view->m_invincible)
+        view->kill();
 }
 
 void
@@ -1593,17 +1592,27 @@ Model::unregister_view(View_ptr view)
 {
     TRACE();
 
-    std::stringstream uid_stream;
-    uid_stream << std::hex << view->m_uid;
-
     if (view->mp_workspace)
         view->mp_workspace->remove_view(view);
+
+    std::stringstream uid_stream;
+    uid_stream << std::hex << view->m_uid;
+    spdlog::info("Unegistered view 0x{}", uid_stream.str());
+    sync_focus();
+}
+
+void
+Model::destroy_view(View_ptr view)
+{
+    TRACE();
+
+    std::stringstream uid_stream;
+    uid_stream << std::hex << view->m_uid;
 
     m_view_map.erase(view->m_uid);
     delete view;
 
-    spdlog::info("Unegistered view 0x{}", uid_stream.str());
-    sync_focus();
+    spdlog::info("Destroyed view 0x{}", uid_stream.str());
 }
 
 bool

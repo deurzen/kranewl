@@ -75,6 +75,7 @@ typedef struct View {
 
     virtual void focus(bool) = 0;
     virtual void moveresize(Region const&, Extents const&, bool) = 0;
+    virtual void kill() = 0;
 
     static bool
     is_free(View_ptr view)

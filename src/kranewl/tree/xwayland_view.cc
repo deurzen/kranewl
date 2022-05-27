@@ -70,6 +70,13 @@ XWaylandView::moveresize(Region const& region, Extents const& extents, bool inte
 
 }
 
+void
+XWaylandView::kill()
+{
+    TRACE();
+
+}
+
 XWaylandUnmanaged::XWaylandUnmanaged(struct wlr_xwayland_surface* wlr_xwayland_surface)
     : mp_wlr_xwayland_surface(wlr_xwayland_surface)
 {}

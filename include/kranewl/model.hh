@@ -51,6 +51,7 @@ public:
 #endif
     void register_view(View_ptr);
     void unregister_view(View_ptr);
+    void destroy_view(View_ptr);
 
     void map_view(View_ptr);
     void unmap_view(View_ptr);
