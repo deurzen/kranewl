@@ -476,7 +476,7 @@ Workspace::arrange(Region region) const
         views.begin(),
         views.end(),
         [](const View_ptr view) -> bool {
-            return view->m_fullscreen && !view->m_contained;
+            return view->fullscreen() && !view->contained();
         }
     );
 
@@ -511,7 +511,7 @@ Workspace::arrange(Region region) const
                 Placement::PlacementMethod::Free,
                 view,
                 FREE_DECORATION,
-                view->m_free_region
+                view->free_region()
             };
         }
     );
@@ -528,7 +528,7 @@ Workspace::arrange(Region region) const
             placements.begin(),
             placements.end(),
             [](Placement& placement) {
-                if (!placement.view->m_focused)
+                if (!placement.view->focused())
                     placement.region = std::nullopt;
             }
         );

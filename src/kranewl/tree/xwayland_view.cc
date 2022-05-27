@@ -28,12 +28,7 @@ XWaylandView::XWaylandView(
           server,
           model,
           seat,
-          wlr_xwayland_surface->surface,
-          XWaylandView::handle_foreign_activate_request,
-          XWaylandView::handle_foreign_fullscreen_request,
-          XWaylandView::handle_foreign_close_request,
-          XWaylandView::handle_foreign_destroy,
-          XWaylandView::handle_surface_new_subsurface
+          wlr_xwayland_surface->surface
       ),
       mp_wlr_xwayland_surface(wlr_xwayland_surface),
       ml_commit({ .notify = XWaylandView::handle_commit }),
@@ -59,61 +54,102 @@ XWaylandView::XWaylandView(
 XWaylandView::~XWaylandView()
 {}
 
-void
-XWaylandView::focus(bool raise)
-{}
+Region
+XWaylandView::constraints()
+{
+    TRACE();
 
-void
-XWaylandView::moveresize(Region const& region, Extents const& extents, bool interactive)
+}
+
+pid_t
+XWaylandView::pid()
+{
+    TRACE();
+
+    struct wlr_xwayland_surface* wlr_xwayland_surface
+        = wlr_xwayland_surface_from_wlr_surface(mp_wlr_surface);
+    return wlr_xwayland_surface->pid;
+}
+
+bool
+XWaylandView::prefers_floating()
+{
+    TRACE();
+
+}
+
+View_ptr
+XWaylandView::is_transient_for()
 {
     TRACE();
 
 }
 
 void
-XWaylandView::kill()
-{
-    TRACE();
-
-}
-
-XWaylandUnmanaged::XWaylandUnmanaged(struct wlr_xwayland_surface* wlr_xwayland_surface)
-    : mp_wlr_xwayland_surface(wlr_xwayland_surface)
-{}
-
-XWaylandUnmanaged::~XWaylandUnmanaged()
-{}
-
-void
-XWaylandView::handle_foreign_activate_request(struct wl_listener* listener, void* data)
+XWaylandView::map()
 {
     TRACE();
 
 }
 
 void
-XWaylandView::handle_foreign_fullscreen_request(struct wl_listener* listener, void* data)
+XWaylandView::unmap()
 {
     TRACE();
 
 }
 
 void
-XWaylandView::handle_foreign_close_request(struct wl_listener* listener, void* data)
+XWaylandView::activate(Toggle)
 {
     TRACE();
 
 }
 
 void
-XWaylandView::handle_foreign_destroy(struct wl_listener* listener, void* data)
+XWaylandView::set_tiled(Toggle)
 {
     TRACE();
 
 }
 
 void
-XWaylandView::handle_surface_new_subsurface(struct wl_listener* listener, void* data)
+XWaylandView::set_fullscreen(Toggle)
+{
+    TRACE();
+
+}
+
+void
+XWaylandView::set_resizing(Toggle)
+{
+    TRACE();
+
+}
+
+void
+XWaylandView::configure(Region const& region, Extents const& extents, bool interactive)
+{
+    TRACE();
+
+}
+
+void
+XWaylandView::close()
+{
+    TRACE();
+
+}
+
+void
+XWaylandView::close_popups()
+{
+    TRACE();
+
+}
+
+void
+XWaylandView::destroy()
 {
     TRACE();
 
@@ -244,4 +280,11 @@ XWaylandView::handle_override_redirect(struct wl_listener* listener, void* data)
     TRACE();
 
 }
+
+XWaylandUnmanaged::XWaylandUnmanaged(struct wlr_xwayland_surface* wlr_xwayland_surface)
+    : mp_wlr_xwayland_surface(wlr_xwayland_surface)
+{}
+
+XWaylandUnmanaged::~XWaylandUnmanaged()
+{}
 #endif

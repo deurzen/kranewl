@@ -1,9 +1,13 @@
 #include <trace.hh>
 
+#include <kranewl/context.hh>
 #include <kranewl/layers.hh>
+#include <kranewl/model.hh>
 #include <kranewl/server.hh>
+#include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
+#include <kranewl/workspace.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
@@ -33,12 +37,7 @@ XDGView::XDGView(
           server,
           model,
           seat,
-          wlr_xdg_surface->surface,
-          XDGView::handle_foreign_activate_request,
-          XDGView::handle_foreign_fullscreen_request,
-          XDGView::handle_foreign_close_request,
-          XDGView::handle_foreign_destroy,
-          XDGView::handle_surface_new_subsurface
+          wlr_xdg_surface->toplevel->base->surface
       ),
       mp_wlr_xdg_surface(wlr_xdg_surface),
       mp_wlr_xdg_toplevel(wlr_xdg_surface->toplevel),
@@ -61,90 +60,111 @@ XDGView::XDGView(
 XDGView::~XDGView()
 {}
 
-void
-XDGView::focus(bool raise)
+Region
+XDGView::constraints()
 {
     TRACE();
 
-    struct wlr_surface* prev_focus
-        = mp_seat->mp_wlr_seat->keyboard_state.focused_surface;
+}
 
-    if (raise)
-        wlr_scene_node_raise_to_top(mp_scene);
+pid_t
+XDGView::pid()
+{
+    TRACE();
 
-    if (prev_focus == mp_wlr_surface)
-        return;
+    pid_t pid;
+    struct wl_client* client
+        = wl_resource_get_client(mp_wlr_surface->resource);
 
-    mp_model->focus_view(this);
+    wl_client_get_credentials(client, &pid, nullptr, nullptr);
+    return pid;
+}
 
-    for (std::size_t i = 0; i < 4; ++i)
-        wlr_scene_rect_set_color(
-            m_protrusions[i],
-            m_active_decoration.colorscheme.focused.values
-        );
+bool
+XDGView::prefers_floating()
+{
+    TRACE();
 
-    if (prev_focus && prev_focus != mp_wlr_surface) {
-        if (wlr_surface_is_layer_surface(prev_focus)) {
-            struct wlr_layer_surface_v1* wlr_layer_surface
-                = wlr_layer_surface_v1_from_wlr_surface(prev_focus);
+    struct wlr_xdg_toplevel_state *state = &mp_wlr_xdg_toplevel->current;
+	return mp_wlr_xdg_toplevel->parent || (state->min_width != 0 && state->min_height != 0
+		&& (state->min_width == state->max_width || state->min_height == state->max_height));
+}
 
-            if (wlr_layer_surface->mapped && (
-                wlr_layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_TOP ||
-                wlr_layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY))
-            {
-                return;
-            }
-        } else {
-            View_ptr prev_view;
-            struct wlr_scene_node* node
-                = reinterpret_cast<struct wlr_scene_node*>(prev_focus->data);
+View_ptr
+XDGView::is_transient_for()
+{
+    TRACE();
 
-            if (prev_focus->role_data && (prev_view = reinterpret_cast<View_ptr>(node->data)))
-                for (std::size_t i = 0; i < 4; ++i)
-                    wlr_scene_rect_set_color(
-                        prev_view->m_protrusions[i],
-                        m_active_decoration.colorscheme.unfocused.values
-                    );
-
-            struct wlr_xdg_surface* wlr_xdg_surface;
-            if (wlr_surface_is_xdg_surface(prev_focus)
-                    && (wlr_xdg_surface = wlr_xdg_surface_from_wlr_surface(prev_focus))
-                    && wlr_xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL)
-            {
-                wlr_xdg_toplevel_set_activated(wlr_xdg_surface, false);
-            }
-        }
-    }
-
-    wlr_idle_set_enabled(
-        mp_seat->mp_idle,
-        mp_seat->mp_wlr_seat,
-        wl_list_empty(&mp_seat->mp_idle_inhibit_manager->inhibitors)
-    );
-
-    struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(mp_seat->mp_wlr_seat);
-    if (keyboard)
-        wlr_seat_keyboard_notify_enter(
-            mp_seat->mp_wlr_seat,
-            mp_wlr_surface,
-            keyboard->keycodes,
-            keyboard->num_keycodes,
-            &keyboard->modifiers
-        );
-    else
-        wlr_seat_keyboard_notify_enter(
-            mp_seat->mp_wlr_seat,
-            mp_wlr_surface,
-            nullptr,
-            0,
-            nullptr
-        );
-
-    wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, true);
 }
 
 void
-XDGView::moveresize(Region const& region, Extents const& extents, bool interactive)
+XDGView::map()
+{
+    TRACE();
+
+}
+
+void
+XDGView::unmap()
+{
+    TRACE();
+
+}
+
+void
+XDGView::activate(Toggle toggle)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, true);
+        set_focused(true);
+        break;
+    }
+    case Toggle::Off:
+    {
+        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, false);
+        set_focused(false);
+        break;
+    }
+    case Toggle::Reverse:
+    {
+        activate(
+            focused()
+            ? Toggle::Off
+            : Toggle::On
+        );
+        return;
+    }
+    default: break;
+    }
+}
+
+void
+XDGView::set_tiled(Toggle)
+{
+    TRACE();
+
+}
+
+void
+XDGView::set_fullscreen(Toggle)
+{
+    TRACE();
+
+}
+
+void
+XDGView::set_resizing(Toggle)
+{
+    TRACE();
+
+}
+
+void
+XDGView::configure(Region const& region, Extents const& extents, bool interactive)
 {
     TRACE();
 
@@ -167,41 +187,21 @@ XDGView::moveresize(Region const& region, Extents const& extents, bool interacti
 }
 
 void
-XDGView::kill()
+XDGView::close()
 {
+    TRACE();
     wlr_xdg_toplevel_send_close(mp_wlr_xdg_surface);
 }
 
 void
-XDGView::handle_foreign_activate_request(struct wl_listener* listener, void* data)
+XDGView::close_popups()
 {
     TRACE();
 
 }
 
 void
-XDGView::handle_foreign_fullscreen_request(struct wl_listener* listener, void* data)
-{
-    TRACE();
-
-}
-
-void
-XDGView::handle_foreign_close_request(struct wl_listener* listener, void* data)
-{
-    TRACE();
-
-}
-
-void
-XDGView::handle_foreign_destroy(struct wl_listener* listener, void* data)
-{
-    TRACE();
-
-}
-
-void
-XDGView::handle_surface_new_subsurface(struct wl_listener* listener, void* data)
+XDGView::destroy()
 {
     TRACE();
 
@@ -271,36 +271,44 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     TRACE();
 
     XDGView_ptr view = wl_container_of(listener, view, ml_map);
+    Server_ptr server = view->mp_server;
+    Model_ptr model = view->mp_model;
+
+    view->m_pid = view->pid();
+    view->set_floating(view->prefers_floating());
+
     struct wlr_xdg_surface* wlr_xdg_surface = view->mp_wlr_xdg_surface;
     struct wlr_xdg_toplevel* wlr_xdg_toplevel = view->mp_wlr_xdg_toplevel;
 
-    view->m_mapped = true;
-    view->m_preferred_dim = Dim{
+    Dim preferred_dim = Dim{
         .w = wlr_xdg_toplevel->base->current.geometry.width,
         .h = wlr_xdg_toplevel->base->current.geometry.height,
     };
 
-    if (!view->m_preferred_dim.w && !view->m_preferred_dim.h) {
-        view->m_preferred_dim.w = wlr_xdg_toplevel->base->surface->current.width;
-        view->m_preferred_dim.h = wlr_xdg_toplevel->base->surface->current.height;
+    if (!preferred_dim.w && !preferred_dim.h) {
+        preferred_dim.w = wlr_xdg_toplevel->base->surface->current.width;
+        preferred_dim.h = wlr_xdg_toplevel->base->surface->current.height;
     }
 
-    view->mp_wlr_surface = wlr_xdg_toplevel->base->surface;
+    Extents const& extents = view->free_decoration().extents();
+    preferred_dim.w += extents.left + extents.right;
+    preferred_dim.h += extents.top + extents.bottom;
+    view->set_preferred_dim(preferred_dim);
 
-    Extents const& extents = view->m_free_decoration.extents();
-    struct wlr_box geometry;
-    wlr_xdg_surface_get_geometry(wlr_xdg_surface, &geometry);
-    view->m_preferred_dim.w = extents.left + extents.right + geometry.width;
-    view->m_preferred_dim.h = extents.top + extents.bottom + geometry.height;
+    struct wlr_xdg_toplevel_state* state = &wlr_xdg_toplevel->current;
+    view->set_minimum_dim(Dim{
+        .w = state->min_width,
+        .h = state->min_height
+    });
 
     view->set_free_region(Region{
-        .pos = {0, 0},
-        .dim = view->m_preferred_dim
+        .pos = Pos{0, 0},
+        .dim = preferred_dim
     });
 
     view->set_tile_region(Region{
-        .pos = {0, 0},
-        .dim = view->m_preferred_dim
+        .pos = Pos{0, 0},
+        .dim = preferred_dim
     });
 
     view->m_app_id = wlr_xdg_toplevel->app_id
@@ -311,28 +319,36 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         : "N/a";
     view->m_title_formatted = view->m_title; // TODO: format title
 
-    struct wlr_xdg_toplevel_state state = wlr_xdg_toplevel->current;
-    view->m_floating = wlr_xdg_toplevel->parent
-        || (state.min_width != 0 && state.min_height != 0
-                && (state.min_width == state.max_width || state.min_height == state.max_height));
-
-    view->m_minimum_dim = Dim{
-        .w = state.min_width,
-        .h = state.min_height
-    };
-
-    view->map(
-        wlr_xdg_toplevel->base->surface,
-        wlr_xdg_toplevel->requested.fullscreen,
-        wlr_xdg_toplevel->requested.fullscreen_output,
-        false // TODO: determine if client has decorations
-    );
-
     wlr_xdg_toplevel_set_tiled(
         wlr_xdg_surface,
-        // TODO: determine from view decorations
         view->free_decoration_to_wlr_edges()
     );
+
+    view->mp_scene = &wlr_scene_tree_create(server->m_layers[Layer::Tile])->node;
+    view->mp_wlr_surface->data = view->mp_scene_surface = wlr_scene_xdg_surface_create(
+        view->mp_scene,
+        view->mp_wlr_xdg_surface
+    );
+    view->mp_scene_surface->data = view;
+
+    wlr_scene_node_reparent(
+        view->mp_scene,
+        server->m_layers[view->floating() ? Layer::Free : Layer::Tile]
+    );
+
+    for (std::size_t i = 0; i < 4; ++i) {
+        view->m_protrusions[i] = wlr_scene_rect_create(
+            view->mp_scene,
+            0, 0,
+            view->active_decoration().colorscheme.unfocused.values
+        );
+        view->m_protrusions[i]->node.data = view;
+        wlr_scene_rect_set_color(
+            view->m_protrusions[i],
+            view->active_decoration().colorscheme.unfocused.values
+        );
+        wlr_scene_node_lower_to_bottom(&view->m_protrusions[i]->node);
+    }
 
     wl_signal_add(&wlr_xdg_toplevel->base->surface->events.commit, &view->ml_commit);
     wl_signal_add(&wlr_xdg_toplevel->base->events.new_popup, &view->ml_new_popup);
@@ -341,6 +357,26 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     wl_signal_add(&wlr_xdg_toplevel->events.request_resize, &view->ml_request_resize);
     wl_signal_add(&wlr_xdg_toplevel->events.set_title, &view->ml_set_title);
     wl_signal_add(&wlr_xdg_toplevel->events.set_app_id, &view->ml_set_app_id);
+
+    Workspace_ptr workspace;
+
+    if (wlr_xdg_toplevel->requested.fullscreen
+        && wlr_xdg_toplevel->requested.fullscreen_output->data)
+    {
+        Output_ptr output = reinterpret_cast<Output_ptr>(
+            wlr_xdg_toplevel->requested.fullscreen_output->data
+        );
+
+        Context_ptr context = output->context();
+        workspace = context->workspace();
+    } else
+        workspace = model->mp_workspace;
+
+    model->move_view_to_workspace(view, workspace);
+
+    view->set_mapped(true);
+    view->render_decoration();
+    model->register_view(view);
 }
 
 void
@@ -350,8 +386,6 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
 
     XDGView_ptr view = wl_container_of(listener, view, ml_unmap);
 
-    view->mp_model->unmap_view(view);
-
     wl_list_remove(&view->ml_commit.link);
     wl_list_remove(&view->ml_new_popup.link);
     wl_list_remove(&view->ml_request_fullscreen.link);
@@ -360,8 +394,11 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_set_title.link);
     wl_list_remove(&view->ml_set_app_id.link);
 
-    view->unmap();
     view->mp_model->unregister_view(view);
+
+    wlr_scene_node_destroy(view->mp_scene);
+	view->mp_wlr_surface = nullptr;
+    view->set_managed(false);
 }
 
 void
@@ -374,10 +411,9 @@ XDGView::handle_destroy(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_map.link);
     wl_list_remove(&view->ml_unmap.link);
     wl_list_remove(&view->ml_destroy.link);
+	wl_list_remove(&view->m_events.unmap.listener_list);
 
 	view->mp_wlr_xdg_toplevel = nullptr;
 	view->mp_wlr_xdg_surface = nullptr;
     view->mp_model->destroy_view(view);
-
-	wl_list_remove(&view->m_events.unmap.listener_list);
 }

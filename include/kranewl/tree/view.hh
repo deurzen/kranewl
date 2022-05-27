@@ -30,6 +30,16 @@ typedef struct View {
     static constexpr Dim MIN_VIEW_DIM = Dim{25, 10};
     static constexpr Dim PREFERRED_INIT_VIEW_DIM = Dim{480, 260};
 
+    enum class OutsideState {
+        Focused,
+        FocusedDisowned,
+        FocusedSticky,
+        Unfocused,
+        UnfocusedDisowned,
+        UnfocusedSticky,
+        Urgent
+    };
+
     enum class Type {
         XDGShell,
 #ifdef XWAYLAND
@@ -43,12 +53,7 @@ typedef struct View {
         Server_ptr,
         Model_ptr,
         Seat_ptr,
-        struct wlr_surface*,
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*)
+        struct wlr_surface*
     );
 #ifdef XWAYLAND
     View(
@@ -57,42 +62,87 @@ typedef struct View {
         Server_ptr,
         Model_ptr,
         Seat_ptr,
-        struct wlr_surface*,
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*),
-        void(*)(wl_listener*, void*)
+        struct wlr_surface*
     );
 #endif
 
     virtual ~View();
 
-    void map(struct wlr_surface*, bool, struct wlr_output*, bool);
-    void unmap();
+    virtual Region constraints() = 0;
+    virtual pid_t pid() = 0;
+    virtual bool prefers_floating() = 0;
+    virtual View_ptr is_transient_for() = 0;
 
-    void touch();
+    virtual void map() = 0;
+    virtual void unmap() = 0;
+    virtual void activate(Toggle) = 0;
+    virtual void set_tiled(Toggle) = 0;
+    virtual void set_fullscreen(Toggle) = 0;
+    virtual void set_resizing(Toggle) = 0;
 
-    virtual void focus(bool) = 0;
-    virtual void moveresize(Region const&, Extents const&, bool) = 0;
-    virtual void kill() = 0;
+    virtual void configure(Region const&, Extents const&, bool) = 0;
+    virtual void close() = 0;
+    virtual void close_popups() = 0;
+    virtual void destroy() = 0;
+
+    void render_decoration();
+
+    bool focused() const { return m_focused; }
+    bool mapped() const { return m_mapped; }
+    bool managed() const { return m_managed; }
+    bool urgent() const { return m_urgent; }
+    bool floating() const { return m_floating; }
+    bool fullscreen() const { return m_fullscreen; }
+    bool scratchpad() const { return m_scratchpad; }
+    bool contained() const { return m_contained; }
+    bool invincible() const { return m_invincible; }
+    bool sticky() const { return m_sticky; }
+    bool iconifyable() const { return m_iconifyable; }
+    bool iconified() const { return m_iconified; }
+    bool disowned() const { return m_disowned; }
+    void set_focused(bool);
+    void set_mapped(bool);
+    void set_managed(bool);
+    void set_urgent(bool);
+    void set_floating(bool);
+    void set_fullscreen(bool);
+    void set_scratchpad(bool);
+    void set_contained(bool);
+    void set_invincible(bool);
+    void set_sticky(bool);
+    void set_iconifyable(bool);
+    void set_iconified(bool);
+    void set_disowned(bool);
+
+    uint32_t free_decoration_to_wlr_edges() const;
+    uint32_t tile_decoration_to_wlr_edges() const;
+    Region const& free_region() const { return m_free_region; }
+    Region const& tile_region() const { return m_tile_region; }
+    Region const& active_region() const { return m_active_region; }
+    void set_free_region(Region const&);
+    void set_tile_region(Region const&);
+    Dim const& minimum_dim() const { return m_minimum_dim; }
+    Dim const& preferred_dim() const { return m_preferred_dim; }
+    void set_minimum_dim(Dim const& minimum_dim) { m_minimum_dim = minimum_dim; }
+    void set_preferred_dim(Dim const& preferred_dim) { m_preferred_dim = preferred_dim; }
+
+    Decoration const& free_decoration() const { return m_free_decoration; }
+    Decoration const& tile_decoration() const { return m_tile_decoration; }
+    Decoration const& active_decoration() const { return m_active_decoration; }
+    void set_free_decoration(Decoration const&);
+    void set_tile_decoration(Decoration const&);
+
+    void touch() { m_last_touched = std::chrono::steady_clock::now(); }
 
     static bool
     is_free(View_ptr view)
     {
         return (view->m_floating && (!view->m_fullscreen || view->m_contained))
-            || !view->m_managed
-            || view->m_disowned;
+            || view->m_disowned
+            || !view->m_managed;
     }
 
-    uint32_t free_decoration_to_wlr_edges() const;
-    uint32_t tile_decoration_to_wlr_edges() const;
-
-    void set_free_region(Region const&);
-    void set_tile_region(Region const&);
-
-    void set_free_decoration(Decoration const&);
-    void set_tile_decoration(Decoration const&);
+    OutsideState outside_state() const;
 
     Uid m_uid;
     Type m_type;
@@ -119,6 +169,17 @@ typedef struct View {
 
     pid_t m_pid;
 
+    std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
+    std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
+
+protected:
+
+    struct {
+        struct wl_signal unmap;
+    } m_events;
+
+private:
     Decoration m_tile_decoration;
     Decoration m_free_decoration;
     Decoration m_active_decoration;
@@ -145,25 +206,10 @@ typedef struct View {
     bool m_iconified;
     bool m_disowned;
 
-    std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
-    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
-    std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
+    OutsideState m_outside_state;
 
-protected:
     void set_inner_region(Region const&);
     void set_active_region(Region const&);
-
-    struct wlr_foreign_toplevel_handle_v1* foreign_toplevel;
-
-    struct wl_listener ml_foreign_activate_request;
-    struct wl_listener ml_foreign_fullscreen_request;
-    struct wl_listener ml_foreign_close_request;
-    struct wl_listener ml_foreign_destroy;
-    struct wl_listener ml_surface_new_subsurface;
-
-    struct {
-        struct wl_signal unmap;
-    } m_events;
 
 }* View_ptr;
 

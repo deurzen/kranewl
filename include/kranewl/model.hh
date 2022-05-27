@@ -146,6 +146,10 @@ public:
 
     void spawn_external(std::string&&) const;
 
+    Output_ptr mp_output;
+    Context_ptr mp_context;
+    Workspace_ptr mp_workspace;
+
 private:
     Server_ptr mp_server;
     Config const& m_config;
@@ -155,11 +159,6 @@ private:
     Cycle<Output_ptr> m_outputs;
     Cycle<Context_ptr> m_contexts;
     Cycle<Workspace_ptr> m_workspaces;
-
-    Output_ptr mp_output;
-    Output_ptr mp_fallback_output;
-    Context_ptr mp_context;
-    Workspace_ptr mp_workspace;
 
     Output_ptr mp_prev_output;
     Context_ptr mp_prev_context;

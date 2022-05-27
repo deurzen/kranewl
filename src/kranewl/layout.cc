@@ -522,7 +522,7 @@ LayoutHandler::arrange_float(
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
-                view->m_free_region
+                view->free_region()
             };
         }
     );
@@ -560,7 +560,7 @@ LayoutHandler::arrange_single_float(
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
-                view->m_focused ? std::optional(view->m_free_region) : std::nullopt
+                view->focused() ? std::optional(view->free_region()) : std::nullopt
             };
         }
     );
@@ -963,10 +963,10 @@ LayoutHandler::arrange_paper(
         begin,
         end,
         [&contains_active](const View_ptr lhs, const View_ptr rhs) {
-            if (lhs->m_focused) {
+            if (lhs->focused()) {
                 contains_active = true;
                 return false;
-            } else if (rhs->m_focused) {
+            } else if (rhs->focused()) {
                 contains_active = true;
                 return true;
             }
@@ -985,7 +985,7 @@ LayoutHandler::arrange_paper(
         [=,this,&after_active,&i](View_ptr view) -> Placement {
             int x = screen_region.pos.x + static_cast<int>(i++ * w);
 
-            if ((!contains_active && *last_active == view) || view->m_focused) {
+            if ((!contains_active && *last_active == view) || view->focused()) {
                 after_active = true;
 
                 return Placement {

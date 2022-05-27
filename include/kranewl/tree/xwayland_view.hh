@@ -21,15 +21,23 @@ typedef struct XWaylandView final : public View {
 
     ~XWaylandView();
 
-    void focus(bool) override;
-    void moveresize(Region const&, Extents const&, bool) override;
-    void kill() override;
+    Region constraints() override;
+    pid_t pid() override;
+    bool prefers_floating() override;
+    View_ptr is_transient_for() override;
 
-    static void handle_foreign_activate_request(struct wl_listener*, void*);
-    static void handle_foreign_fullscreen_request(struct wl_listener*, void*);
-    static void handle_foreign_close_request(struct wl_listener*, void*);
-    static void handle_foreign_destroy(struct wl_listener*, void*);
-    static void handle_surface_new_subsurface(struct wl_listener*, void*);
+    void map() override;
+    void unmap() override;
+    void activate(Toggle) override;
+    void set_tiled(Toggle) override;
+    void set_fullscreen(Toggle) override;
+    void set_resizing(Toggle) override;
+
+    void configure(Region const&, Extents const&, bool) override;
+    void close() override;
+    void close_popups() override;
+    void destroy() override;
+
     static void handle_commit(struct wl_listener*, void*);
     static void handle_request_move(struct wl_listener*, void*);
     static void handle_request_resize(struct wl_listener*, void*);

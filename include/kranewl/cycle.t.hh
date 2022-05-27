@@ -108,6 +108,8 @@ Cycle<T>::next_will_wrap(Direction direction) const
     case Direction::Backward: return m_index == 0;
     case Direction::Forward: return m_index == Util::last_index(m_elements);
     }
+
+    return false;
 }
 
 template <typename T>

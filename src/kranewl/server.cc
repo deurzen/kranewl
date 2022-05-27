@@ -385,9 +385,10 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
         if (!(view = view_from_popup(xdg_surface->popup)) || !view->mp_output)
             return;
 
+        Region const& active_region = view->active_region();
         mappable_box = view->mp_output->placeable_region();
-        mappable_box.x -= view->m_active_region.pos.x;
-        mappable_box.y -= view->m_active_region.pos.y;
+        mappable_box.x -= active_region.pos.x;
+        mappable_box.y -= active_region.pos.y;
 
         wlr_xdg_popup_unconstrain_from_box(xdg_surface->popup, &mappable_box);
 
