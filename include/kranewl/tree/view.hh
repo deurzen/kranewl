@@ -68,8 +68,11 @@ typedef struct View {
 
     virtual ~View();
 
-    static void map_view(View_ptr, struct wlr_surface*, bool, struct wlr_output*, bool);
-    static void unmap_view(View_ptr);
+    void map(struct wlr_surface*, bool, struct wlr_output*, bool);
+    void unmap();
+
+    virtual void focus(bool) = 0;
+    virtual void moveresize(Region const&, Extents const&, bool) = 0;
 
     static bool
     is_free(View_ptr view)

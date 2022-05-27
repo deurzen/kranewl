@@ -3,19 +3,19 @@
 #include <kranewl/input/keyboard.hh>
 #include <kranewl/input/mouse.hh>
 
+#include <cstdint>
 #include <functional>
 #include <optional>
-#include <cstdint>
 
 class Model;
-typedef class Client* Client_ptr;
+typedef struct View* View_ptr;
 
 typedef
     std::function<void(Model&)>
     KeyboardAction;
 
 typedef
-    std::function<bool(Model&, Client_ptr)>
+    std::function<bool(Model&, View_ptr)>
     MouseAction;
 
 typedef

@@ -62,12 +62,11 @@ Output::handle_frame(struct wl_listener* listener, void*)
 
     Output_ptr output = wl_container_of(listener, output, ml_frame);
 
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
     if (!wlr_scene_output_commit(output->mp_wlr_scene_output))
         return;
 
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
     wlr_scene_output_send_frame_done(output->mp_wlr_scene_output, &now);
 }
 

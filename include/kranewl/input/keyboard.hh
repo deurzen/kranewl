@@ -8,6 +8,11 @@ extern "C" {
 #include <cstdint>
 #include <unordered_set>
 
+struct KeyboardInput {
+	xkb_keysym_t keysym;
+	uint32_t modifiers;
+};
+
 typedef class Server* Server_ptr;
 typedef class Seat* Seat_ptr;
 
@@ -30,10 +35,12 @@ typedef struct Keyboard {
 
 }* Keyboard_ptr;
 
-struct KeyboardInput {
-	uint32_t mod;
-	xkb_keysym_t keysym;
-};
+inline bool
+operator==(KeyboardInput const& lhs, KeyboardInput const& rhs)
+{
+    return lhs.keysym == rhs.keysym
+        && lhs.modifiers == rhs.modifiers;
+}
 
 namespace std
 {
@@ -42,10 +49,10 @@ namespace std
         std::size_t
         operator()(KeyboardInput const& input) const
         {
-            std::size_t mod_hash = std::hash<uint32_t>()(input.mod);
             std::size_t key_hash = std::hash<xkb_keysym_t>()(input.keysym);
+            std::size_t modifiers_hash = std::hash<uint32_t>()(input.modifiers);
 
-            return mod_hash ^ key_hash;
+            return modifiers_hash ^ key_hash;
         }
     };
 }

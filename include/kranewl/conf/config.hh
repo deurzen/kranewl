@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kranewl/bindings.hh>
+#include <kranewl/input/bindings.hh>
 
 #include <string>
 #include <memory>

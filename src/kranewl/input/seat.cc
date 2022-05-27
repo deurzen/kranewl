@@ -8,19 +8,37 @@ extern "C" {
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_idle_inhibit_v1.h>
+#include <wlr/types/wlr_input_inhibitor.h>
 }
 
 Seat::Seat(
     Server_ptr server,
     Model_ptr model,
     struct wlr_seat* seat,
-    struct wlr_cursor* cursor
+    struct wlr_idle* idle,
+    struct wlr_cursor* cursor,
+    struct wlr_input_inhibit_manager* input_inhibit_manager,
+    struct wlr_idle_inhibit_manager_v1* idle_inhibit_manager,
+    struct wlr_pointer_constraints_v1* pointer_constraints,
+    struct wlr_relative_pointer_manager_v1* relative_pointer_manager,
+    struct wlr_virtual_pointer_manager_v1* virtual_pointer_manager,
+    struct wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager,
+    struct wlr_keyboard_shortcuts_inhibit_manager_v1* keyboard_shortcuts_inhibit_manager
 )
     : mp_server(server),
       mp_model(model),
-      mp_seat(seat),
+      mp_wlr_seat(seat),
+      mp_idle(idle),
       mp_cursor(cursor),
-      mp_cursor_manager(wlr_xcursor_manager_create(NULL, 24)),
+      mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
+      mp_input_inhibit_manager(input_inhibit_manager),
+      mp_idle_inhibit_manager(idle_inhibit_manager),
+      mp_pointer_constraints(pointer_constraints),
+      mp_relative_pointer_manager(relative_pointer_manager),
+      mp_virtual_pointer_manager(virtual_pointer_manager),
+      mp_virtual_keyboard_manager(virtual_keyboard_manager),
+      mp_keyboard_shortcuts_inhibit_manager(keyboard_shortcuts_inhibit_manager),
       ml_destroy({ .notify = Seat::handle_destroy }),
       ml_cursor_motion({ .notify = Seat::handle_cursor_motion }),
       ml_cursor_motion_absolute({ .notify = Seat::handle_cursor_motion_absolute }),
@@ -31,7 +49,10 @@ Seat::Seat(
       ml_start_drag({ .notify = Seat::handle_start_drag }),
       ml_request_set_cursor({ .notify = Seat::handle_request_set_cursor }),
       ml_request_set_selection({ .notify = Seat::handle_request_set_selection }),
-      ml_request_set_primary_selection({ .notify = Seat::handle_request_set_primary_selection })
+      ml_request_set_primary_selection({ .notify = Seat::handle_request_set_primary_selection }),
+      ml_inhibit_manager_new_inhibitor({ .notify = Seat::handle_inhibit_manager_new_inhibitor }),
+      ml_inhibit_manager_inhibit_activate({ .notify = Seat::handle_inhibit_manager_inhibit_activate }),
+      ml_inhibit_manager_inhibit_deactivate({ .notify = Seat::handle_inhibit_manager_inhibit_deactivate })
 {
     TRACE();
 
@@ -48,6 +69,9 @@ Seat::Seat(
     wl_signal_add(&seat->events.request_set_cursor, &ml_request_set_cursor);
     wl_signal_add(&seat->events.request_set_selection, &ml_request_set_selection);
     wl_signal_add(&seat->events.request_set_primary_selection, &ml_request_set_primary_selection);
+    wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_inhibit_manager_new_inhibitor);
+    wl_signal_add(&mp_input_inhibit_manager->events.activate, &ml_inhibit_manager_inhibit_activate);
+    wl_signal_add(&mp_input_inhibit_manager->events.deactivate, &ml_inhibit_manager_inhibit_deactivate);
 }
 
 Seat::~Seat()
@@ -79,7 +103,7 @@ process_cursor_motion(Seat_ptr seat, uint32_t time)
     }
 
     double sx, sy;
-    struct wlr_surface* surface = NULL;
+    struct wlr_surface* surface = nullptr;
     // TODO: get client under cursor
 
     if (true /* no client under cursor? */) {
@@ -91,10 +115,10 @@ process_cursor_motion(Seat_ptr seat, uint32_t time)
     }
 
     if (surface) {
-        wlr_seat_pointer_notify_enter(seat->mp_seat, surface, sx, sy);
-        wlr_seat_pointer_notify_motion(seat->mp_seat, time, sx, sy);
+        wlr_seat_pointer_notify_enter(seat->mp_wlr_seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(seat->mp_wlr_seat, time, sx, sy);
     } else
-        wlr_seat_pointer_clear_focus(seat->mp_seat);
+        wlr_seat_pointer_clear_focus(seat->mp_wlr_seat);
 }
 
 Keyboard_ptr
@@ -170,7 +194,7 @@ Seat::handle_cursor_frame(struct wl_listener* listener, void*)
     TRACE();
 
     Seat_ptr seat = wl_container_of(listener, seat, ml_cursor_frame);
-    wlr_seat_pointer_notify_frame(seat->mp_seat);
+    wlr_seat_pointer_notify_frame(seat->mp_wlr_seat);
 }
 
 void
@@ -203,6 +227,27 @@ Seat::handle_request_set_selection(struct wl_listener*, void*)
 
 void
 Seat::handle_request_set_primary_selection(struct wl_listener*, void*)
+{
+    TRACE();
+
+}
+
+void
+Seat::handle_inhibit_manager_new_inhibitor(struct wl_listener*, void*)
+{
+    TRACE();
+
+}
+
+void
+Seat::handle_inhibit_manager_inhibit_activate(struct wl_listener*, void*)
+{
+    TRACE();
+
+}
+
+void
+Seat::handle_inhibit_manager_inhibit_deactivate(struct wl_listener*, void*)
 {
     TRACE();
 

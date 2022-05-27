@@ -29,7 +29,20 @@ public:
         Middle = 274,
     };
 
-    Seat(Server_ptr, Model_ptr, struct wlr_seat*, struct wlr_cursor*);
+    Seat(
+        Server_ptr,
+        Model_ptr,
+        struct wlr_seat*,
+        struct wlr_idle*,
+        struct wlr_cursor*,
+        struct wlr_input_inhibit_manager*,
+        struct wlr_idle_inhibit_manager_v1*,
+        struct wlr_pointer_constraints_v1*,
+        struct wlr_relative_pointer_manager_v1*,
+        struct wlr_virtual_pointer_manager_v1*,
+        struct wlr_virtual_keyboard_manager_v1*,
+        struct wlr_keyboard_shortcuts_inhibit_manager_v1*
+    );
     ~Seat();
 
     Keyboard_ptr create_keyboard(struct wlr_input_device*);
@@ -47,14 +60,25 @@ public:
     static void handle_request_set_cursor(struct wl_listener*, void*);
     static void handle_request_set_selection(struct wl_listener*, void*);
     static void handle_request_set_primary_selection(struct wl_listener*, void*);
+    static void handle_inhibit_manager_new_inhibitor(struct wl_listener*, void*);
+    static void handle_inhibit_manager_inhibit_activate(struct wl_listener*, void*);
+    static void handle_inhibit_manager_inhibit_deactivate(struct wl_listener*, void*);
 
 public:
     Server_ptr mp_server;
     Model_ptr mp_model;
 
-    struct wlr_seat* mp_seat;
+    struct wlr_seat* mp_wlr_seat;
+    struct wlr_idle* mp_idle;
     struct wlr_cursor* mp_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
+    struct wlr_input_inhibit_manager* mp_input_inhibit_manager;
+    struct wlr_idle_inhibit_manager_v1* mp_idle_inhibit_manager;
+    struct wlr_pointer_constraints_v1* mp_pointer_constraints;
+    struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
+    struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
+    struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
+    struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
     CursorMode m_cursor_mode;
 
     std::vector<Keyboard_ptr> m_keyboards;
@@ -79,5 +103,8 @@ public:
     struct wl_listener ml_request_set_cursor;
     struct wl_listener ml_request_set_selection;
     struct wl_listener ml_request_set_primary_selection;
+    struct wl_listener ml_inhibit_manager_new_inhibitor;
+    struct wl_listener ml_inhibit_manager_inhibit_activate;
+    struct wl_listener ml_inhibit_manager_inhibit_deactivate;
 
 }* Seat_ptr;

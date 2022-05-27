@@ -8,6 +8,7 @@
 #include <kranewl/cycle.t.hh>
 #include <kranewl/exec.hh>
 #include <kranewl/input/mouse.hh>
+#include <kranewl/input/keybindings.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
@@ -54,7 +55,7 @@ Model::Model(
       m_sticky_views{},
       m_unmanaged_views{},
       mp_focus(nullptr),
-      m_key_bindings{},
+      m_key_bindings(Bindings::key_bindings),
       m_mouse_bindings{}
 {
     TRACE();
@@ -107,6 +108,21 @@ Model::register_server(Server_ptr server)
 {
     TRACE();
     mp_server = server;
+}
+
+void
+Model::exit()
+{
+    TRACE();
+
+    m_running = false;
+    mp_server->terminate();
+}
+
+KeyBindings const&
+Model::key_bindings() const
+{
+    return m_key_bindings;
 }
 
 Output_ptr
@@ -208,9 +224,35 @@ Model::reclaim_view(View_ptr)
 }
 
 void
-Model::focus_view(View_ptr)
+Model::focus_view(View_ptr view)
 {
     TRACE();
+
+    Output_ptr output = view->mp_context->output();
+
+    if (!output)
+        return;
+
+    if (!view->m_sticky) {
+        activate_workspace(view->mp_workspace);
+        mp_workspace->activate_view(view);
+    }
+
+    if (mp_focus && mp_focus != view)
+        unfocus_view(mp_focus);
+
+    view->m_urgent = false;
+    mp_focus = view;
+
+    if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
+        apply_layout(mp_workspace);
+}
+
+void
+Model::unfocus_view(View_ptr view)
+{
+    TRACE();
+
 }
 
 void
@@ -258,12 +300,24 @@ Model::place_view(Placement& placement)
     spdlog::info("Placing view {} at {}", view->m_uid, std::to_string(view->m_active_region));
 
     map_view(view);
-    mp_server->moveresize_view(
-        view,
+    view->moveresize(
         view->m_active_region,
         view->m_active_decoration.extents(),
         false
     );
+}
+
+void
+Model::sync_focus()
+{
+    View_ptr active = mp_workspace->active();
+
+    if (active && active != mp_focus)
+        active->focus(true);
+    else if (mp_workspace->empty()) {
+        mp_server->relinquish_focus();
+        mp_focus = nullptr;
+    }
 }
 
 void
@@ -307,6 +361,8 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
         unmap_view(view);
     else
         map_view(view);
+
+    sync_focus();
 }
 
 void
@@ -349,6 +405,8 @@ Model::move_view_to_context(View_ptr view, Context_ptr context_to)
         unmap_view(view);
     else
         map_view(view);
+
+    sync_focus();
 }
 
 void
@@ -397,6 +455,8 @@ Model::move_view_to_output(View_ptr view, Output_ptr output_to)
         map_view(view);
     } else
         unmap_view(view);
+
+    sync_focus();
 }
 
 void
@@ -404,6 +464,99 @@ Model::move_view_to_focused_output(View_ptr view)
 {
     TRACE();
     move_view_to_output(view, mp_output);
+}
+
+void
+Model::activate_workspace(Index)
+{
+    TRACE();
+
+}
+
+void
+Model::activate_workspace(Workspace_ptr)
+{
+    TRACE();
+
+}
+
+void
+Model::activate_context(Index)
+{
+    TRACE();
+
+}
+
+void
+Model::activate_context(Context_ptr)
+{
+    TRACE();
+
+}
+
+void
+Model::activate_output(Index)
+{
+    TRACE();
+
+}
+
+void
+Model::activate_output(Output_ptr)
+{
+    TRACE();
+
+}
+
+void
+Model::toggle_layout()
+{
+    TRACE();
+
+    mp_workspace->toggle_layout();
+    apply_layout(mp_workspace);
+}
+
+void
+Model::set_layout(LayoutHandler::LayoutKind layout)
+{
+    TRACE();
+
+    mp_workspace->set_layout(layout);
+    apply_layout(mp_workspace);
+}
+
+void
+Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
+{
+    Cycle<View_ptr> const& views = mp_workspace->views();
+    std::vector<Region> regions;
+
+    bool was_tiled = !mp_workspace->layout_is_free();
+
+    if (was_tiled) {
+        regions.reserve(views.size());
+
+        std::transform(
+            views.begin(),
+            views.end(),
+            std::back_inserter(regions),
+            [=,this](View_ptr view) -> Region {
+                if (is_free(view))
+                    return view->m_free_region;
+                else
+                    return view->m_tile_region;
+            }
+        );
+    }
+
+    mp_workspace->set_layout(layout);
+
+    if (was_tiled && mp_workspace->layout_is_free())
+        for (std::size_t i = 0; i < views.size(); ++i)
+            views[i]->set_free_region(regions[i]);
+
+    apply_layout(mp_workspace);
 }
 
 void
@@ -490,8 +643,32 @@ Model::unregister_view(View_ptr view)
     std::stringstream uid_stream;
     uid_stream << std::hex << view->m_uid;
 
+    if (view->mp_workspace)
+        view->mp_workspace->remove_view(view);
+
     m_view_map.erase(view->m_uid);
     delete view;
 
     spdlog::info("Unegistered view 0x{}", uid_stream.str());
+    sync_focus();
+}
+
+bool
+Model::is_free(View_ptr view) const
+{
+    return View::is_free(view)
+        || ((!view->m_fullscreen || view->m_contained)
+            && (view->m_sticky
+                    ? mp_workspace
+                    : view->mp_workspace
+               )->layout_is_free());
+}
+
+void
+Model::spawn_external(std::string&& command) const
+{
+    TRACE();
+
+    spdlog::info("Calling external command: {}", command);
+    exec_external(command);
 }

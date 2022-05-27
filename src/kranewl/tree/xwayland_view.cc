@@ -59,6 +59,17 @@ XWaylandView::XWaylandView(
 XWaylandView::~XWaylandView()
 {}
 
+void
+XWaylandView::focus(bool raise)
+{}
+
+void
+XWaylandView::moveresize(Region const& region, Extents const& extents, bool interactive)
+{
+    TRACE();
+
+}
+
 XWaylandUnmanaged::XWaylandUnmanaged(struct wlr_xwayland_surface* wlr_xwayland_surface)
     : mp_wlr_xwayland_surface(wlr_xwayland_surface)
 {}

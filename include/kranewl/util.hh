@@ -96,13 +96,6 @@ namespace Util
     }
 
     template <typename K, typename V>
-    V&
-    at(std::unordered_map<K, V>& c, K& key)
-    {
-        return c.at(key);
-    }
-
-    template <typename K, typename V>
     std::optional<const V>
     const_retrieve(std::unordered_map<K, V> const& c, K const& key)
     {
@@ -112,6 +105,13 @@ namespace Util
             return std::nullopt;
 
         return iter->second;
+    }
+
+    template <typename K, typename V>
+    V&
+    at(std::unordered_map<K, V>& c, K& key)
+    {
+        return c.at(key);
     }
 
     template <typename Container>

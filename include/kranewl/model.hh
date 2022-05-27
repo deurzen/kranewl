@@ -1,9 +1,10 @@
 #pragma once
 
-#include <kranewl/bindings.hh>
 #include <kranewl/common.hh>
 #include <kranewl/cycle.hh>
 #include <kranewl/geometry.hh>
+#include <kranewl/input/bindings.hh>
+#include <kranewl/layout.hh>
 #include <kranewl/placement.hh>
 #include <kranewl/tree/view.hh>
 
@@ -36,6 +37,8 @@ public:
     void register_server(Server_ptr);
     void exit();
 
+    KeyBindings const& key_bindings() const;
+
     Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
@@ -54,7 +57,10 @@ public:
     void disown_view(View_ptr);
     void reclaim_view(View_ptr);
     void focus_view(View_ptr);
+    void unfocus_view(View_ptr);
     void place_view(Placement&);
+
+    void sync_focus();
 
     void move_view_to_workspace(View_ptr, Index);
     void move_view_to_workspace(View_ptr, Workspace_ptr);
@@ -62,11 +68,23 @@ public:
     void move_view_to_context(View_ptr, Context_ptr);
     void move_view_to_output(View_ptr, Index);
     void move_view_to_output(View_ptr, Output_ptr);
-
     void move_view_to_focused_output(View_ptr);
+
+    void activate_workspace(Index);
+    void activate_workspace(Workspace_ptr);
+    void activate_context(Index);
+    void activate_context(Context_ptr);
+    void activate_output(Index);
+    void activate_output(Output_ptr);
+
+    void toggle_layout();
+    void set_layout(LayoutHandler::LayoutKind);
+    void set_layout_retain_region(LayoutHandler::LayoutKind);
 
     void apply_layout(Index);
     void apply_layout(Workspace_ptr);
+
+    bool is_free(View_ptr) const;
 
     void spawn_external(std::string&&) const;
 
@@ -98,7 +116,7 @@ private:
 
     View_ptr mp_focus;
 
-    KeyBindings m_key_bindings;
-    MouseBindings m_mouse_bindings;
+    const KeyBindings m_key_bindings;
+    const MouseBindings m_mouse_bindings;
 
 };

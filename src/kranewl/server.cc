@@ -114,7 +114,20 @@ Server::Server(Model_ptr model)
       m_seat([this]() {
           struct wlr_cursor* cursor = wlr_cursor_create();
           wlr_cursor_attach_output_layout(cursor, mp_output_layout);
-          return Seat{this, mp_model, wlr_seat_create(mp_display, "seat0"), cursor};
+          return Seat{
+              this,
+              mp_model,
+              wlr_seat_create(mp_display, "seat0"),
+              wlr_idle_create(mp_display),
+              cursor,
+              wlr_input_inhibit_manager_create(mp_display),
+              wlr_idle_inhibit_v1_create(mp_display),
+              wlr_pointer_constraints_v1_create(mp_display),
+              wlr_relative_pointer_manager_v1_create(mp_display),
+              wlr_virtual_pointer_manager_v1_create(mp_display),
+              wlr_virtual_keyboard_manager_v1_create(mp_display),
+              wlr_keyboard_shortcuts_inhibit_v1_create(mp_display)
+          };
       }()),
 #ifdef XWAYLAND
       mp_xwayland(wlr_xwayland_create(mp_display, mp_compositor, 1)),
@@ -122,17 +135,9 @@ Server::Server(Model_ptr model)
       mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
       mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
       mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
-      mp_idle(wlr_idle_create(mp_display)),
-      mp_idle_inhibit_manager(wlr_idle_inhibit_v1_create(mp_display)),
       mp_server_decoration_manager(wlr_server_decoration_manager_create(mp_display)),
       mp_xdg_decoration_manager(wlr_xdg_decoration_manager_v1_create(mp_display)),
       mp_output_manager(wlr_output_manager_v1_create(mp_display)),
-      mp_input_inhibit_manager(wlr_input_inhibit_manager_create(mp_display)),
-      mp_keyboard_shortcuts_inhibit_manager(wlr_keyboard_shortcuts_inhibit_v1_create(mp_display)),
-      mp_pointer_constraints(wlr_pointer_constraints_v1_create(mp_display)),
-      mp_relative_pointer_manager(wlr_relative_pointer_manager_v1_create(mp_display)),
-      mp_virtual_pointer_manager(wlr_virtual_pointer_manager_v1_create(mp_display)),
-      mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
       ml_new_output({ .notify = Server::handle_new_output }),
       ml_output_layout_change({ .notify = Server::handle_output_layout_change }),
       ml_output_manager_apply({ .notify = Server::handle_output_manager_apply }),
@@ -141,10 +146,6 @@ Server::Server(Model_ptr model)
       ml_new_layer_shell_surface({ .notify = Server::handle_new_layer_shell_surface }),
       ml_xdg_activation({ .notify = Server::handle_xdg_activation }),
       ml_new_input({ .notify = Server::handle_new_input }),
-      ml_inhibit_activate({ .notify = Server::handle_inhibit_activate }),
-      ml_inhibit_deactivate({ .notify = Server::handle_inhibit_deactivate }),
-      ml_idle_inhibitor_create({ .notify = Server::handle_idle_inhibitor_create }),
-      ml_idle_inhibitor_destroy({ .notify = Server::handle_idle_inhibitor_destroy }),
       ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
 #ifdef XWAYLAND
       ml_xwayland_ready({ .notify = Server::handle_xwayland_ready }),
@@ -177,13 +178,10 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
     wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
-    wl_signal_add(&mp_idle_inhibit_manager->events.new_inhibitor, &ml_idle_inhibitor_create);
     wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_xdg_new_toplevel_decoration);
     wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
-    wl_signal_add(&mp_input_inhibit_manager->events.activate, &ml_inhibit_activate);
-    wl_signal_add(&mp_input_inhibit_manager->events.deactivate, &ml_inhibit_deactivate);
 
     // TODO: mp_keyboard_shortcuts_inhibit_manager signals
     // TODO: mp_pointer_constraints signals
@@ -233,20 +231,45 @@ Server::run() noexcept
 }
 
 void
-Server::moveresize_view(View_ptr view, Region const& region, Extents const& extents, bool interactive)
+Server::terminate() noexcept
 {
     TRACE();
 
-    wlr_scene_node_set_position(view->mp_scene, region.pos.x, region.pos.y);
-    wlr_scene_node_set_position(view->mp_scene_surface, extents.left, extents.top);
-    wlr_scene_rect_set_size(view->m_protrusions[0], region.dim.w, extents.top);
-    wlr_scene_rect_set_size(view->m_protrusions[1], region.dim.w, extents.bottom);
-    wlr_scene_rect_set_size(view->m_protrusions[2], extents.left, region.dim.h - extents.top - extents.bottom);
-    wlr_scene_rect_set_size(view->m_protrusions[3], extents.right, region.dim.h - extents.top - extents.bottom);
-    wlr_scene_node_set_position(&view->m_protrusions[0]->node, 0, 0);
-    wlr_scene_node_set_position(&view->m_protrusions[1]->node, 0, region.dim.h - extents.bottom);
-    wlr_scene_node_set_position(&view->m_protrusions[2]->node, 0, extents.top);
-    wlr_scene_node_set_position(&view->m_protrusions[3]->node, region.dim.w - extents.right, extents.top);
+    wl_display_terminate(mp_display);
+}
+
+void
+Server::relinquish_focus()
+{
+    struct wlr_surface* focused_surface
+        = m_seat.mp_wlr_seat->keyboard_state.focused_surface;
+
+    if (focused_surface) {
+        if (wlr_surface_is_layer_surface(focused_surface)) {
+            struct wlr_layer_surface_v1* wlr_layer_surface
+                = wlr_layer_surface_v1_from_wlr_surface(focused_surface);
+
+            if (wlr_layer_surface->mapped && (
+                wlr_layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_TOP ||
+                wlr_layer_surface->current.layer == ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY))
+            {
+                return;
+            }
+        } else {
+            struct wlr_scene_node* node
+                = reinterpret_cast<struct wlr_scene_node*>(focused_surface->data);
+
+            struct wlr_xdg_surface* wlr_xdg_surface;
+            if (wlr_surface_is_xdg_surface(focused_surface)
+                    && (wlr_xdg_surface = wlr_xdg_surface_from_wlr_surface(focused_surface))
+                    && wlr_xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL)
+            {
+                wlr_xdg_toplevel_set_activated(wlr_xdg_surface, false);
+            }
+        }
+    }
+
+    wlr_seat_keyboard_notify_clear_focus(m_seat.mp_wlr_seat);
 }
 
 void
@@ -379,13 +402,13 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
         &server->m_seat
     );
 
-    view->mp_scene = wlr_scene_xdg_surface_create(
-        &server->mp_scene->node,
-        xdg_surface
-    );
+    /* view->mp_scene = wlr_scene_xdg_surface_create( */
+    /*     &server->mp_scene->node, */
+    /*     xdg_surface */
+    /* ); */
 
-    view->mp_scene->data = view;
-    xdg_surface->data = view->mp_scene;
+    /* view->mp_scene->data = view; */
+    /* xdg_surface->data = view->mp_scene; */
 }
 
 void
@@ -418,13 +441,13 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
 
         struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
         struct xkb_keymap* keymap
-            = xkb_keymap_new_from_names(context, NULL, XKB_KEYMAP_COMPILE_NO_FLAGS);
+            = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
         wlr_keyboard_set_keymap(device->keyboard, keymap);
         xkb_keymap_unref(keymap);
         xkb_context_unref(context);
         wlr_keyboard_set_repeat_info(device->keyboard, 200, 100);
-        wlr_seat_set_keyboard(server->m_seat.mp_seat, device);
+        wlr_seat_set_keyboard(server->m_seat.mp_wlr_seat, device);
 
         break;
     }
@@ -440,35 +463,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     if (!server->m_seat.m_keyboards.empty())
         caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
-    wlr_seat_set_capabilities(server->m_seat.mp_seat, caps);
-}
-
-void
-Server::handle_inhibit_activate(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_inhibit_deactivate(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_idle_inhibitor_create(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_idle_inhibitor_destroy(struct wl_listener*, void*)
-{
-    TRACE();
-
+    wlr_seat_set_capabilities(server->m_seat.mp_wlr_seat, caps);
 }
 
 void

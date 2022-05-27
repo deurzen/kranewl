@@ -45,9 +45,9 @@ View::View(
       mp_workspace(nullptr),
       mp_wlr_surface(wlr_surface),
       m_alpha(1.f),
-      m_tile_decoration(FREE_DECORATION),
-      m_free_decoration(FREE_DECORATION),
-      m_active_decoration(FREE_DECORATION),
+      m_tile_decoration{FREE_DECORATION},
+      m_free_decoration{FREE_DECORATION},
+      m_active_decoration{FREE_DECORATION},
       m_minimum_dim({}),
       m_preferred_dim({}),
       m_free_region({}),
@@ -99,6 +99,9 @@ View::View(
       mp_model(model),
       mp_seat(seat),
       mp_wlr_surface(wlr_surface),
+      m_tile_decoration({}, DEFAULT_COLOR_SCHEME),
+      m_free_decoration({}, DEFAULT_COLOR_SCHEME),
+      m_active_decoration({}, DEFAULT_COLOR_SCHEME),
       ml_foreign_activate_request({ .notify = handle_foreign_activate_request }),
       ml_foreign_fullscreen_request({ .notify = handle_foreign_fullscreen_request }),
       ml_foreign_close_request({ .notify = handle_foreign_close_request }),
@@ -120,7 +123,7 @@ set_view_pid(View_ptr view)
         struct wl_client* client
             = wl_resource_get_client(view->mp_wlr_surface->resource);
 
-        wl_client_get_credentials(client, &pid, NULL, NULL);
+        wl_client_get_credentials(client, &pid, nullptr, nullptr);
         view->m_pid = pid;
 
         break;
@@ -140,8 +143,7 @@ set_view_pid(View_ptr view)
 }
 
 void
-View::map_view(
-    View_ptr view,
+View::map(
     struct wlr_surface* wlr_surface,
     bool fullscreen,
     struct wlr_output* fullscreen_output,
@@ -150,50 +152,56 @@ View::map_view(
 {
     TRACE();
 
-    Server_ptr server = view->mp_server;
-    Model_ptr model = view->mp_model;
+    Server_ptr server = mp_server;
+    Model_ptr model = mp_model;
 
-    view->mp_wlr_surface = wlr_surface;
-    set_view_pid(view);
+    mp_wlr_surface = wlr_surface;
+    set_view_pid(this);
 
-    view->mp_scene = &wlr_scene_tree_create(view->mp_server->m_layers[Layer::Tile])->node;
-    view->mp_wlr_surface->data = view->mp_scene_surface = view->m_type == View::Type::XDGShell
+    mp_scene = &wlr_scene_tree_create(mp_server->m_layers[Layer::Tile])->node;
+    mp_wlr_surface->data = mp_scene_surface = m_type == View::Type::XDGShell
         ? wlr_scene_xdg_surface_create(
-            view->mp_scene,
-            reinterpret_cast<XDGView_ptr>(view)->mp_wlr_xdg_surface
+            mp_scene,
+            reinterpret_cast<XDGView_ptr>(this)->mp_wlr_xdg_surface
         )
-        : wlr_scene_subsurface_tree_create(view->mp_scene, view->mp_wlr_surface);
-    view->mp_scene_surface->data = view;
+        : wlr_scene_subsurface_tree_create(mp_scene, mp_wlr_surface);
+    mp_scene_surface->data = this;
 
     wlr_scene_node_reparent(
-        view->mp_scene,
-        server->m_layers[view->m_floating ? Layer::Free : Layer::Tile]
+        mp_scene,
+        server->m_layers[m_floating ? Layer::Free : Layer::Tile]
     );
 
-    // TODO: globalize
-    static const float border_rgba[4] = {0.5, 0.5, 0.5, 1.0};
-
     for (std::size_t i = 0; i < 4; ++i) {
-        view->m_protrusions[i] = wlr_scene_rect_create(view->mp_scene, 0, 0, border_rgba);
-        view->m_protrusions[i]->node.data = view;
-        wlr_scene_rect_set_color(view->m_protrusions[i], border_rgba);
-        wlr_scene_node_lower_to_bottom(&view->m_protrusions[i]->node);
+        m_protrusions[i] = wlr_scene_rect_create(
+            mp_scene,
+            0,
+            0,
+            m_active_decoration.colorscheme.unfocused.values
+        );
+        m_protrusions[i]->node.data = this;
+        wlr_scene_rect_set_color(
+            m_protrusions[i],
+            m_active_decoration.colorscheme.unfocused.values
+        );
+        wlr_scene_node_lower_to_bottom(&m_protrusions[i]->node);
     }
 
     if (fullscreen_output && fullscreen_output->data) {
         Output_ptr output = reinterpret_cast<Output_ptr>(fullscreen_output->data);
     }
 
-    model->move_view_to_focused_output(view);
+    model->move_view_to_focused_output(this);
+    focus(true);
 }
 
-
 void
-View::unmap_view(View_ptr view)
+View::unmap()
 {
     TRACE();
 
-    wlr_scene_node_destroy(view->mp_scene);
+    wlr_scene_node_destroy(mp_scene_surface);
+    wlr_scene_node_destroy(mp_scene);
 }
 
 static uint32_t

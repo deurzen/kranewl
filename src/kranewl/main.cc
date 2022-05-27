@@ -19,7 +19,7 @@ int
 main(int argc, char** argv)
 {
 #ifndef NDEBUG
-    /* wlr_log_init(WLR_DEBUG, NULL); */
+    /* wlr_log_init(WLR_DEBUG, nullptr); */
 #ifdef TRACING_ENABLED
     spdlog::set_level(spdlog::level::trace);
 #else
