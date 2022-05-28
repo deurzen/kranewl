@@ -224,7 +224,7 @@ Model::focus_view(View_ptr view)
 
     Output_ptr output = view->mp_context->output();
 
-    if (!output)
+    if (!output || mp_focus == view)
         return;
 
     if (!view->sticky()) {
@@ -232,9 +232,10 @@ Model::focus_view(View_ptr view)
         mp_workspace->activate_view(view);
     }
 
-    if (mp_focus && mp_focus != view)
-        unfocus_view(mp_focus);
+    if (mp_focus)
+        mp_focus->focus(Toggle::Off);
 
+    view->focus(Toggle::On);
     view->set_urgent(false);
     mp_focus = view;
 

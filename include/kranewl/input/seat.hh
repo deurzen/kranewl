@@ -12,23 +12,11 @@ extern "C" {
 
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
-typedef class Keyboard* Keyboard_ptr;
-typedef class Client* Client_ptr;
+typedef struct Keyboard* Keyboard_ptr;
+typedef struct Mouse* Mouse_ptr;
 
 typedef class Seat final {
 public:
-    enum class CursorMode {
-        Passthrough,
-        Move,
-        Resize,
-    };
-
-    enum class CursorButton {
-        Left   = 272,
-        Right  = 273,
-        Middle = 274,
-    };
-
     Seat(
         Server_ptr,
         Model_ptr,
@@ -50,14 +38,6 @@ public:
     void unregister_keyboard(Keyboard_ptr);
 
     static void handle_destroy(struct wl_listener*, void*);
-    static void handle_cursor_motion(struct wl_listener*, void*);
-    static void handle_cursor_motion_absolute(struct wl_listener*, void*);
-    static void handle_cursor_button(struct wl_listener*, void*);
-    static void handle_cursor_axis(struct wl_listener*, void*);
-    static void handle_cursor_frame(struct wl_listener*, void*);
-    static void handle_request_start_drag(struct wl_listener*, void*);
-    static void handle_start_drag(struct wl_listener*, void*);
-    static void handle_request_set_cursor(struct wl_listener*, void*);
     static void handle_request_set_selection(struct wl_listener*, void*);
     static void handle_request_set_primary_selection(struct wl_listener*, void*);
     static void handle_inhibit_manager_new_inhibitor(struct wl_listener*, void*);
@@ -70,37 +50,17 @@ public:
 
     struct wlr_seat* mp_wlr_seat;
     struct wlr_idle* mp_idle;
-    struct wlr_cursor* mp_cursor;
-    struct wlr_xcursor_manager* mp_cursor_manager;
     struct wlr_input_inhibit_manager* mp_input_inhibit_manager;
     struct wlr_idle_inhibit_manager_v1* mp_idle_inhibit_manager;
-    struct wlr_pointer_constraints_v1* mp_pointer_constraints;
-    struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
-    struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
     struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
     struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
-    CursorMode m_cursor_mode;
 
+    Mouse_ptr mp_mouse;
     std::vector<Keyboard_ptr> m_keyboards;
-
-    struct {
-        Client_ptr client;
-        double x, y;
-        Region region;
-        uint32_t resize_edges;
-    } m_grab_state;
 
     struct wl_client* mp_exclusive_client;
 
     struct wl_listener ml_destroy;
-    struct wl_listener ml_cursor_motion;
-    struct wl_listener ml_cursor_motion_absolute;
-    struct wl_listener ml_cursor_button;
-    struct wl_listener ml_cursor_axis;
-    struct wl_listener ml_cursor_frame;
-    struct wl_listener ml_request_start_drag;
-    struct wl_listener ml_start_drag;
-    struct wl_listener ml_request_set_cursor;
     struct wl_listener ml_request_set_selection;
     struct wl_listener ml_request_set_primary_selection;
     struct wl_listener ml_inhibit_manager_new_inhibitor;

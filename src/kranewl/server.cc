@@ -15,15 +15,14 @@
 
 #include <spdlog/spdlog.h>
 
-#include <wayland-server-core.h>
-#include <wayland-util.h>
-
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
 #define class class_
 #define namespace namespace_
 #define static
 extern "C" {
+#include <wayland-server-core.h>
+#include <wayland-util.h>
 #include <wlr/backend.h>
 #include <wlr/backend/multi.h>
 #include <wlr/render/allocator.h>
@@ -454,7 +453,10 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     }
     case WLR_INPUT_DEVICE_POINTER:
     {
-        wlr_cursor_attach_input_device(server->m_seat.mp_cursor, device);
+        wlr_cursor_attach_input_device(
+            server->m_seat.mp_mouse->mp_cursor,
+            device
+        );
         break;
     }
     default: break;
