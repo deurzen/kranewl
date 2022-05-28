@@ -1589,6 +1589,8 @@ Model::register_view(View_ptr view, Workspace_ptr workspace)
     );
 
     move_view_to_workspace(view, workspace);
+
+    sync_focus();
 }
 
 void
@@ -1596,8 +1598,10 @@ Model::unregister_view(View_ptr view)
 {
     TRACE();
 
-    if (view->mp_workspace)
+    if (view->mp_workspace) {
         view->mp_workspace->remove_view(view);
+        apply_layout(view->mp_workspace);
+    }
 
     std::stringstream uid_ss;
     uid_ss << std::hex << view->m_uid;
@@ -1607,6 +1611,14 @@ Model::unregister_view(View_ptr view)
         view->m_title,
         view->m_pid
     );
+
+    if (true /* TODO: focus_follows_mouse */) {
+        View_ptr view_under_cursor
+            = mp_server->m_seat.mp_mouse->view_under_cursor();
+
+        if (view_under_cursor)
+            focus_view(view_under_cursor);
+    }
 
     sync_focus();
 }

@@ -67,20 +67,6 @@ Mouse::~Mouse()
 
 }
 
-static inline void
-process_cursor_move(Mouse_ptr mouse, uint32_t time)
-{
-    TRACE();
-
-}
-
-static inline void
-process_cursor_resize(Mouse_ptr mouse, uint32_t time)
-{
-    TRACE();
-
-}
-
 static inline View_ptr
 view_at(
     Server_ptr server,
@@ -117,8 +103,39 @@ view_at(
     return nullptr;
 }
 
+View_ptr
+Mouse::view_under_cursor() const
+{
+    double sx, sy;
+    struct wlr_surface* surface = nullptr;
+
+    View_ptr view = view_at(
+        mp_server,
+        mp_cursor->x,
+        mp_cursor->y,
+        &surface,
+        &sx, &sy
+    );
+
+    return view;
+}
+
 static inline void
-cursor_set_focus(
+process_cursor_move(Mouse_ptr mouse, uint32_t time)
+{
+    TRACE();
+
+}
+
+static inline void
+process_cursor_resize(Mouse_ptr mouse, uint32_t time)
+{
+    TRACE();
+
+}
+
+static inline void
+cursor_motion_to_client(
     Mouse_ptr mouse,
     View_ptr view,
     struct wlr_surface* surface,
@@ -166,6 +183,7 @@ process_cursor_motion(Mouse_ptr mouse, uint32_t time)
 
     double sx, sy;
     struct wlr_surface* surface = nullptr;
+
     View_ptr view = view_at(
         mouse->mp_server,
         mouse->mp_cursor->x,
@@ -182,7 +200,7 @@ process_cursor_motion(Mouse_ptr mouse, uint32_t time)
         );
     }
 
-    cursor_set_focus(mouse, view, surface, sx, sy, time);
+    cursor_motion_to_client(mouse, view, surface, sx, sy, time);
 }
 
 void
@@ -216,6 +234,32 @@ Mouse::handle_cursor_button(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Mouse_ptr mouse = wl_container_of(listener, mouse, ml_cursor_button);
+    struct wlr_event_pointer_button* event
+        = reinterpret_cast<struct wlr_event_pointer_button*>(data);
+
+    wlr_seat_pointer_notify_button(
+        mouse->mp_seat->mp_wlr_seat,
+        event->time_msec,
+        event->button,
+        event->state
+    );
+
+    double sx, sy;
+    struct wlr_surface* surface = nullptr;
+
+    View_ptr view = view_at(
+        mouse->mp_server,
+        mouse->mp_cursor->x,
+        mouse->mp_cursor->y,
+        &surface,
+        &sx, &sy
+    );
+
+    if (event->state == WLR_BUTTON_RELEASED)
+        mouse->m_cursor_mode = CursorMode::Passthrough;
+    else if (false /* TODO: !focus_follows_mouse */)
+        mouse->mp_seat->mp_model->focus_view(view);
 }
 
 void

@@ -42,6 +42,8 @@ typedef struct Mouse {
     );
     ~Mouse();
 
+    View_ptr view_under_cursor() const;
+
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
     static void handle_cursor_button(struct wl_listener*, void*);
