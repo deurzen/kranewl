@@ -51,6 +51,7 @@ View::View(
       m_active_region({}),
       m_previous_region({}),
       m_inner_region({}),
+      m_activated(false),
       m_focused(false),
       m_mapped(false),
       m_managed(true),
@@ -125,6 +126,12 @@ View::View(
 
 View::~View()
 {}
+
+void
+View::set_activated(bool activated)
+{
+    m_activated = activated;
+}
 
 void
 View::set_focused(bool focused)

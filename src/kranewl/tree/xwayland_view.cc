@@ -100,6 +100,13 @@ XWaylandView::unmap()
 }
 
 void
+XWaylandView::focus(Toggle)
+{
+    TRACE();
+
+}
+
+void
 XWaylandView::activate(Toggle)
 {
     TRACE();

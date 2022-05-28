@@ -75,6 +75,7 @@ typedef struct View {
 
     virtual void map() = 0;
     virtual void unmap() = 0;
+    virtual void focus(Toggle) = 0;
     virtual void activate(Toggle) = 0;
     virtual void set_tiled(Toggle) = 0;
     virtual void set_fullscreen(Toggle) = 0;
@@ -87,6 +88,7 @@ typedef struct View {
 
     void render_decoration();
 
+    bool activated() const { return m_activated; }
     bool focused() const { return m_focused; }
     bool mapped() const { return m_mapped; }
     bool managed() const { return m_managed; }
@@ -100,6 +102,7 @@ typedef struct View {
     bool iconifyable() const { return m_iconifyable; }
     bool iconified() const { return m_iconified; }
     bool disowned() const { return m_disowned; }
+    void set_activated(bool);
     void set_focused(bool);
     void set_mapped(bool);
     void set_managed(bool);
@@ -192,6 +195,7 @@ private:
     Region m_previous_region;
     Region m_inner_region;
 
+    bool m_activated;
     bool m_focused;
     bool m_mapped;
     bool m_managed;

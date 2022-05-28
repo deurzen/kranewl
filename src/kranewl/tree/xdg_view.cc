@@ -112,6 +112,45 @@ XDGView::unmap()
 }
 
 void
+XDGView::focus(Toggle toggle)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        if (focused())
+            return;
+
+        set_focused(true);
+        activate(toggle);
+        render_decoration();
+        break;
+    }
+    case Toggle::Off:
+    {
+        if (!focused())
+            return;
+
+        set_focused(false);
+        activate(toggle);
+        render_decoration();
+        break;
+    }
+    case Toggle::Reverse:
+    {
+        focus(
+            focused()
+            ? Toggle::Off
+            : Toggle::On
+        );
+        return;
+    }
+    default: break;
+    }
+}
+
+void
 XDGView::activate(Toggle toggle)
 {
     TRACE();
@@ -119,20 +158,45 @@ XDGView::activate(Toggle toggle)
     switch (toggle) {
     case Toggle::On:
     {
+        if (activated())
+            return;
+
+        set_activated(true);
+
+        struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(mp_seat->mp_wlr_seat);
+        if (keyboard)
+            wlr_seat_keyboard_notify_enter(
+                mp_seat->mp_wlr_seat,
+                mp_wlr_surface,
+                keyboard->keycodes,
+                keyboard->num_keycodes,
+                &keyboard->modifiers
+            );
+        else
+            wlr_seat_keyboard_notify_enter(
+                mp_seat->mp_wlr_seat,
+                mp_wlr_surface,
+                nullptr,
+                0,
+                nullptr
+            );
+
         wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, true);
-        set_focused(true);
         break;
     }
     case Toggle::Off:
     {
+        if (!activated())
+            return;
+
+        set_activated(false);
         wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, false);
-        set_focused(false);
         break;
     }
     case Toggle::Reverse:
     {
         activate(
-            focused()
+            activated()
             ? Toggle::Off
             : Toggle::On
         );
@@ -372,11 +436,9 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     } else
         workspace = model->mp_workspace;
 
-    model->move_view_to_workspace(view, workspace);
-
     view->set_mapped(true);
     view->render_decoration();
-    model->register_view(view);
+    model->register_view(view, workspace);
 }
 
 void
@@ -394,11 +456,15 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_set_title.link);
     wl_list_remove(&view->ml_set_app_id.link);
 
+    view->activate(Toggle::Off);
     view->mp_model->unregister_view(view);
 
     wlr_scene_node_destroy(view->mp_scene);
 	view->mp_wlr_surface = nullptr;
     view->set_managed(false);
+
+    if (view->mp_model->mp_workspace)
+        view->mp_model->apply_layout(view->mp_workspace);
 }
 
 void

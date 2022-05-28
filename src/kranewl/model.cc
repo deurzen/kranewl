@@ -322,9 +322,16 @@ Model::sync_focus()
 
     View_ptr active = mp_workspace->active();
 
-    if (active && active != mp_focus)
-        active->activate(Toggle::On);
-    else if (mp_workspace->empty()) {
+    if (active == mp_focus)
+        return;
+
+    if (mp_focus)
+        mp_focus->focus(Toggle::Off);
+
+    if (active) {
+        active->focus(Toggle::On);
+        mp_focus = active;
+    } else if (mp_workspace->empty()) {
         mp_server->relinquish_focus();
         mp_focus = nullptr;
     }
@@ -1584,12 +1591,9 @@ Model::create_xwayland_view(
 #endif
 
 void
-Model::register_view(View_ptr view)
+Model::register_view(View_ptr view, Workspace_ptr workspace)
 {
     TRACE();
-
-    if (view->mp_workspace)
-        view->mp_workspace->add_view(view);
 
     std::stringstream uid_ss;
     uid_ss << std::hex << view->m_uid;
@@ -1600,7 +1604,7 @@ Model::register_view(View_ptr view)
         view->m_pid
     );
 
-    sync_focus();
+    move_view_to_workspace(view, workspace);
 }
 
 void

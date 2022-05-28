@@ -29,6 +29,7 @@ typedef struct XDGView final : public View {
 
     void map() override;
     void unmap() override;
+    void focus(Toggle) override;
     void activate(Toggle) override;
     void set_tiled(Toggle) override;
     void set_fullscreen(Toggle) override;

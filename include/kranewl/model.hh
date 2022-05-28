@@ -49,7 +49,7 @@ public:
 #ifdef XWAYLAND
     XWaylandView_ptr create_xwayland_view(struct wlr_xwayland_surface*, Seat_ptr);
 #endif
-    void register_view(View_ptr);
+    void register_view(View_ptr, Workspace_ptr);
     void unregister_view(View_ptr);
     void destroy_view(View_ptr);
 
