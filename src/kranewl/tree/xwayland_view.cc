@@ -86,20 +86,6 @@ XWaylandView::is_transient_for()
 }
 
 void
-XWaylandView::map()
-{
-    TRACE();
-
-}
-
-void
-XWaylandView::unmap()
-{
-    TRACE();
-
-}
-
-void
 XWaylandView::focus(Toggle)
 {
     TRACE();

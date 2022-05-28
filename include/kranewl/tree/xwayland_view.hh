@@ -26,8 +26,6 @@ typedef struct XWaylandView final : public View {
     bool prefers_floating() override;
     View_ptr is_transient_for() override;
 
-    void map() override;
-    void unmap() override;
     void focus(Toggle) override;
     void activate(Toggle) override;
     void set_tiled(Toggle) override;

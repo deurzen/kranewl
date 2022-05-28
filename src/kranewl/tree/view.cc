@@ -65,6 +65,7 @@ View::View(
       m_iconifyable(true),
       m_iconified(false),
       m_disowned(false),
+      m_layer(Layer::None),
       m_last_focused(std::chrono::steady_clock::now()),
       m_last_touched(std::chrono::steady_clock::now()),
       m_managed_since(std::chrono::steady_clock::now()),
@@ -116,6 +117,7 @@ View::View(
       m_iconifyable(true),
       m_iconified(false),
       m_disowned(false),
+      m_layer(Layer::None),
       m_last_focused(std::chrono::steady_clock::now()),
       m_last_touched(std::chrono::steady_clock::now()),
       m_managed_since(std::chrono::steady_clock::now())
@@ -259,6 +261,92 @@ View::set_disowned(bool disowned)
         default: return;
         }
     }
+}
+
+void
+View::map()
+{
+    if (!m_mapped) {
+        wlr_scene_node_set_enabled(mp_scene, true);
+        m_mapped = true;
+    }
+}
+
+void
+View::unmap()
+{
+    if (m_mapped) {
+        focus(Toggle::Off);
+        wlr_scene_node_set_enabled(mp_scene, false);
+        m_mapped = false;
+    }
+}
+
+void
+View::tile(Toggle toggle)
+{
+    TRACE();
+
+    switch (toggle) {
+    case Toggle::On:
+    {
+        if (!m_floating)
+            return;
+
+        set_floating(false);
+        if (!m_fullscreen)
+            relayer(Layer::Tile);
+
+        break;
+    }
+    case Toggle::Off:
+    {
+        if (m_floating)
+            return;
+
+        set_floating(true);
+        if (!m_fullscreen)
+            relayer(Layer::Free);
+
+        break;
+    }
+    case Toggle::Reverse:
+    {
+        tile(
+            floating()
+            ? Toggle::On
+            : Toggle::Off
+        );
+        return;
+    }
+    default: break;
+    }
+}
+
+void
+View::relayer(Layer::type layer)
+{
+    if (layer == m_layer)
+        return;
+
+    m_layer = layer;
+
+    wlr_scene_node_reparent(
+        mp_scene,
+        mp_server->m_layers[layer]
+    );
+}
+
+void
+View::raise() const
+{
+    wlr_scene_node_raise_to_top(mp_scene);
+}
+
+void
+View::lower() const
+{
+    wlr_scene_node_lower_to_bottom(mp_scene);
 }
 
 void

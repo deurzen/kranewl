@@ -194,20 +194,6 @@ Model::unregister_output(Output_ptr output)
 }
 
 void
-Model::map_view(View_ptr)
-{
-    TRACE();
-
-}
-
-void
-Model::unmap_view(View_ptr)
-{
-    TRACE();
-
-}
-
-void
 Model::iconify_view(View_ptr)
 {
     TRACE();
@@ -285,7 +271,7 @@ Model::place_view(Placement& placement)
         }
         }
 
-        unmap_view(view);
+        view->unmap();
         return;
     }
 
@@ -307,7 +293,7 @@ Model::place_view(Placement& placement)
 
     spdlog::info("Placing view {} at {}", view->m_uid, std::to_string(view->active_region()));
 
-    map_view(view);
+    view->map();
     view->configure(
         view->active_region(),
         view->active_decoration().extents(),
@@ -372,7 +358,6 @@ Model::reverse_views()
         return;
 
     mp_workspace->reverse();
-    /* mp_workspace->active()->focus(true); */
     sync_focus();
 
     apply_layout(mp_workspace);
@@ -387,7 +372,6 @@ Model::rotate_views(Direction direction)
         return;
 
     mp_workspace->rotate(direction);
-    /* mp_workspace->active()->focus(true); */
     sync_focus();
 
     apply_layout(mp_workspace);
@@ -504,9 +488,9 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
     apply_layout(workspace_to);
 
     if (output_to)
-        map_view(view);
+        view->map();
     else
-        unmap_view(view);
+        view->unmap();
 
     sync_focus();
 }
@@ -547,9 +531,9 @@ Model::move_view_to_context(View_ptr view, Context_ptr context_to)
     apply_layout(workspace_to);
 
     if (output_to)
-        map_view(view);
+        view->map();
     else
-        unmap_view(view);
+        view->unmap();
 
     sync_focus();
 }
@@ -598,9 +582,9 @@ Model::move_view_to_output(View_ptr view, Output_ptr output_to)
 
     if (output_to) {
         wlr_surface_send_enter(view->mp_wlr_surface, output_to->mp_wlr_output);
-        map_view(view);
+        view->map();
     } else
-        unmap_view(view);
+        view->unmap();
 
     sync_focus();
 }
@@ -837,8 +821,7 @@ Model::apply_layout(Workspace_ptr workspace)
 {
     TRACE();
 
-    Context_ptr context = workspace->context();
-    Output_ptr output = context->output();
+    Output_ptr output = workspace->context()->output();
 
     if (!output)
         return;
@@ -880,9 +863,9 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
     TRACE();
 
     switch (toggle) {
-    case Toggle::On:      view->set_floating(true);              break;
-    case Toggle::Off:     view->set_floating(false);             break;
-    case Toggle::Reverse: view->set_floating(!view->floating()); break;
+    case Toggle::On:      view->tile(Toggle::Off);     break;
+    case Toggle::Off:     view->tile(Toggle::On);      break;
+    case Toggle::Reverse: view->tile(Toggle::Reverse); break;
     default: return;
     }
 
@@ -1166,7 +1149,7 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
 
         // TODO: set iconify state
 
-        unmap_view(view);
+        view->unmap();
 
         apply_layout(workspace);
         sync_focus();

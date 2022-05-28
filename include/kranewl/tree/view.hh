@@ -3,6 +3,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
+#include <kranewl/layers.hh>
 #include <kranewl/model.hh>
 #include <kranewl/tree/surface.hh>
 
@@ -73,8 +74,6 @@ typedef struct View {
     virtual bool prefers_floating() = 0;
     virtual View_ptr is_transient_for() = 0;
 
-    virtual void map() = 0;
-    virtual void unmap() = 0;
     virtual void focus(Toggle) = 0;
     virtual void activate(Toggle) = 0;
     virtual void set_tiled(Toggle) = 0;
@@ -85,6 +84,13 @@ typedef struct View {
     virtual void close() = 0;
     virtual void close_popups() = 0;
     virtual void destroy() = 0;
+
+    void map();
+    void unmap();
+    void tile(Toggle);
+    void relayer(Layer::type);
+    void raise() const;
+    void lower() const;
 
     void render_decoration();
 
@@ -209,6 +215,8 @@ private:
     bool m_iconifyable;
     bool m_iconified;
     bool m_disowned;
+
+    Layer::type m_layer;
 
     OutsideState m_outside_state;
 

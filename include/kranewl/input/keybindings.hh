@@ -225,6 +225,77 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_Return, MODKEY },
     CALL_EXTERNAL(alacritty)
 },
+
+// workspace layout data modifiers
+{ { XKB_KEY_equal, MODKEY },
+    CALL(change_gap_size(2))
+},
+{ { XKB_KEY_minus, MODKEY },
+    CALL(change_gap_size(-2))
+},
+{ { XKB_KEY_equal, MODKEY | SHIFT },
+    CALL(reset_gap_size())
+},
+{ { XKB_KEY_i, MODKEY },
+    CALL(change_main_count(1))
+},
+{ { XKB_KEY_d, MODKEY },
+    CALL(change_main_count(-1))
+},
+{ { XKB_KEY_l, MODKEY },
+    CALL(change_main_factor(.05f))
+},
+{ { XKB_KEY_h, MODKEY },
+    CALL(change_main_factor(-.05f))
+},
+{ { XKB_KEY_Page_Up, MODKEY | SHIFT },
+    CALL(change_margin(5))
+},
+{ { XKB_KEY_Page_Down, MODKEY | SHIFT },
+    CALL(change_margin(-5))
+},
+{ { XKB_KEY_Left, MODKEY | SHIFT },
+    CALL(change_margin(Edge::Left, 5))
+},
+{ { XKB_KEY_Left, MODKEY | CTRL | SHIFT },
+    CALL(change_margin(Edge::Left, -5))
+},
+{ { XKB_KEY_Up, MODKEY | SHIFT },
+    CALL(change_margin(Edge::Top, 5))
+},
+{ { XKB_KEY_Up, MODKEY | CTRL | SHIFT },
+    CALL(change_margin(Edge::Top, -5))
+},
+{ { XKB_KEY_Right, MODKEY | SHIFT },
+    CALL(change_margin(Edge::Right, 5))
+},
+{ { XKB_KEY_Right, MODKEY | CTRL | SHIFT },
+    CALL(change_margin(Edge::Right, -5))
+},
+{ { XKB_KEY_Down, MODKEY | SHIFT },
+    CALL(change_margin(Edge::Bottom, 5))
+},
+{ { XKB_KEY_Down, MODKEY | CTRL | SHIFT },
+    CALL(change_margin(Edge::Bottom, -5))
+},
+{ { XKB_KEY_comma, MODKEY | CTRL | SHIFT },
+    CALL(cycle_layout_data(Direction::Backward))
+},
+{ { XKB_KEY_period, MODKEY | CTRL | SHIFT },
+    CALL(cycle_layout_data(Direction::Forward))
+},
+{ { XKB_KEY_slash, MODKEY | CTRL | SHIFT },
+    CALL(toggle_layout_data())
+},
+{ { XKB_KEY_Delete, MODKEY | CTRL | SHIFT },
+    CALL(copy_data_from_prev_layout())
+},
+{ { XKB_KEY_equal, MODKEY | CTRL | SHIFT },
+    CALL(reset_margin())
+},
+{ { XKB_KEY_equal, MODKEY | SECKEY | CTRL | SHIFT },
+    CALL(reset_layout_data())
+},
 };
 
 }

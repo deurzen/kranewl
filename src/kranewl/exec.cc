@@ -7,8 +7,9 @@ extern "C" {
 void
 exec_external(std::string& command) {
     if (!fork()) {
+        dup2(STDERR_FILENO, STDOUT_FILENO);
         setsid();
         execl("/bin/sh", "/bin/sh", "-c", ("exec " + command).c_str(), nullptr);
-        std::exit(EXIT_SUCCESS);
+        _exit(EXIT_FAILURE);
     }
 }

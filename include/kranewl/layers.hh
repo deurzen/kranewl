@@ -1,6 +1,8 @@
 #pragma once
 
 struct Layer {
+    typedef short type;
+    static constexpr short None = -1;
     static constexpr short Background = 0;
     static constexpr short Bottom     = 1;
     static constexpr short Tile       = 2;

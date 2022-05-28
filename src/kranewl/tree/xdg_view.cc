@@ -98,20 +98,6 @@ XDGView::is_transient_for()
 }
 
 void
-XDGView::map()
-{
-    TRACE();
-
-}
-
-void
-XDGView::unmap()
-{
-    TRACE();
-
-}
-
-void
 XDGView::focus(Toggle toggle)
 {
     TRACE();
@@ -395,10 +381,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     );
     view->mp_scene_surface->data = view;
 
-    wlr_scene_node_reparent(
-        view->mp_scene,
-        server->m_layers[view->floating() ? Layer::Free : Layer::Tile]
-    );
+    view->relayer(view->floating() ? Layer::Free : Layer::Tile);
 
     for (std::size_t i = 0; i < 4; ++i) {
         view->m_protrusions[i] = wlr_scene_rect_create(
