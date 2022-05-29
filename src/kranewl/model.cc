@@ -182,26 +182,7 @@ Model::create_output(
         std::forward<Region const&&>(output_region)
     );
 
-    std::optional<Context_ptr> context
-        = m_contexts.first_element_with_condition([](Context_ptr context) {
-            return !context->output();
-        });
-
-    if (context) {
-        output->set_context(*context);
-        (*context)->set_output(output);
-
-        spdlog::info("Assigned context {} to output {}",
-            (*context)->index(),
-            output->mp_wlr_output->name
-        );
-    } else
-        // TODO: dynamically generate new context
-        spdlog::error("Depleted allocatable contexts,"
-            " output {} will not house any workspaces",
-            output->mp_wlr_output->name
-        );
-
+    output_reserve_context(output);
     register_output(output);
 
     return output;
@@ -227,6 +208,32 @@ Model::unregister_output(Output_ptr output)
     delete output;
 
     mp_output = m_outputs.active_element().value_or(nullptr);
+}
+
+void
+Model::output_reserve_context(Output_ptr output)
+{
+    TRACE();
+
+    std::optional<Context_ptr> context
+        = m_contexts.first_element_with_condition([](Context_ptr context) {
+            return !context->output();
+        });
+
+    if (context) {
+        output->set_context(*context);
+        (*context)->set_output(output);
+
+        spdlog::info("Assigned context {} to output {}",
+            (*context)->index(),
+            output->mp_wlr_output->name
+        );
+    } else
+        // TODO: dynamically generate new context
+        spdlog::error("Depleted allocatable contexts,"
+            " output {} will not house any workspaces",
+            output->mp_wlr_output->name
+        );
 }
 
 void
@@ -713,27 +720,50 @@ Model::toggle_context()
 {
     TRACE();
 
+    if (mp_prev_context)
+        activate_context(mp_prev_context);
 }
 
 void
-Model::activate_next_context(Direction)
+Model::activate_next_context(Direction direction)
 {
     TRACE();
-
+    activate_context(m_contexts.next_index(direction));
 }
 
 void
-Model::activate_context(Index)
+Model::activate_context(Index index)
 {
     TRACE();
 
+    if (index < m_contexts.size())
+        activate_context(context(index));
 }
 
 void
-Model::activate_context(Context_ptr)
+Model::activate_context(Context_ptr next_context)
 {
     TRACE();
 
+    if (next_context == mp_context)
+        return;
+
+    abort_cursor_interactive();
+
+    Context_ptr prev_context = mp_output->context();
+    mp_prev_context = prev_context;
+
+    Output_ptr next_output = mp_output;
+    Output_ptr prev_output = next_context->output();
+
+    if (next_output != prev_output)
+        prev_output->set_context(prev_context);
+
+    next_output->set_context(next_context);
+    m_contexts.activate_element(next_context);
+    mp_context = next_context;
+
+    activate_workspace(next_context->workspace());
 }
 
 void

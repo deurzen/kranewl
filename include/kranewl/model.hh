@@ -48,6 +48,7 @@ public:
     Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
+    void output_reserve_context(Output_ptr);
 
     XDGView_ptr create_xdg_shell_view(struct wlr_xdg_surface*, Seat_ptr);
 #ifdef XWAYLAND
