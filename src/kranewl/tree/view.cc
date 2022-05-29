@@ -31,6 +31,11 @@ View::View(
     struct wlr_surface* wlr_surface
 )
     : m_uid(uid),
+      m_uid_formatted([uid]() {
+          std::stringstream uid_ss;
+          uid_ss << "0x" << std::hex << uid;
+          return uid_ss.str();
+      }()),
       m_type(Type::XDGShell),
       mp_server(server),
       mp_model(model),
@@ -483,6 +488,17 @@ View::set_tile_decoration(Decoration const& decoration)
 {
     m_tile_decoration = decoration;
     m_active_decoration = decoration;
+}
+
+void
+View::format_uid()
+{
+    std::stringstream uid_ss;
+    uid_ss << "0x" << std::hex << m_uid << std::dec;
+    uid_ss << " [" << m_title;
+    uid_ss << ", " << m_pid << "]";
+    uid_ss << " (" << (m_type == Type::XDGShell ? "W" : "X") << ")";
+    m_uid_formatted = uid_ss.str();
 }
 
 View::OutsideState

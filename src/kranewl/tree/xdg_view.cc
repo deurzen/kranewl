@@ -297,6 +297,7 @@ XDGView::handle_set_title(struct wl_listener* listener, void* data)
     XDGView_ptr view = wl_container_of(listener, view, ml_set_title);
     view->m_title = view->mp_wlr_xdg_toplevel->title;
     view->m_title_formatted = view->m_title;
+    view->format_uid();
 }
 
 void
@@ -306,6 +307,7 @@ XDGView::handle_set_app_id(struct wl_listener* listener, void* data)
 
     XDGView_ptr view = wl_container_of(listener, view, ml_set_app_id);
     view->m_app_id = view->mp_wlr_xdg_toplevel->app_id;
+    view->format_uid();
 }
 
 void

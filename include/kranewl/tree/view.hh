@@ -143,6 +143,7 @@ typedef struct View {
     void set_tile_decoration(Decoration const&);
 
     void touch() { m_last_touched = std::chrono::steady_clock::now(); }
+    void format_uid();
 
     static bool
     is_free(View_ptr view)
@@ -155,6 +156,8 @@ typedef struct View {
     OutsideState outside_state() const;
 
     Uid m_uid;
+    std::string m_uid_formatted;
+
     Type m_type;
 
     Server_ptr mp_server;

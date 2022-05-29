@@ -198,30 +198,8 @@ Model::unregister_output(Output_ptr output)
 
     m_outputs.remove_element(output);
     delete output;
-}
 
-void
-Model::iconify_view(View_ptr)
-{
-    TRACE();
-}
-
-void
-Model::deiconify_view(View_ptr)
-{
-    TRACE();
-}
-
-void
-Model::disown_view(View_ptr)
-{
-    TRACE();
-}
-
-void
-Model::reclaim_view(View_ptr)
-{
-    TRACE();
+    mp_output = m_outputs.active_element().value_or(nullptr);
 }
 
 void
@@ -1561,17 +1539,9 @@ Model::register_view(View_ptr view, Workspace_ptr workspace)
 {
     TRACE();
 
-    std::stringstream uid_ss;
-    uid_ss << std::hex << view->m_uid;
-    spdlog::info(
-        "Registered view 0x{} [{}, PID {}]",
-        uid_ss.str(),
-        view->m_title,
-        view->m_pid
-    );
-
+    view->format_uid();
     move_view_to_workspace(view, workspace);
-
+    spdlog::info("Registered view {}", view->m_uid_formatted);
     sync_focus();
 }
 
@@ -1585,15 +1555,7 @@ Model::unregister_view(View_ptr view)
         apply_layout(view->mp_workspace);
     }
 
-    std::stringstream uid_ss;
-    uid_ss << std::hex << view->m_uid;
-    spdlog::info(
-        "Unregistered view 0x{} [{}, PID {}]",
-        uid_ss.str(),
-        view->m_title,
-        view->m_pid
-    );
-
+    spdlog::info("Unregistered view {}", view->m_uid_formatted);
     mp_output->focus_at_cursor();
     sync_focus();
 }
@@ -1604,17 +1566,8 @@ Model::destroy_view(View_ptr view)
     TRACE();
 
     m_view_map.erase(view->m_uid);
-
-    std::stringstream uid_ss;
-    uid_ss << std::hex << view->m_uid;
-    spdlog::info(
-        "Destroyed view 0x{} [{}, PID {}]",
-        uid_ss.str(),
-        view->m_title,
-        view->m_pid
-    );
-
     delete view;
+    spdlog::info("Destroyed view {}", view->m_uid_formatted);
 }
 
 bool

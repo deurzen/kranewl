@@ -54,12 +54,6 @@ public:
     void unregister_view(View_ptr);
     void destroy_view(View_ptr);
 
-    void map_view(View_ptr);
-    void unmap_view(View_ptr);
-    void iconify_view(View_ptr);
-    void deiconify_view(View_ptr);
-    void disown_view(View_ptr);
-    void reclaim_view(View_ptr);
     void focus_view(View_ptr);
     void place_view(Placement&);
 

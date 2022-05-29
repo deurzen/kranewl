@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdlib>
-
 enum Layer : short {
     None       = -1,
     Background = 0,
