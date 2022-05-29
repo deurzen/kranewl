@@ -365,14 +365,40 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
     struct wlr_event_pointer_axis* event
         = reinterpret_cast<struct wlr_event_pointer_axis*>(data);
 
-    wlr_seat_pointer_notify_axis(
-        cursor->mp_seat->mp_wlr_seat,
-        event->time_msec,
-        event->orientation,
-        event->delta,
-        event->delta_discrete,
-        event->source
-    );
+    struct wlr_keyboard* keyboard
+        = wlr_seat_get_keyboard(cursor->mp_seat->mp_wlr_seat);
+
+    uint32_t button;
+    uint32_t modifiers = keyboard
+        ? wlr_keyboard_get_modifiers(keyboard)
+        : 0;
+
+    if (modifiers)
+        switch (event->orientation) {
+        case WLR_AXIS_ORIENTATION_VERTICAL:
+        {
+            button = event->delta < 0
+                ? CursorInput::Button::ScrollUp
+                : CursorInput::Button::ScrollDown;
+            break;
+        }
+        case WLR_AXIS_ORIENTATION_HORIZONTAL:
+            button = event->delta < 0
+                ? CursorInput::Button::ScrollLeft
+                : CursorInput::Button::ScrollRight;
+            break;
+        default: button = 0; break;
+        }
+
+    if (!process_cursorbinding(cursor, button, modifiers))
+        wlr_seat_pointer_notify_axis(
+            cursor->mp_seat->mp_wlr_seat,
+            event->time_msec,
+            event->orientation,
+            event->delta,
+            event->delta_discrete,
+            event->source
+        );
 }
 
 void
