@@ -13,7 +13,7 @@ extern "C" {
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
 typedef struct Keyboard* Keyboard_ptr;
-typedef struct Mouse* Mouse_ptr;
+typedef struct Cursor* Cursor_ptr;
 
 typedef class Seat final {
 public:
@@ -55,10 +55,8 @@ public:
     struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
     struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
 
-    Mouse_ptr mp_mouse;
+    Cursor_ptr mp_cursor;
     std::vector<Keyboard_ptr> m_keyboards;
-
-    struct wl_client* mp_exclusive_client;
 
     struct wl_listener ml_destroy;
     struct wl_listener ml_request_set_selection;

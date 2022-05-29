@@ -52,10 +52,6 @@ public:
     struct wlr_output* mp_wlr_output;
     struct wlr_scene_output* mp_wlr_scene_output;
 
-    struct wlr_output_damage* mp_damage;
-    struct wlr_output_mode* mp_current_mode;
-    enum wl_output_subpixel m_subpixel;
-
     struct wl_listener ml_frame;
     struct wl_listener ml_commit;
     struct wl_listener ml_present;

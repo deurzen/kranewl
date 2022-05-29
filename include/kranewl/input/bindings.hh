@@ -1,7 +1,7 @@
 #pragma once
 
 #include <kranewl/input/keyboard.hh>
-#include <kranewl/input/mouse.hh>
+#include <kranewl/input/cursor.hh>
 
 #include <cstdint>
 #include <functional>
@@ -16,12 +16,12 @@ typedef
 
 typedef
     std::function<bool(Model&, View_ptr)>
-    MouseAction;
+    CursorAction;
 
 typedef
     std::unordered_map<KeyboardInput, KeyboardAction>
     KeyBindings;
 
 typedef
-    std::unordered_map<MouseInput, MouseAction>
-    MouseBindings;
+    std::unordered_map<CursorInput, CursorAction>
+    CursorBindings;

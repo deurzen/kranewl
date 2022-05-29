@@ -1,6 +1,6 @@
 #include <trace.hh>
 
-#include <kranewl/layers.hh>
+#include <kranewl/layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/model.hh>
 #include <kranewl/tree/view.hh>
@@ -324,7 +324,7 @@ View::tile(Toggle toggle)
 }
 
 void
-View::relayer(Layer::type layer)
+View::relayer(Layer layer)
 {
     if (layer == m_layer)
         return;
@@ -458,6 +458,13 @@ View::set_free_region(Region const& region)
 }
 
 void
+View::set_free_pos(Pos const& pos)
+{
+    m_free_region.pos = pos;
+    set_active_pos(pos);
+}
+
+void
 View::set_tile_region(Region const& region)
 {
     m_tile_region = region;
@@ -493,6 +500,13 @@ View::set_active_region(Region const& region)
     m_previous_region = m_active_region;
     set_inner_region(region);
     m_active_region = region;
+}
+
+void
+View::set_active_pos(Pos const& pos)
+{
+    m_previous_region = m_active_region;
+    m_active_region.pos = pos;
 }
 
 void

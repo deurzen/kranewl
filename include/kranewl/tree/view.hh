@@ -3,7 +3,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
-#include <kranewl/layers.hh>
+#include <kranewl/layer.hh>
 #include <kranewl/model.hh>
 #include <kranewl/tree/surface.hh>
 
@@ -88,7 +88,7 @@ typedef struct View {
     void map();
     void unmap();
     void tile(Toggle);
-    void relayer(Layer::type);
+    void relayer(Layer);
     void raise() const;
     void lower() const;
 
@@ -129,6 +129,7 @@ typedef struct View {
     Region const& tile_region() const { return m_tile_region; }
     Region const& active_region() const { return m_active_region; }
     void set_free_region(Region const&);
+    void set_free_pos(Pos const&);
     void set_tile_region(Region const&);
     Dim const& minimum_dim() const { return m_minimum_dim; }
     Dim const& preferred_dim() const { return m_preferred_dim; }
@@ -216,12 +217,13 @@ private:
     bool m_iconified;
     bool m_disowned;
 
-    Layer::type m_layer;
+    Layer m_layer;
 
     OutsideState m_outside_state;
 
     void set_inner_region(Region const&);
     void set_active_region(Region const&);
+    void set_active_pos(Pos const&);
 
 }* View_ptr;
 

@@ -118,7 +118,7 @@ Output::set_context(Context_ptr context)
     TRACE();
 
     if (!context)
-        spdlog::error("output must contain a valid context");
+        spdlog::error("Output must contain a valid context");
 
     if (mp_context)
         mp_context->set_output(nullptr);

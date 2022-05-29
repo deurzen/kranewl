@@ -37,9 +37,10 @@ public:
     void register_server(Server_ptr);
     void exit();
 
-    const View_ptr focused_view() const;
+    View_ptr focused_view() const;
 
     KeyBindings const& key_bindings() const;
+    CursorBindings const& cursor_bindings() const;
 
     Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
     void register_output(Output_ptr);
@@ -60,7 +61,6 @@ public:
     void disown_view(View_ptr);
     void reclaim_view(View_ptr);
     void focus_view(View_ptr);
-    void unfocus_view(View_ptr);
     void place_view(Placement&);
 
     void sync_focus();
@@ -174,6 +174,6 @@ private:
     View_ptr mp_focus;
 
     const KeyBindings m_key_bindings;
-    const MouseBindings m_mouse_bindings;
+    const CursorBindings m_cursor_bindings;
 
 };

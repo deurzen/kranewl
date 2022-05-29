@@ -1,8 +1,8 @@
 #pragma once
 
 #include <kranewl/input/bindings.hh>
-#include <kranewl/model.hh>
 #include <kranewl/layout.hh>
+#include <kranewl/model.hh>
 
 extern "C" {
 #include <wlr/types/wlr_keyboard.h>

@@ -2,6 +2,7 @@
 
 #include <kranewl/geometry.hh>
 #include <kranewl/input/seat.hh>
+#include <kranewl/layer.hh>
 
 extern "C" {
 #include <wlr/backend.h>
@@ -9,6 +10,7 @@ extern "C" {
 #include <xkbcommon/xkbcommon.h>
 }
 
+#include <array>
 #include <cstdint>
 #include <string>
 
@@ -17,12 +19,6 @@ typedef class Server* Server_ptr;
 typedef struct View* View_ptr;
 
 typedef class Server final {
-    enum class CursorMode {
-        Passthrough,
-        Move,
-        Resize,
-    };
-
 public:
     Server(Model_ptr);
     ~Server();
@@ -47,7 +43,6 @@ private:
     static void handle_xdg_toplevel_destroy(struct wl_listener*, void*);
     static void handle_xdg_toplevel_request_move(struct wl_listener*, void*);
     static void handle_xdg_toplevel_request_resize(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_handle_moveresize(View_ptr, CursorMode, uint32_t);
 #ifdef XWAYLAND
     static void handle_xwayland_ready(struct wl_listener*, void*);
     static void handle_new_xwayland_surface(struct wl_listener*, void*);
@@ -66,16 +61,14 @@ public:
     struct wlr_renderer* mp_renderer;
     struct wlr_allocator* mp_allocator;
     struct wlr_compositor* mp_compositor;
-    struct wlr_data_device_manager* mp_data_device_manager;
-    struct wlr_output_layout* mp_output_layout;
-    struct wlr_scene* mp_scene;
-    struct wlr_scene_node* m_layers[7];
 #ifdef XWAYLAND
     struct wlr_xwayland* mp_xwayland;
 #endif
-
+    struct wlr_data_device_manager* mp_data_device_manager;
+    struct wlr_output_layout* mp_output_layout;
+    struct wlr_scene* mp_scene;
+    std::array<struct wlr_scene_node*, 7> m_layers;
     Seat m_seat;
-
 
 private:
     struct wlr_xdg_shell* mp_xdg_shell;

@@ -1,7 +1,7 @@
 #include <trace.hh>
 
 #include <kranewl/context.hh>
-#include <kranewl/layers.hh>
+#include <kranewl/layer.hh>
 #include <kranewl/model.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>

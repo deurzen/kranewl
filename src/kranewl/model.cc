@@ -7,8 +7,9 @@
 #include <kranewl/context.hh>
 #include <kranewl/cycle.t.hh>
 #include <kranewl/exec.hh>
-#include <kranewl/input/mouse.hh>
-#include <kranewl/input/keybindings.hh>
+#include <kranewl/input/cursor-bindings.hh>
+#include <kranewl/input/cursor.hh>
+#include <kranewl/input/key-bindings.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
@@ -56,7 +57,7 @@ Model::Model(
       m_unmanaged_views{},
       mp_focus(nullptr),
       m_key_bindings(Bindings::key_bindings),
-      m_mouse_bindings{}
+      m_cursor_bindings(Bindings::cursor_bindings)
 {
     TRACE();
 
@@ -119,7 +120,7 @@ Model::exit()
     mp_server->terminate();
 }
 
-const View_ptr
+View_ptr
 Model::focused_view() const
 {
     return mp_focus;
@@ -129,6 +130,12 @@ KeyBindings const&
 Model::key_bindings() const
 {
     return m_key_bindings;
+}
+
+CursorBindings const&
+Model::cursor_bindings() const
+{
+    return m_cursor_bindings;
 }
 
 Output_ptr
@@ -241,13 +248,6 @@ Model::focus_view(View_ptr view)
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);
-}
-
-void
-Model::unfocus_view(View_ptr view)
-{
-    TRACE();
-
 }
 
 void

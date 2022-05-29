@@ -13,7 +13,7 @@ extern "C" {
 
 struct Config final {
     KeyBindings key_bindings;
-    MouseBindings mouse_bindings;
+    CursorBindings cursor_bindings;
 };
 
 class ConfigParser final {

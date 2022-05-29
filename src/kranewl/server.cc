@@ -5,7 +5,6 @@
 #include <kranewl/exec.hh>
 #include <kranewl/input/keyboard.hh>
 #include <kranewl/model.hh>
-#include <kranewl/tree/client.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
@@ -61,7 +60,9 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #ifdef XWAYLAND
+#define Cursor Cursor_
 #include <X11/Xlib.h>
+#undef Cursor
 #include <wlr/xwayland.h>
 #endif
 }
@@ -454,7 +455,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     case WLR_INPUT_DEVICE_POINTER:
     {
         wlr_cursor_attach_input_device(
-            server->m_seat.mp_mouse->mp_cursor,
+            server->m_seat.mp_cursor->mp_wlr_cursor,
             device
         );
         break;
@@ -513,13 +514,6 @@ Server::handle_xdg_toplevel_request_move(struct wl_listener*, void*)
 
 void
 Server::handle_xdg_toplevel_request_resize(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xdg_toplevel_handle_moveresize(View_ptr, CursorMode, uint32_t)
 {
     TRACE();
 

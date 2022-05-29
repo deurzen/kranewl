@@ -1536,7 +1536,7 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
     }
     default:
     {
-        spdlog::critical("no associated configuration defined");
+        spdlog::critical("No associated configuration defined");
         std::exit(EXIT_FAILURE);
     }
     }
@@ -1583,7 +1583,7 @@ LayoutHandler::Layout::kind_to_default_data(LayoutKind kind)
     }
     default:
     {
-        spdlog::critical("no associated default data defined");
+        spdlog::critical("No associated default data defined");
         std::exit(EXIT_FAILURE);
     }
     }

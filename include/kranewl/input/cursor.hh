@@ -3,6 +3,7 @@
 #include <kranewl/geometry.hh>
 
 extern "C" {
+#include <linux/input-event-codes.h>
 #include <wlr/backend.h>
 #include <xkbcommon/xkbcommon.h>
 }
@@ -10,8 +11,28 @@ extern "C" {
 #include <cstdint>
 #include <unordered_set>
 
-struct MouseInput {
-	unsigned button;
+struct CursorInput {
+    enum class Target
+    {
+        Global,
+        Root,
+        View
+    };
+
+    enum Button : uint32_t {
+        Left        = BTN_LEFT,
+        Right       = BTN_RIGHT,
+        Middle      = BTN_MIDDLE,
+        Forward     = BTN_SIDE,
+        Backward    = BTN_EXTRA,
+        ScrollUp    = KEY_MAX + 1,
+        ScrollDown  = KEY_MAX + 2,
+        ScrollLeft  = KEY_MAX + 3,
+        ScrollRight = KEY_MAX + 4,
+    };
+
+    Target target;
+	Button button;
 	uint32_t modifiers;
 };
 
@@ -19,20 +40,14 @@ typedef class Server* Server_ptr;
 typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
 
-typedef struct Mouse {
+typedef struct Cursor {
     enum class CursorMode {
         Passthrough,
         Move,
         Resize,
     };
 
-    enum class CursorButton {
-        Left   = 272,
-        Right  = 273,
-        Middle = 274,
-    };
-
-    Mouse(
+    Cursor(
         Server_ptr,
         Seat_ptr,
         struct wlr_cursor*,
@@ -40,7 +55,7 @@ typedef struct Mouse {
         struct wlr_relative_pointer_manager_v1*,
         struct wlr_virtual_pointer_manager_v1*
     );
-    ~Mouse();
+    ~Cursor();
 
     View_ptr view_under_cursor() const;
 
@@ -57,14 +72,14 @@ typedef struct Mouse {
 	Seat_ptr mp_seat;
 
     CursorMode m_cursor_mode;
-    struct wlr_cursor* mp_cursor;
+    struct wlr_cursor* mp_wlr_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
     struct wlr_pointer_constraints_v1* mp_pointer_constraints;
     struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
     struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
 
     struct {
-        View_ptr client;
+        View_ptr view;
         double x, y;
         Region region;
         uint32_t resize_edges;
@@ -79,26 +94,28 @@ typedef struct Mouse {
     struct wl_listener ml_start_drag;
     struct wl_listener ml_request_set_cursor;
 
-}* Mouse_ptr;
+}* Cursor_ptr;
 
 inline bool
-operator==(MouseInput const& lhs, MouseInput const& rhs)
+operator==(CursorInput const& lhs, CursorInput const& rhs)
 {
-    return lhs.button == rhs.button
+    return lhs.target == rhs.target
+        && lhs.button == rhs.button
         && lhs.modifiers == rhs.modifiers;
 }
 
 namespace std
 {
     template <>
-    struct hash<MouseInput> {
+    struct hash<CursorInput> {
         std::size_t
-        operator()(MouseInput const& input) const
+        operator()(CursorInput const& input) const
         {
+            std::size_t target_hash = std::hash<CursorInput::Target>()(input.target);
             std::size_t modifiers_hash = std::hash<uint32_t>()(input.modifiers);
-            std::size_t button_hash = std::hash<unsigned>()(input.button);
+            std::size_t button_hash = std::hash<uint32_t>()(input.button);
 
-            return modifiers_hash ^ button_hash;
+            return target_hash ^ modifiers_hash ^ button_hash;
         }
     };
 }

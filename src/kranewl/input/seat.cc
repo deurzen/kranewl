@@ -1,7 +1,7 @@
 #include <trace.hh>
 
 #include <kranewl/input/keyboard.hh>
-#include <kranewl/input/mouse.hh>
+#include <kranewl/input/cursor.hh>
 #include <kranewl/input/seat.hh>
 #include <kranewl/util.hh>
 
@@ -35,7 +35,7 @@ Seat::Seat(
       mp_idle_inhibit_manager(idle_inhibit_manager),
       mp_virtual_keyboard_manager(virtual_keyboard_manager),
       mp_keyboard_shortcuts_inhibit_manager(keyboard_shortcuts_inhibit_manager),
-      mp_mouse(new Mouse(
+      mp_cursor(new Cursor(
           server,
           this,
           cursor,
@@ -65,7 +65,7 @@ Seat::~Seat()
 {
     TRACE();
 
-    delete mp_mouse;
+    delete mp_cursor;
     for (Keyboard_ptr keyboard : m_keyboards)
         delete keyboard;
 
