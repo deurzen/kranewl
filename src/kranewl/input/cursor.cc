@@ -120,6 +120,40 @@ Cursor::view_under_cursor() const
     return view;
 }
 
+void
+Cursor::initiate_cursor_interactive(Mode mode, View_ptr view)
+{
+    TRACE();
+
+    double sx, sy;
+    struct wlr_surface* surface = nullptr;
+
+    view_at(
+        mp_server,
+        mp_wlr_cursor->x,
+        mp_wlr_cursor->y,
+        &surface,
+        &sx, &sy
+    );
+
+    m_cursor_mode = mode;
+    Extents const& extents = view->active_decoration().extents();
+
+    m_grab_state = {
+        .view = view,
+        .x = sx + extents.left,
+        .y = sy + extents.top,
+        .resize_edges = WLR_EDGE_NONE
+    };
+}
+
+void
+Cursor::abort_cursor_interactive()
+{
+    m_cursor_mode = Mode::Passthrough;
+    m_grab_state.view = nullptr;
+}
+
 static inline void
 process_cursor_move(Cursor_ptr cursor, uint32_t time)
 {
@@ -154,7 +188,9 @@ cursor_motion_to_client(
     uint32_t time
 )
 {
-    if (true /* TODO: focus_follows_cursor */ && time && view && view->managed())
+    static View_ptr previous_view = nullptr;
+
+    if (true /* TODO: focus_follows_cursor */ && time && view && view != previous_view && view->managed())
         cursor->mp_seat->mp_model->focus_view(view);
 
     if (!surface) {
@@ -170,13 +206,13 @@ cursor_motion_to_client(
 
     wlr_seat_pointer_notify_enter(cursor->mp_seat->mp_wlr_seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(cursor->mp_seat->mp_wlr_seat, time, sx, sy);
+
+    previous_view = view;
 }
 
 static inline void
 process_cursor_motion(Cursor_ptr cursor, uint32_t time)
 {
-    TRACE();
-
     struct wlr_drag_icon* icon;
     if (cursor->mp_seat->mp_wlr_seat->drag && (icon = cursor->mp_seat->mp_wlr_seat->drag->icon))
         wlr_scene_node_set_position(
@@ -186,9 +222,9 @@ process_cursor_motion(Cursor_ptr cursor, uint32_t time)
         );
 
     switch (cursor->m_cursor_mode) {
-    case Cursor::CursorMode::Move:   process_cursor_move(cursor, time);   return;
-    case Cursor::CursorMode::Resize: process_cursor_resize(cursor, time); return;
-    case Cursor::CursorMode::Passthrough: // fallthrough
+    case Cursor::Mode::Move:   process_cursor_move(cursor, time);   return;
+    case Cursor::Mode::Resize: process_cursor_resize(cursor, time); return;
+    case Cursor::Mode::Passthrough: // fallthrough
     default: break;
     }
 
@@ -217,8 +253,6 @@ process_cursor_motion(Cursor_ptr cursor, uint32_t time)
 void
 Cursor::handle_cursor_motion(struct wl_listener* listener, void* data)
 {
-    TRACE();
-
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_motion);
     struct wlr_event_pointer_motion* event
         = reinterpret_cast<struct wlr_event_pointer_motion*>(data);
@@ -230,8 +264,6 @@ Cursor::handle_cursor_motion(struct wl_listener* listener, void* data)
 void
 Cursor::handle_cursor_motion_absolute(struct wl_listener* listener, void* data)
 {
-    TRACE();
-
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_motion_absolute);
     struct wlr_event_pointer_motion_absolute* event
         = reinterpret_cast<struct wlr_event_pointer_motion_absolute*>(data);
@@ -333,8 +365,8 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
     }
     case WLR_BUTTON_RELEASED:
     {
-        if (cursor->m_cursor_mode != CursorMode::Passthrough) {
-            cursor->m_cursor_mode = CursorMode::Passthrough;
+        if (cursor->m_cursor_mode != Mode::Passthrough) {
+            cursor->m_cursor_mode = Mode::Passthrough;
 
             wlr_xcursor_manager_set_cursor_image(
                 cursor->mp_cursor_manager,
@@ -368,7 +400,7 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
     struct wlr_keyboard* keyboard
         = wlr_seat_get_keyboard(cursor->mp_seat->mp_wlr_seat);
 
-    uint32_t button;
+    uint32_t button = 0;
     uint32_t modifiers = keyboard
         ? wlr_keyboard_get_modifiers(keyboard)
         : 0;
@@ -387,7 +419,7 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
                 ? CursorInput::Button::ScrollLeft
                 : CursorInput::Button::ScrollRight;
             break;
-        default: button = 0; break;
+        default: break;
         }
 
     if (!process_cursorbinding(cursor, button, modifiers))
@@ -404,8 +436,6 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
 void
 Cursor::handle_cursor_frame(struct wl_listener* listener, void*)
 {
-    TRACE();
-
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_frame);
     wlr_seat_pointer_notify_frame(cursor->mp_seat->mp_wlr_seat);
 }

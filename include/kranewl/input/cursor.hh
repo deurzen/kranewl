@@ -41,7 +41,7 @@ typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
 
 typedef struct Cursor {
-    enum class CursorMode {
+    enum class Mode {
         Passthrough,
         Move,
         Resize,
@@ -59,6 +59,9 @@ typedef struct Cursor {
 
     View_ptr view_under_cursor() const;
 
+    void initiate_cursor_interactive(Mode, View_ptr);
+    void abort_cursor_interactive();
+
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
     static void handle_cursor_button(struct wl_listener*, void*);
@@ -71,13 +74,13 @@ typedef struct Cursor {
     Server_ptr mp_server;
 	Seat_ptr mp_seat;
 
-    CursorMode m_cursor_mode;
     struct wlr_cursor* mp_wlr_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
     struct wlr_pointer_constraints_v1* mp_pointer_constraints;
     struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
     struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
 
+    Mode m_cursor_mode;
     struct {
         View_ptr view;
         double x, y;

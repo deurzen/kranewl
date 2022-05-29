@@ -76,14 +76,14 @@ static const CursorBindings cursor_bindings = {
 },
 { { VIEW, LEFT, MODKEY },
     CALL_FOCUS({
-        /* if (view) */
-        /*     model.start_moving(view); */
+        if (view)
+            model.cursor_interactive(Cursor::Mode::Move, view);
     })
 },
 { { VIEW, RIGHT, MODKEY },
     CALL_FOCUS({
-        /* if (view) */
-        /*     model.start_resizing(view); */
+        if (view)
+            model.cursor_interactive(Cursor::Mode::Resize, view);
     })
 },
 { { GLOBAL, SCROLLDOWN, MODKEY },

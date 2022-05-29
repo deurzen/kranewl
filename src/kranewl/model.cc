@@ -270,7 +270,11 @@ Model::place_view(Placement& placement)
     }
     }
 
-    spdlog::info("Placing view {} at {}", view->m_uid, std::to_string(view->active_region()));
+    spdlog::info(
+        "Placing view {} at {}",
+        view->m_uid_formatted,
+        std::to_string(view->active_region())
+    );
 
     view->map();
     view->configure(
@@ -278,6 +282,22 @@ Model::place_view(Placement& placement)
         view->active_decoration().extents(),
         false
     );
+}
+
+void
+Model::cursor_interactive(Cursor::Mode mode, View_ptr view)
+{
+    TRACE();
+
+    if (is_free(view))
+        mp_server->m_seat.mp_cursor->initiate_cursor_interactive(mode, view);
+}
+
+void
+Model::abort_cursor_interactive()
+{
+    TRACE();
+    mp_server->m_seat.mp_cursor->abort_cursor_interactive();
 }
 
 void

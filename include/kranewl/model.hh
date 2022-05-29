@@ -56,6 +56,8 @@ public:
 
     void focus_view(View_ptr);
     void place_view(Placement&);
+    void cursor_interactive(Cursor::Mode, View_ptr);
+    void abort_cursor_interactive();
 
     void sync_focus();
     void cycle_focus(Direction);

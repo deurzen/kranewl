@@ -90,7 +90,7 @@ Output::handle_present(struct wl_listener* listener, void*)
             View_ptr view_under_cursor
                 = output->mp_server->m_seat.mp_cursor->view_under_cursor();
 
-            if (view_under_cursor)
+            if (view_under_cursor && view_under_cursor->managed())
                 output->mp_model->focus_view(view_under_cursor);
         }
 
