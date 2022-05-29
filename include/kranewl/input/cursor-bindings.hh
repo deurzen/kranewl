@@ -17,17 +17,11 @@ extern "C" {
 #define MODKEY WLR_MODIFIER_ALT
 #define SECKEY WLR_MODIFIER_LOGO
 #endif
-#define SHIFT WLR_MODIFIER_SHIFT
-#define CAPS WLR_MODIFIER_CAPS
-#define CTRL WLR_MODIFIER_CTRL
-#define ALT WLR_MODIFIER_ALT
-#define MOD2 WLR_MODIFIER_MOD2
-#define MOD3 WLR_MODIFIER_MOD3
-#define LOGO WLR_MODIFIER_LOGO
-#define MOD5 WLR_MODIFIER_MOD5
+
 #define GLOBAL CursorInput::Target::Global
 #define ROOT CursorInput::Target::Root
 #define VIEW CursorInput::Target::View
+
 #define LEFT CursorInput::Button::Left
 #define RIGHT CursorInput::Button::Right
 #define MIDDLE CursorInput::Button::Middle
@@ -37,6 +31,7 @@ extern "C" {
 #define SCROLLRIGHT CursorInput::Button::ScrollRight
 #define FORWARD CursorInput::Button::Forward
 #define BACKWARD CursorInput::Button::Backward
+
 #define CALL_FOCUS(args) [](Model& model, View_ptr view) {{args} return true;}
 #define CALL_NOFOCUS(args) [](Model& model, View_ptr view) {{args} return false;}
 #define CALL_EXTERNAL(command) CALL(spawn_external(#command))
@@ -44,13 +39,13 @@ extern "C" {
 namespace Bindings {
 
 static const CursorBindings cursor_bindings = {
-{ { VIEW, RIGHT, MODKEY | CTRL },
+{ { VIEW, RIGHT, MODKEY | WLR_MODIFIER_CTRL },
     CALL_FOCUS({
         if (view)
             model.set_floating_view(Toggle::Reverse, view);
     })
 },
-{ { VIEW, MIDDLE, MODKEY | CTRL | SHIFT },
+{ { VIEW, MIDDLE, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
             model.set_fullscreen_view(Toggle::Reverse, view);
@@ -62,13 +57,13 @@ static const CursorBindings cursor_bindings = {
             model.center_view(view);
     })
 },
-{ { VIEW, SCROLLDOWN, MODKEY | CTRL | SHIFT },
+{ { VIEW, SCROLLDOWN, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
             model.inflate_view(-16, view);
     })
 },
-{ { VIEW, SCROLLUP, MODKEY | CTRL | SHIFT },
+{ { VIEW, SCROLLUP, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
             model.inflate_view(16, view);
@@ -88,44 +83,49 @@ static const CursorBindings cursor_bindings = {
 },
 { { GLOBAL, SCROLLDOWN, MODKEY },
     CALL_NOFOCUS({
+        static_cast<void>(view);
         model.cycle_focus(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY },
     CALL_NOFOCUS({
+        static_cast<void>(view);
         model.cycle_focus(Direction::Backward);
     })
 },
-{ { GLOBAL, SCROLLDOWN, MODKEY | SHIFT },
+{ { GLOBAL, SCROLLDOWN, MODKEY | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
-        /* model.activate_next_workspace(Direction::Forward); */
+        static_cast<void>(view);
+        model.activate_next_workspace(Direction::Forward);
     })
 },
-{ { GLOBAL, SCROLLUP, MODKEY | SHIFT },
+{ { GLOBAL, SCROLLUP, MODKEY | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
-        /* model.activate_next_workspace(Direction::Backward); */
+        static_cast<void>(view);
+        model.activate_next_workspace(Direction::Backward);
     })
 },
 { { VIEW, FORWARD, MODKEY },
     CALL_NOFOCUS({
-        /* if (view) */
-        /*     model.move_view_to_next_workspace(Direction::Forward, view); */
+        if (view)
+            model.move_view_to_next_workspace(view, Direction::Forward);
     })
 },
 { { VIEW, BACKWARD, MODKEY },
     CALL_NOFOCUS({
-        /* if (view) */
-        /*     model.move_view_to_next_workspace(Direction::Backward, view); */
+        if (view)
+            model.move_view_to_next_workspace(view, Direction::Backward);
     })
 },
-{ { VIEW, RIGHT, MODKEY | CTRL | SHIFT },
+{ { VIEW, RIGHT, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
         if (view)
             model.kill_view(view);
     })
 },
-{ { GLOBAL, LEFT, MODKEY | SECKEY | CTRL },
+{ { GLOBAL, LEFT, MODKEY | SECKEY | WLR_MODIFIER_CTRL },
     CALL_NOFOCUS({
+        static_cast<void>(view);
         model.spawn_external("alacritty --class kranewl:cf,Alacritty");
     })
 },
@@ -148,15 +148,5 @@ static const CursorBindings cursor_bindings = {
 #undef VIEW
 #undef ROOT
 #undef GLOBAL
-#undef MOD5
-#undef LOGO
-#undef MOD3
-#undef MOD2
-#undef ALT
-#undef CTRL
-#undef CAPS
-#undef SHIFT
-#undef SECKEY
-#undef MODKEY
 #undef SECKEY
 #undef MODKEY

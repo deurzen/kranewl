@@ -483,6 +483,15 @@ Model::shuffle_stack(Direction direction)
 }
 
 void
+Model::move_focus_to_workspace(Index index)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_workspace(mp_focus, index);
+}
+
+void
 Model::move_view_to_workspace(View_ptr view, Index index)
 {
     TRACE();
@@ -502,10 +511,11 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
         return;
 
     view->mp_workspace = workspace_to;
+    Output_ptr output_from = nullptr;
 
     if (workspace_from) {
         Context_ptr context_from = workspace_from->context();
-        Output_ptr output_from = context_from->output();
+        output_from = context_from->output();
 
         workspace_from->remove_view(view);
         apply_layout(workspace_from);
@@ -520,12 +530,39 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
     workspace_to->add_view(view);
     apply_layout(workspace_to);
 
-    if (output_to)
+    if (output_to && output_to != output_from)
         view->map();
     else
         view->unmap();
 
     sync_focus();
+}
+
+void
+Model::move_focus_to_next_workspace(Direction direction)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_next_workspace(mp_focus, direction);
+}
+
+void
+Model::move_view_to_next_workspace(View_ptr view, Direction direction)
+{
+    TRACE();
+
+    Workspace_ptr next_workspace = *m_workspaces.next_element(direction);
+    move_view_to_workspace(view, next_workspace);
+}
+
+void
+Model::move_focus_to_context(Index index)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_context(mp_focus, index);
 }
 
 void
@@ -543,10 +580,11 @@ Model::move_view_to_context(View_ptr view, Context_ptr context_to)
     TRACE();
 
     Workspace_ptr workspace_from = view->mp_workspace;
+    Output_ptr output_from = nullptr;
 
     if (workspace_from) {
         Context_ptr context_from = workspace_from->context();
-        Output_ptr output_from = context_from->output();
+        output_from = context_from->output();
 
         workspace_from->remove_view(view);
         apply_layout(workspace_from);
@@ -563,12 +601,39 @@ Model::move_view_to_context(View_ptr view, Context_ptr context_to)
     workspace_to->add_view(view);
     apply_layout(workspace_to);
 
-    if (output_to)
+    if (output_to && output_to != output_from)
         view->map();
     else
         view->unmap();
 
     sync_focus();
+}
+
+void
+Model::move_focus_to_next_context(Direction direction)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_next_context(mp_focus, direction);
+}
+
+void
+Model::move_view_to_next_context(View_ptr view, Direction direction)
+{
+    TRACE();
+
+    Context_ptr next_context = *m_contexts.next_element(direction);
+    move_view_to_context(view, next_context);
+}
+
+void
+Model::move_focus_to_output(Index index)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_output(mp_focus, index);
 }
 
 void
@@ -586,10 +651,11 @@ Model::move_view_to_output(View_ptr view, Output_ptr output_to)
     TRACE();
 
     Workspace_ptr workspace_from = view->mp_workspace;
+    Output_ptr output_from = nullptr;
 
     if (workspace_from) {
         Context_ptr context_from = workspace_from->context();
-        Output_ptr output_from = context_from->output();
+        output_from = context_from->output();
 
         workspace_from->remove_view(view);
         apply_layout(workspace_from);
@@ -613,13 +679,31 @@ Model::move_view_to_output(View_ptr view, Output_ptr output_to)
     workspace_to->add_view(view);
     apply_layout(workspace_to);
 
-    if (output_to) {
+    if (output_to && output_to != output_from) {
         wlr_surface_send_enter(view->mp_wlr_surface, output_to->mp_wlr_output);
         view->map();
     } else
         view->unmap();
 
     sync_focus();
+}
+
+void
+Model::move_focus_to_next_output(Direction direction)
+{
+    TRACE();
+
+    if (mp_focus)
+        move_view_to_next_output(mp_focus, direction);
+}
+
+void
+Model::move_view_to_next_output(View_ptr view, Direction direction)
+{
+    TRACE();
+
+    Output_ptr next_output = *m_outputs.next_element(direction);
+    move_view_to_output(view, next_output);
 }
 
 void
@@ -698,7 +782,7 @@ Model::activate_workspace(Workspace_ptr next_workspace)
     Context_ptr prev_context = prev_workspace->context();
 
     if (next_context == prev_context) {
-        for (View_ptr view : *mp_workspace)
+        for (View_ptr view : *prev_workspace)
             if (!view->sticky())
                 view->unmap();
 
@@ -964,7 +1048,6 @@ void
 Model::save_layout(std::size_t number) const
 {
     TRACE();
-
     mp_workspace->save_layout(number);
 }
 
@@ -993,7 +1076,7 @@ Model::apply_layout(Workspace_ptr workspace)
 
     Output_ptr output = workspace->context()->output();
 
-    if (!output)
+    if (workspace != output->context()->workspace() || !output)
         return;
 
     for (Placement placement : workspace->arrange(output->placeable_region()))

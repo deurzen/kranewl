@@ -72,12 +72,21 @@ public:
     void shuffle_main(Direction);
     void shuffle_stack(Direction);
 
+    void move_focus_to_workspace(Index);
     void move_view_to_workspace(View_ptr, Index);
     void move_view_to_workspace(View_ptr, Workspace_ptr);
+    void move_focus_to_next_workspace(Direction);
+    void move_view_to_next_workspace(View_ptr, Direction);
+    void move_focus_to_context(Index);
     void move_view_to_context(View_ptr, Index);
     void move_view_to_context(View_ptr, Context_ptr);
+    void move_focus_to_next_context(Direction);
+    void move_view_to_next_context(View_ptr, Direction);
+    void move_focus_to_output(Index);
     void move_view_to_output(View_ptr, Index);
     void move_view_to_output(View_ptr, Output_ptr);
+    void move_focus_to_next_output(Direction);
+    void move_view_to_next_output(View_ptr, Direction);
     void move_view_to_focused_output(View_ptr);
 
     void toggle_workspace();
