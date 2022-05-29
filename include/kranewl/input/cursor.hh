@@ -85,7 +85,7 @@ typedef struct Cursor {
         View_ptr view;
         double x, y;
         Region region;
-        uint32_t resize_edges;
+        uint32_t edges;
     } m_grab_state;
 
     struct wl_listener ml_cursor_motion;

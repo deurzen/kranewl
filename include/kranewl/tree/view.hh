@@ -126,8 +126,10 @@ typedef struct View {
     uint32_t free_decoration_to_wlr_edges() const;
     uint32_t tile_decoration_to_wlr_edges() const;
     Region const& free_region() const { return m_free_region; }
+    Pos const& free_pos() const { return m_free_region.pos; }
     Region const& tile_region() const { return m_tile_region; }
     Region const& active_region() const { return m_active_region; }
+    Region const& previous_region() const { return m_previous_region; }
     void set_free_region(Region const&);
     void set_free_pos(Pos const&);
     void set_tile_region(Region const&);

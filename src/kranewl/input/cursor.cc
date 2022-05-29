@@ -25,6 +25,8 @@ extern "C" {
 #undef class
 #undef namespace
 
+#include <algorithm>
+
 Cursor::Cursor(
     Server_ptr server,
     Seat_ptr seat,
@@ -125,26 +127,60 @@ Cursor::initiate_cursor_interactive(Mode mode, View_ptr view)
 {
     TRACE();
 
-    double sx, sy;
-    struct wlr_surface* surface = nullptr;
-
-    view_at(
-        mp_server,
-        mp_wlr_cursor->x,
-        mp_wlr_cursor->y,
-        &surface,
-        &sx, &sy
-    );
-
-    m_cursor_mode = mode;
-    Extents const& extents = view->active_decoration().extents();
-
     m_grab_state = {
         .view = view,
-        .x = sx + extents.left,
-        .y = sy + extents.top,
-        .resize_edges = WLR_EDGE_NONE
+        .x = mp_wlr_cursor->x,
+        .y = mp_wlr_cursor->y,
+        .region = view->free_region(),
+        .edges = WLR_EDGE_NONE
     };
+
+    switch (mode) {
+    case Mode::Move:
+    {
+        wlr_xcursor_manager_set_cursor_image(
+            mp_cursor_manager,
+            "fleur",
+            mp_wlr_cursor
+        );
+        break;
+    }
+    case Mode::Resize:
+    {
+        Pos center = view->free_region().center();
+
+        if (m_grab_state.x >= center.x)
+            m_grab_state.edges |= WLR_EDGE_RIGHT;
+        else
+            m_grab_state.edges |= WLR_EDGE_LEFT;
+
+        if (m_grab_state.y >= center.y) {
+            m_grab_state.edges |= WLR_EDGE_BOTTOM;
+
+            wlr_xcursor_manager_set_cursor_image(
+                mp_cursor_manager,
+                (m_grab_state.edges & WLR_EDGE_RIGHT)
+                    ? "bottom_right_corner"
+                    : "bottom_left_corner",
+                mp_wlr_cursor
+            );
+        } else {
+            m_grab_state.edges |= WLR_EDGE_TOP;
+
+            wlr_xcursor_manager_set_cursor_image(
+                mp_cursor_manager,
+                (m_grab_state.edges & WLR_EDGE_RIGHT)
+                    ? "top_right_corner"
+                    : "top_left_corner",
+                mp_wlr_cursor
+            );
+        }
+        break;
+    }
+    default: break;
+    }
+
+    m_cursor_mode = mode;
 }
 
 void
@@ -160,9 +196,11 @@ process_cursor_move(Cursor_ptr cursor, uint32_t time)
     TRACE();
 
     View_ptr view = cursor->m_grab_state.view;
+    Pos const& pos = cursor->m_grab_state.region.pos;
+
     view->set_free_pos(Pos{
-        .x = cursor->mp_wlr_cursor->x - cursor->m_grab_state.x,
-        .y = cursor->mp_wlr_cursor->y - cursor->m_grab_state.y
+        .x = pos.x + cursor->mp_wlr_cursor->x - cursor->m_grab_state.x,
+        .y = pos.y + cursor->mp_wlr_cursor->y - cursor->m_grab_state.y
     });
 
     view->configure(
@@ -177,6 +215,48 @@ process_cursor_resize(Cursor_ptr cursor, uint32_t time)
 {
     TRACE();
 
+    View_ptr view = cursor->m_grab_state.view;
+    Region const& grab_region = cursor->m_grab_state.region;
+    Region region = view->free_region();
+    Decoration const& decoration = view->free_decoration();
+    Extents const& extents = decoration.extents();
+
+    int dx = cursor->mp_wlr_cursor->x - cursor->m_grab_state.x;
+    int dy = cursor->mp_wlr_cursor->y - cursor->m_grab_state.y;
+
+    int dest_w;
+    int dest_h;
+
+    if ((cursor->m_grab_state.edges & WLR_EDGE_LEFT))
+        dest_w = grab_region.dim.w - dx;
+    else
+        dest_w = grab_region.dim.w + dx;
+
+    if ((cursor->m_grab_state.edges & WLR_EDGE_TOP))
+        dest_h = grab_region.dim.h - dy;
+    else
+        dest_h = grab_region.dim.h + dy;
+
+    region.dim.w = std::max(0, dest_w);
+    region.dim.h = std::max(0, dest_h);
+
+    if ((cursor->m_grab_state.edges & WLR_EDGE_TOP))
+        region.pos.y
+            = grab_region.pos.y + (grab_region.dim.h - region.dim.h);
+
+    if ((cursor->m_grab_state.edges & WLR_EDGE_LEFT))
+        region.pos.x
+            = grab_region.pos.x + (grab_region.dim.w - region.dim.w);
+
+    if (region == view->previous_region())
+        return;
+
+    view->set_free_region(region);
+    view->configure(
+        view->free_region(),
+        view->free_decoration().extents(),
+        true
+    );
 }
 
 static inline void
@@ -352,13 +432,14 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
             ? wlr_keyboard_get_modifiers(keyboard)
             : 0;
 
-        if (!process_cursorbinding(cursor, button, modifiers) && false /* TODO: !focus_follows_cursor */) {
+        if (process_cursorbinding(cursor, button, modifiers))
+            return;
+
+        if (false /* TODO: !focus_follows_cursor */) {
             View_ptr view = cursor->view_under_cursor();
 
-            if (view && !view->focused() && view->managed()) {
+            if (view && !view->focused() && view->managed())
                 cursor->mp_seat->mp_model->focus_view(view);
-                return;
-            }
         }
 
         break;
