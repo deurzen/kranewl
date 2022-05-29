@@ -771,20 +771,41 @@ Model::toggle_output()
 {
     TRACE();
 
+    if (mp_prev_output)
+        activate_output(mp_prev_output);
 }
 
 void
-Model::activate_output(Index)
+Model::activate_output(Index index)
 {
     TRACE();
 
+    if (index < m_outputs.size())
+        activate_output(output(index));
 }
 
 void
-Model::activate_output(Output_ptr)
+Model::activate_output(Output_ptr next_output)
 {
     TRACE();
 
+    if (next_output == mp_output)
+        return;
+
+    abort_cursor_interactive();
+
+    Output_ptr prev_output = mp_output;
+    mp_prev_output = prev_output;
+    mp_output = next_output;
+    m_outputs.activate_element(next_output);
+
+    Context_ptr next_context = next_output->context();
+    Context_ptr prev_context = prev_output->context();
+    mp_prev_context = prev_context;
+    mp_context = next_context;
+    m_contexts.activate_element(next_context);
+
+    activate_workspace(next_context->workspace());
 }
 
 void
