@@ -248,7 +248,7 @@ process_cursor_resize(Cursor_ptr cursor, uint32_t time)
         region.pos.x
             = grab_region.pos.x + (grab_region.dim.w - region.dim.w);
 
-    if (region == view->previous_region())
+    if (region == view->prev_region())
         return;
 
     view->set_free_region(region);
@@ -268,9 +268,9 @@ cursor_motion_to_client(
     uint32_t time
 )
 {
-    static View_ptr previous_view = nullptr;
+    static View_ptr prev_view = nullptr;
 
-    if (true /* TODO: focus_follows_cursor */ && time && view && view != previous_view && view->managed())
+    if (true /* TODO: focus_follows_cursor */ && time && view && view != prev_view && view->managed())
         cursor->mp_seat->mp_model->focus_view(view);
 
     if (!surface) {
@@ -287,7 +287,7 @@ cursor_motion_to_client(
     wlr_seat_pointer_notify_enter(cursor->mp_seat->mp_wlr_seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(cursor->mp_seat->mp_wlr_seat, time, sx, sy);
 
-    previous_view = view;
+    prev_view = view;
 }
 
 static inline void

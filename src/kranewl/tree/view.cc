@@ -54,7 +54,7 @@ View::View(
       m_free_region({}),
       m_tile_region({}),
       m_active_region({}),
-      m_previous_region({}),
+      m_prev_region({}),
       m_inner_region({}),
       m_activated(false),
       m_focused(false),
@@ -107,7 +107,7 @@ View::View(
       m_free_region({}),
       m_tile_region({}),
       m_active_region({}),
-      m_previous_region({}),
+      m_prev_region({}),
       m_inner_region({}),
       m_focused(false),
       m_mapped(false),
@@ -513,7 +513,7 @@ View::outside_state() const
 void
 View::set_active_region(Region const& region)
 {
-    m_previous_region = m_active_region;
+    m_prev_region = m_active_region;
     set_inner_region(region);
     m_active_region = region;
 }
@@ -521,7 +521,7 @@ View::set_active_region(Region const& region)
 void
 View::set_active_pos(Pos const& pos)
 {
-    m_previous_region = m_active_region;
+    m_prev_region = m_active_region;
     m_active_region.pos = pos;
 }
 

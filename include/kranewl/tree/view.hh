@@ -129,7 +129,7 @@ typedef struct View {
     Pos const& free_pos() const { return m_free_region.pos; }
     Region const& tile_region() const { return m_tile_region; }
     Region const& active_region() const { return m_active_region; }
-    Region const& previous_region() const { return m_previous_region; }
+    Region const& prev_region() const { return m_prev_region; }
     void set_free_region(Region const&);
     void set_free_pos(Pos const&);
     void set_tile_region(Region const&);
@@ -204,7 +204,7 @@ private:
     Region m_free_region;
     Region m_tile_region;
     Region m_active_region;
-    Region m_previous_region;
+    Region m_prev_region;
     Region m_inner_region;
 
     bool m_activated;

@@ -126,6 +126,33 @@ Model::focused_view() const
     return mp_focus;
 }
 
+Workspace_ptr
+Model::workspace(Index index) const
+{
+    if (index < m_workspaces.size())
+        return m_workspaces[index];
+
+    return nullptr;
+}
+
+Context_ptr
+Model::context(Index index) const
+{
+    if (index < m_contexts.size())
+        return m_contexts[index];
+
+    return nullptr;
+}
+
+Output_ptr
+Model::output(Index index) const
+{
+    if (index < m_outputs.size())
+        return m_outputs[index];
+
+    return nullptr;
+}
+
 KeyBindings const&
 Model::key_bindings() const
 {
@@ -596,14 +623,100 @@ Model::move_view_to_focused_output(View_ptr view)
 }
 
 void
-Model::activate_workspace(Index)
+Model::toggle_workspace()
+{
+    TRACE();
+
+    if (mp_prev_workspace)
+        activate_workspace(mp_prev_workspace);
+}
+
+void
+Model::toggle_workspace_current_context()
+{
+    TRACE();
+
+    Workspace_ptr prev_workspace = mp_context->prev_workspace();
+
+    if (prev_workspace)
+        activate_workspace(prev_workspace);
+}
+
+void
+Model::activate_next_workspace(Direction direction)
+{
+    TRACE();
+    activate_workspace(m_workspaces.next_index(direction));
+}
+
+void
+Model::activate_next_workspace_current_context(Direction direction)
+{
+    TRACE();
+    activate_workspace(*mp_context->workspaces().next_element(direction));
+}
+
+void
+Model::activate_workspace(Index index)
+{
+    TRACE();
+
+    if (index < m_workspaces.size())
+        activate_workspace(workspace(index));
+}
+
+void
+Model::activate_workspace_current_context(Index index)
+{
+    TRACE();
+
+    if (index < mp_context->size())
+        activate_workspace((*mp_context)[index]);
+}
+
+void
+Model::activate_workspace(Workspace_ptr next_workspace)
+{
+    TRACE();
+
+    if (next_workspace == mp_workspace)
+        return;
+
+    abort_cursor_interactive();
+
+    Workspace_ptr prev_workspace = mp_workspace;
+    mp_prev_workspace = prev_workspace;
+
+    Context_ptr next_context = next_workspace->context();
+    Context_ptr prev_context = prev_workspace->context();
+
+    if (next_context == prev_context) {
+        for (View_ptr view : *mp_workspace)
+            if (!view->sticky())
+                view->unmap();
+
+        for (View_ptr view : m_sticky_views)
+            view->mp_workspace = next_workspace;
+    }
+
+    next_context->activate_workspace(next_workspace);
+    m_workspaces.activate_element(next_workspace);
+    mp_workspace = next_workspace;
+
+    apply_layout(next_workspace);
+    mp_output->focus_at_cursor();
+    sync_focus();
+}
+
+void
+Model::toggle_context()
 {
     TRACE();
 
 }
 
 void
-Model::activate_workspace(Workspace_ptr)
+Model::activate_next_context(Direction)
 {
     TRACE();
 
@@ -618,6 +731,13 @@ Model::activate_context(Index)
 
 void
 Model::activate_context(Context_ptr)
+{
+    TRACE();
+
+}
+
+void
+Model::toggle_output()
 {
     TRACE();
 

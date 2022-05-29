@@ -38,6 +38,9 @@ public:
     void exit();
 
     View_ptr focused_view() const;
+    Workspace_ptr workspace(Index) const;
+    Context_ptr context(Index) const;
+    Output_ptr output(Index) const;
 
     KeyBindings const& key_bindings() const;
     CursorBindings const& cursor_bindings() const;
@@ -76,10 +79,18 @@ public:
     void move_view_to_output(View_ptr, Output_ptr);
     void move_view_to_focused_output(View_ptr);
 
+    void toggle_workspace();
+    void toggle_workspace_current_context();
+    void activate_next_workspace(Direction);
+    void activate_next_workspace_current_context(Direction);
     void activate_workspace(Index);
+    void activate_workspace_current_context(Index);
     void activate_workspace(Workspace_ptr);
+    void toggle_context();
+    void activate_next_context(Direction);
     void activate_context(Index);
     void activate_context(Context_ptr);
+    void toggle_output();
     void activate_output(Index);
     void activate_output(Output_ptr);
 
