@@ -38,10 +38,14 @@ public:
     bool contains(Pos) const;
     bool contains(Region) const;
 
+    void focus_at_cursor();
+
 private:
     Context_ptr mp_context;
     Region m_full_region;
     Region m_placeable_region;
+
+    bool m_cursor_focus_on_present;
 
 public:
     Server_ptr mp_server;

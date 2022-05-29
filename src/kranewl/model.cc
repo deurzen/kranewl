@@ -871,6 +871,7 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
     }
 
     apply_layout(view->mp_workspace);
+    mp_output->focus_at_cursor();
 }
 
 void
@@ -894,15 +895,10 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
             return;
 
         view->set_fullscreen(true);
-
         // TODO: set fullscreen state
-
-        Workspace_ptr workspace = view->mp_workspace;
-        apply_layout(workspace);
-
         m_fullscreen_map[view] = view->free_region();
 
-        return;
+        break;
     }
     case Toggle::Off:
     {
@@ -913,15 +909,10 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
             view->set_free_region(m_fullscreen_map.at(view));
 
         view->set_fullscreen(false);
-
         // TODO: unset fullscreen state
-
-        Workspace_ptr workspace = view->mp_workspace;
-        apply_layout(workspace);
-
         m_fullscreen_map.erase(view);
 
-        return;
+        break;
     }
     case Toggle::Reverse:
     {
@@ -936,6 +927,10 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
     }
     default: return;
     }
+
+    Workspace_ptr workspace = view->mp_workspace;
+    apply_layout(workspace);
+    mp_output->focus_at_cursor();
 }
 
 void
@@ -1037,20 +1032,12 @@ Model::set_contained_view(Toggle toggle, View_ptr view)
     case Toggle::On:
     {
         view->set_contained(true);
-
-        Workspace_ptr workspace = view->mp_workspace;
-
-        apply_layout(workspace);
-        return;
+        break;
     }
     case Toggle::Off:
     {
         view->set_contained(false);
-
-        Workspace_ptr workspace = view->mp_workspace;
-
-        apply_layout(workspace);
-        return;
+        break;
     }
     case Toggle::Reverse:
     {
@@ -1065,6 +1052,10 @@ Model::set_contained_view(Toggle toggle, View_ptr view)
     }
     default: return;
     }
+
+    Workspace_ptr workspace = view->mp_workspace;
+    apply_layout(workspace);
+    mp_output->focus_at_cursor();
 }
 
 void
@@ -1139,42 +1130,29 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
+    Workspace_ptr workspace = view->mp_workspace;
+
     switch (toggle) {
     case Toggle::On:
     {
         if (view->iconified() || view->sticky())
             return;
 
-        Workspace_ptr workspace = view->mp_workspace;
         workspace->view_to_icon(view);
-
         // TODO: set iconify state
-
         view->unmap();
-
-        apply_layout(workspace);
-        sync_focus();
-
         view->set_iconified(true);
-
-        return;
+        break;
     }
     case Toggle::Off:
     {
         if (!view->iconified())
             return;
 
-        Workspace_ptr workspace = view->mp_workspace;
         workspace->icon_to_view(view);
-
         // TODO: unset iconify state
-
         view->set_iconified(false);
-
-        apply_layout(workspace);
-        sync_focus();
-
-        return;
+        break;
     }
     case Toggle::Reverse:
     {
@@ -1189,6 +1167,10 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
     }
     default: return;
     }
+
+    apply_layout(workspace);
+    mp_output->focus_at_cursor();
+    sync_focus();
 }
 
 void
@@ -1612,14 +1594,7 @@ Model::unregister_view(View_ptr view)
         view->m_pid
     );
 
-    if (true /* TODO: focus_follows_mouse */) {
-        View_ptr view_under_cursor
-            = mp_server->m_seat.mp_mouse->view_under_cursor();
-
-        if (view_under_cursor)
-            focus_view(view_under_cursor);
-    }
-
+    mp_output->focus_at_cursor();
     sync_focus();
 }
 

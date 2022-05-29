@@ -33,9 +33,9 @@ Output::Output(
       mp_server(server),
       mp_model(model),
       m_dirty(true),
+      m_cursor_focus_on_present(false),
       mp_wlr_output(wlr_output),
       mp_wlr_scene_output(wlr_scene_output),
-      m_subpixel(wlr_output->subpixel),
       ml_frame({ .notify = Output::handle_frame }),
       ml_commit({ .notify = Output::handle_commit }),
       ml_present({ .notify = Output::handle_present }),
@@ -79,10 +79,23 @@ Output::handle_commit(struct wl_listener*, void*)
 }
 
 void
-Output::handle_present(struct wl_listener*, void*)
+Output::handle_present(struct wl_listener* listener, void*)
 {
     TRACE();
 
+    Output_ptr output = wl_container_of(listener, output, ml_present);
+
+    if (output->m_cursor_focus_on_present && output == output->mp_model->mp_output) {
+        if (true /* TODO: focus_follows_mouse */) {
+            View_ptr view_under_cursor
+                = output->mp_server->m_seat.mp_cursor->view_under_cursor();
+
+            if (view_under_cursor)
+                output->mp_model->focus_view(view_under_cursor);
+        }
+
+        output->m_cursor_focus_on_present = false;
+    }
 }
 
 void
@@ -155,4 +168,10 @@ bool
 Output::contains(Region region) const
 {
     return m_full_region.contains(region);
+}
+
+void
+Output::focus_at_cursor()
+{
+    m_cursor_focus_on_present = true;
 }
