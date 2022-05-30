@@ -62,6 +62,8 @@ typedef struct Cursor {
     void initiate_cursor_interactive(Mode, View_ptr);
     void abort_cursor_interactive();
 
+    void process_cursor_motion(uint32_t time);
+
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
     static void handle_cursor_button(struct wl_listener*, void*);

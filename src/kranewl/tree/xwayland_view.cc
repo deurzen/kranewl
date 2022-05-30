@@ -13,8 +13,8 @@ extern "C" {
 #include <wlr/xwayland.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 XWaylandView::XWaylandView(
     struct wlr_xwayland_surface* wlr_xwayland_surface,

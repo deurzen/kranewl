@@ -22,8 +22,8 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 XDGView::XDGView(
     struct wlr_xdg_surface* wlr_xdg_surface,

@@ -61,10 +61,13 @@ public:
 
     Layer_ptr create_layer(struct wlr_layer_surface_v1*, Output_ptr, SceneLayer);
     void register_layer(Layer_ptr);
-    void destroy_layer(Layer_ptr);
 
     void focus_view(View_ptr);
+    void refocus();
     void place_view(Placement&);
+
+    void focus_output(Output_ptr);
+
     void cursor_interactive(Cursor::Mode, View_ptr);
     void abort_cursor_interactive();
 

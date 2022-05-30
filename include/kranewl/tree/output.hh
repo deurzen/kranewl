@@ -19,7 +19,7 @@ typedef class Model* Model_ptr;
 typedef class Context* Context_ptr;
 typedef class Layer* Layer_ptr;
 
-typedef class Output final : public Node {
+typedef class Output final {
 public:
     Output(
         Server_ptr,
@@ -51,6 +51,7 @@ public:
 
     void add_layer(Layer_ptr);
     void remove_layer(Layer_ptr);
+    void relayer_layer(Layer_ptr, SceneLayer, SceneLayer);
 
     void arrange_layers();
 

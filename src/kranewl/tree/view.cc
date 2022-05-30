@@ -19,8 +19,8 @@ extern "C" {
 #include <wlr/util/edges.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 View::View(
     XDGView_ptr,
@@ -30,13 +30,13 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : m_uid(uid),
+    : Node(Type::XDGShell),
+      m_uid(uid),
       m_uid_formatted([uid]() {
           std::stringstream uid_ss;
           uid_ss << "0x" << std::hex << uid;
           return uid_ss.str();
       }()),
-      m_type(Type::XDGShell),
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
@@ -88,8 +88,8 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : m_uid(uid),
-      m_type(Type::XWayland),
+    : Node(Type::XWaylandManaged),
+      m_uid(uid),
       mp_server(server),
       mp_model(model),
       mp_seat(seat),

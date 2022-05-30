@@ -67,8 +67,8 @@ extern "C" {
 #endif
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 extern "C" {
 #include <xkbcommon/xkbcommon.h>
@@ -427,8 +427,9 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
         break;
     default:
         spdlog::error("No applicable scene layer found for layer surface");
+        spdlog::warn("Ignoring layer surface");
         scene_layer = SCENE_LAYER_NONE;
-        break;
+        return;
     }
 
     Output_ptr output = reinterpret_cast<Output_ptr>(layer_surface->output->data);

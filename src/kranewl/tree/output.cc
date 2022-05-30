@@ -19,8 +19,8 @@ extern "C" {
 #include <wlr/types/wlr_seat.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 #include <vector>
 
@@ -31,8 +31,7 @@ Output::Output(
     struct wlr_scene_output* wlr_scene_output,
     Region const&& output_region
 )
-    : Node(this),
-      mp_context(nullptr),
+    : mp_context(nullptr),
       m_full_region(output_region),
       m_placeable_region(output_region),
       mp_server(server),
@@ -121,6 +120,13 @@ Output::handle_destroy(struct wl_listener*, void* data)
 {
     TRACE();
 
+    static const std::vector<SceneLayer> scene_layers = {
+        SCENE_LAYER_BACKGROUND,
+        SCENE_LAYER_BOTTOM,
+        SCENE_LAYER_TOP,
+        SCENE_LAYER_OVERLAY,
+    };
+
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
     Output_ptr output = reinterpret_cast<Output_ptr>(wlr_output->data);
 
@@ -132,6 +138,15 @@ Output::handle_destroy(struct wl_listener*, void* data)
 
     wlr_scene_output_destroy(output->mp_wlr_scene_output);
     wlr_output_layout_remove(output->mp_server->mp_output_layout, output->mp_wlr_output);
+
+    for (SceneLayer scene_layer : scene_layers) {
+        for (Layer_ptr layer : output->m_layer_map.at(scene_layer)) {
+            layer->mp_output = nullptr;
+            layer->mp_layer_surface->output = nullptr;
+        }
+
+        output->m_layer_map.at(scene_layer).clear();
+    }
 
     output->mp_model->unregister_output(output);
 }
@@ -205,6 +220,16 @@ Output::remove_layer(Layer_ptr layer)
 {
     TRACE();
     Util::erase_remove(m_layer_map.at(layer->m_scene_layer), layer);
+}
+
+void
+Output::relayer_layer(Layer_ptr layer, SceneLayer old_layer, SceneLayer new_layer)
+{
+    TRACE();
+
+    Util::erase_remove(m_layer_map.at(old_layer), layer);
+    m_layer_map[new_layer].push_back(layer);
+    layer->m_scene_layer = new_layer;
 }
 
 static inline void

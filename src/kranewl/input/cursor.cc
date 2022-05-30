@@ -23,8 +23,8 @@ extern "C" {
 #include <wlr/types/wlr_xcursor_manager.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 #include <algorithm>
 
@@ -99,7 +99,10 @@ view_at(
             while (node && !node->data)
                 node = node->parent;
 
-            return reinterpret_cast<View_ptr>(node->data);
+            if (node && node->data && static_cast<Node_ptr>(node->data)->is_focusable())
+                return reinterpret_cast<View_ptr>(node->data);
+
+            return nullptr;
         }
     }
 
@@ -291,20 +294,20 @@ cursor_motion_to_client(
     prev_view = view;
 }
 
-static inline void
-process_cursor_motion(Cursor_ptr cursor, uint32_t time)
+void
+Cursor::process_cursor_motion(uint32_t time)
 {
     struct wlr_drag_icon* icon;
-    if (cursor->mp_seat->mp_wlr_seat->drag && (icon = cursor->mp_seat->mp_wlr_seat->drag->icon))
+    if (mp_seat->mp_wlr_seat->drag && (icon = mp_seat->mp_wlr_seat->drag->icon))
         wlr_scene_node_set_position(
             reinterpret_cast<struct wlr_scene_node*>(icon->data),
-            cursor->mp_wlr_cursor->x + icon->surface->sx,
-            cursor->mp_wlr_cursor->y + icon->surface->sy
+            mp_wlr_cursor->x + icon->surface->sx,
+            mp_wlr_cursor->y + icon->surface->sy
         );
 
-    switch (cursor->m_cursor_mode) {
-    case Cursor::Mode::Move:   process_cursor_move(cursor, time);   return;
-    case Cursor::Mode::Resize: process_cursor_resize(cursor, time); return;
+    switch (m_cursor_mode) {
+    case Cursor::Mode::Move:   process_cursor_move(this, time);   return;
+    case Cursor::Mode::Resize: process_cursor_resize(this, time); return;
     case Cursor::Mode::Passthrough: // fallthrough
     default: break;
     }
@@ -313,22 +316,21 @@ process_cursor_motion(Cursor_ptr cursor, uint32_t time)
     struct wlr_surface* surface = nullptr;
 
     View_ptr view = view_at(
-        cursor->mp_server,
-        cursor->mp_wlr_cursor->x,
-        cursor->mp_wlr_cursor->y,
+        mp_server,
+        mp_wlr_cursor->x,
+        mp_wlr_cursor->y,
         &surface,
         &sx, &sy
     );
 
-    if (!view && time) {
+    if (!surface && time)
         wlr_xcursor_manager_set_cursor_image(
-            cursor->mp_cursor_manager,
+            mp_cursor_manager,
             "left_ptr",
-            cursor->mp_wlr_cursor
+            mp_wlr_cursor
         );
-    }
 
-    cursor_motion_to_client(cursor, view, surface, sx, sy, time);
+    cursor_motion_to_client(this, view, surface, sx, sy, time);
 }
 
 void
@@ -339,7 +341,7 @@ Cursor::handle_cursor_motion(struct wl_listener* listener, void* data)
         = reinterpret_cast<struct wlr_event_pointer_motion*>(data);
 
     wlr_cursor_move(cursor->mp_wlr_cursor, event->device, event->delta_x, event->delta_y);
-    process_cursor_motion(cursor, event->time_msec);
+    cursor->process_cursor_motion(event->time_msec);
 }
 
 void
@@ -350,7 +352,7 @@ Cursor::handle_cursor_motion_absolute(struct wl_listener* listener, void* data)
         = reinterpret_cast<struct wlr_event_pointer_motion_absolute*>(data);
 
     wlr_cursor_warp_absolute(cursor->mp_wlr_cursor, event->device, event->x, event->y);
-    process_cursor_motion(cursor, event->time_msec);
+    cursor->process_cursor_motion(event->time_msec);
 }
 
 bool

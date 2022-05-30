@@ -3,6 +3,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/geometry.hh>
 #include <kranewl/scene-layer.hh>
+#include <kranewl/tree/node.hh>
 
 #include <chrono>
 
@@ -14,7 +15,7 @@ typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
 typedef class Output* Output_ptr;
 
-typedef struct Layer {
+typedef struct Layer : public Node {
     Layer(
         struct wlr_layer_surface_v1*,
         Server_ptr,
@@ -57,7 +58,7 @@ typedef struct Layer {
 
 private:
     Region m_region;
-    bool m_mapped;
+    int m_mapped;
     std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
 
 }* Layer_ptr;

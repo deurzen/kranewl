@@ -4,6 +4,7 @@
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
 #include <kranewl/scene-layer.hh>
+#include <kranewl/tree/node.hh>
 
 #include <vector>
 #include <chrono>
@@ -25,7 +26,7 @@ typedef struct XWaylandView* XWaylandView_ptr;
 #endif
 typedef struct View* View_ptr;
 
-typedef struct View {
+typedef struct View : public Node {
     static constexpr Dim MIN_VIEW_DIM = Dim{25, 10};
     static constexpr Dim PREFERRED_INIT_VIEW_DIM = Dim{480, 260};
 
@@ -37,13 +38,6 @@ typedef struct View {
         UnfocusedDisowned,
         UnfocusedSticky,
         Urgent
-    };
-
-    enum class Type {
-        XDGShell,
-#ifdef XWAYLAND
-        XWayland,
-#endif
     };
 
     View(
@@ -161,8 +155,6 @@ typedef struct View {
 
     Uid m_uid;
     std::string m_uid_formatted;
-
-    Type m_type;
 
     Server_ptr mp_server;
     Model_ptr mp_model;

@@ -32,8 +32,8 @@ extern "C" {
 #include <wlr/types/wlr_surface.h>
 }
 #undef static
-#undef class
 #undef namespace
+#undef class
 
 Model::Model(
     Config const& config,
@@ -241,12 +241,15 @@ Model::focus_view(View_ptr view)
 {
     TRACE();
 
+    if (!view || !view->mp_context)
+        return;
+
     Output_ptr output = view->mp_context->output();
 
     if (!output || mp_focus == view)
         return;
 
-    if (!view->sticky()) {
+    if (!view->sticky() || view->mp_context != mp_context) {
         activate_workspace(view->mp_workspace);
         mp_workspace->activate_view(view);
     }
@@ -260,6 +263,36 @@ Model::focus_view(View_ptr view)
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);
+}
+
+void
+Model::refocus()
+{
+    TRACE();
+
+    Output_ptr output;
+    if (!mp_focus || !(output = mp_focus->mp_context->output()))
+        return;
+
+    if (!mp_focus->sticky() || mp_focus->mp_context != mp_context) {
+        activate_workspace(mp_focus->mp_workspace);
+        mp_workspace->activate_view(mp_focus);
+    }
+
+    mp_focus->focus(Toggle::On);
+    mp_focus->set_urgent(false);
+
+    if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
+        apply_layout(mp_workspace);
+}
+
+void
+Model::focus_output(Output_ptr output)
+{
+    TRACE();
+
+    if (output && output != mp_output)
+        focus_view(output->context()->workspace()->active());
 }
 
 void
@@ -1840,8 +1873,8 @@ Model::destroy_view(View_ptr view)
     TRACE();
 
     m_view_map.erase(view->m_uid);
-    delete view;
     spdlog::info("Destroyed view {}", view->m_uid_formatted);
+    delete view;
 }
 
 Layer_ptr
@@ -1871,16 +1904,6 @@ Model::register_layer(Layer_ptr layer)
 
     layer->mp_output->add_layer(layer);
     spdlog::info("Registered layer {}", layer->m_uid_formatted);
-}
-
-void
-Model::destroy_layer(Layer_ptr layer)
-{
-    TRACE();
-
-    layer->mp_output->remove_layer(layer);
-    delete layer;
-    spdlog::info("Destroyed layer {}", layer->m_uid_formatted);
 }
 
 bool
