@@ -1,8 +1,8 @@
 #include <trace.hh>
 
-#include <kranewl/layer.hh>
-#include <kranewl/server.hh>
 #include <kranewl/model.hh>
+#include <kranewl/scene-layer.hh>
+#include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg_view.hh>
 
@@ -70,7 +70,7 @@ View::View(
       m_iconifyable(true),
       m_iconified(false),
       m_disowned(false),
-      m_layer(Layer::None),
+      m_scene_layer(SCENE_LAYER_NONE),
       m_last_focused(std::chrono::steady_clock::now()),
       m_last_touched(std::chrono::steady_clock::now()),
       m_managed_since(std::chrono::steady_clock::now()),
@@ -122,7 +122,7 @@ View::View(
       m_iconifyable(true),
       m_iconified(false),
       m_disowned(false),
-      m_layer(Layer::None),
+      m_scene_layer(SCENE_LAYER_NONE),
       m_last_focused(std::chrono::steady_clock::now()),
       m_last_touched(std::chrono::steady_clock::now()),
       m_managed_since(std::chrono::steady_clock::now())
@@ -268,6 +268,24 @@ View::set_disowned(bool disowned)
     }
 }
 
+std::chrono::time_point<std::chrono::steady_clock>
+View::last_focused() const
+{
+    return m_last_focused;
+}
+
+std::chrono::time_point<std::chrono::steady_clock>
+View::last_touched() const
+{
+    return m_last_touched;
+}
+
+std::chrono::time_point<std::chrono::steady_clock>
+View::managed_since() const
+{
+    return m_managed_since;
+}
+
 void
 View::map()
 {
@@ -300,7 +318,7 @@ View::tile(Toggle toggle)
 
         set_floating(false);
         if (!m_fullscreen)
-            relayer(Layer::Tile);
+            relayer(SCENE_LAYER_TILE);
 
         break;
     }
@@ -311,7 +329,7 @@ View::tile(Toggle toggle)
 
         set_floating(true);
         if (!m_fullscreen)
-            relayer(Layer::Free);
+            relayer(SCENE_LAYER_FREE);
 
         break;
     }
@@ -329,16 +347,16 @@ View::tile(Toggle toggle)
 }
 
 void
-View::relayer(Layer layer)
+View::relayer(SceneLayer layer)
 {
-    if (layer == m_layer)
+    if (layer == m_scene_layer)
         return;
 
-    m_layer = layer;
+    m_scene_layer = layer;
 
     wlr_scene_node_reparent(
         mp_scene,
-        mp_server->m_layers[layer]
+        mp_server->m_scene_layers[layer]
     );
 }
 
@@ -541,14 +559,3 @@ View::set_inner_region(Region const& region)
         m_inner_region.dim = region.dim;
     }
 }
-
-ViewChild::ViewChild(SubsurfaceViewChild_ptr)
-    : m_type(Type::Subsurface)
-{}
-
-ViewChild::ViewChild(PopupViewChild_ptr)
-    : m_type(Type::Popup)
-{}
-
-ViewChild::~ViewChild()
-{}

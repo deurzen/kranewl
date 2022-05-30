@@ -2,8 +2,9 @@
 
 #include <kranewl/model.hh>
 #include <kranewl/server.hh>
-#include <kranewl/workspace.hh>
 #include <kranewl/tree/output.hh>
+#include <kranewl/util.hh>
+#include <kranewl/workspace.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
@@ -11,13 +12,17 @@
 #define namespace namespace_
 #define static
 extern "C" {
+#include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output_damage.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_seat.h>
 }
 #undef static
 #undef class
 #undef namespace
+
+#include <vector>
 
 Output::Output(
     Server_ptr server,
@@ -34,6 +39,12 @@ Output::Output(
       mp_model(model),
       m_dirty(true),
       m_cursor_focus_on_present(false),
+      m_layer_map{
+          { SCENE_LAYER_BACKGROUND, {} },
+          { SCENE_LAYER_BOTTOM, {} },
+          { SCENE_LAYER_TOP, {} },
+          { SCENE_LAYER_OVERLAY, {} }
+      },
       mp_wlr_output(wlr_output),
       mp_wlr_scene_output(wlr_scene_output),
       ml_frame({ .notify = Output::handle_frame }),
@@ -158,6 +169,12 @@ Output::placeable_region() const
     return m_placeable_region;
 }
 
+void
+Output::set_placeable_region(Region const& region)
+{
+    m_placeable_region = region;
+}
+
 bool
 Output::contains(Pos pos) const
 {
@@ -174,4 +191,257 @@ void
 Output::focus_at_cursor()
 {
     m_cursor_focus_on_present = true;
+}
+
+void
+Output::add_layer(Layer_ptr layer)
+{
+    TRACE();
+    m_layer_map[layer->m_scene_layer].push_back(layer);
+}
+
+void
+Output::remove_layer(Layer_ptr layer)
+{
+    TRACE();
+    Util::erase_remove(m_layer_map.at(layer->m_scene_layer), layer);
+}
+
+static inline void
+propagate_exclusivity(
+    Region& placeable_region,
+    uint32_t anchor,
+    int32_t exclusive_zone,
+    int32_t margin_top,
+    int32_t margin_right,
+    int32_t margin_bottom,
+    int32_t margin_left
+)
+{
+    TRACE();
+
+    struct Edge {
+        uint32_t singular_anchor;
+        uint32_t anchor_triplet;
+        int* positive_axis;
+        int* negative_axis;
+        int margin;
+    };
+
+    // https://github.com/swaywm/sway/blob/master/sway/desktop/layer_shell.c
+    const std::vector<Edge> edges = {
+        {
+            .singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+            .anchor_triplet =
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP,
+            .positive_axis = &placeable_region.pos.y,
+            .negative_axis = &placeable_region.dim.h,
+            .margin = margin_top,
+        },
+        {
+            .singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+            .anchor_triplet =
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+            .positive_axis = NULL,
+            .negative_axis = &placeable_region.dim.h,
+            .margin = margin_bottom,
+        },
+        {
+            .singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT,
+            .anchor_triplet =
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+            .positive_axis = &placeable_region.pos.x,
+            .negative_axis = &placeable_region.dim.w,
+            .margin = margin_left,
+        },
+        {
+            .singular_anchor = ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT,
+            .anchor_triplet =
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP |
+                ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM,
+            .positive_axis = NULL,
+            .negative_axis = &placeable_region.dim.w,
+            .margin = margin_right,
+        },
+    };
+
+    for (auto const& edge : edges) {
+        if ((anchor  == edge.singular_anchor || anchor == edge.anchor_triplet)
+            && exclusive_zone + edge.margin > 0)
+        {
+            if (edge.positive_axis)
+                *edge.positive_axis += exclusive_zone + edge.margin;
+
+            if (edge.negative_axis)
+                *edge.negative_axis -= exclusive_zone + edge.margin;
+
+            break;
+        }
+    }
+}
+
+static inline void
+arrange_layer(
+    Output_ptr output,
+    Region& placeable_region,
+    std::vector<Layer_ptr> const& layers,
+    bool exclusive
+)
+{
+    TRACE();
+
+    static constexpr uint32_t full_width
+        = ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT | ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+    static constexpr uint32_t full_height
+        = ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP | ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+
+    for (Layer_ptr layer : layers) {
+        struct wlr_layer_surface_v1* layer_surface = layer->mp_layer_surface;
+        struct wlr_layer_surface_v1_state* state = &layer_surface->current;
+
+        if (exclusive != (state->exclusive_zone > 0))
+            continue;
+
+        Region region = {
+            .dim = {
+                .w = state->desired_width,
+                .h = state->desired_height,
+            }
+        };
+
+        Region bounds = state->exclusive_zone == -1
+            ? output->full_region()
+            : placeable_region;
+
+        // horizontal axis
+        if ((state->anchor & full_width) && region.dim.w == 0) {
+            region.pos.x = bounds.pos.x;
+            region.dim.w = bounds.dim.w;
+        } else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT))
+            region.pos.x = bounds.pos.x;
+        else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT))
+            region.pos.x = bounds.pos.x + (bounds.dim.w - region.dim.w);
+        else
+            region.pos.x = bounds.pos.x + ((bounds.dim.w / 2) - (region.dim.w / 2));
+
+        // vertical axis
+        if ((state->anchor & full_height) && region.dim.h == 0) {
+            region.pos.y = bounds.pos.y;
+            region.dim.h = bounds.dim.h;
+        } else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP))
+            region.pos.y = bounds.pos.y;
+        else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM))
+            region.pos.y = bounds.pos.y + (bounds.dim.h - region.dim.h);
+        else
+            region.pos.y = bounds.pos.y + ((bounds.dim.h / 2) - (region.dim.h / 2));
+
+        { // margin
+            if ((state->anchor & full_width) == full_width) {
+                region.pos.x += state->margin.left;
+                region.dim.w -= state->margin.left + state->margin.right;
+            } else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT))
+                region.pos.x += state->margin.left;
+            else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT))
+                region.pos.x -= state->margin.right;
+
+            if ((state->anchor & full_height) == full_height) {
+                region.pos.y += state->margin.top;
+                region.dim.h -= state->margin.top + state->margin.bottom;
+            } else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP))
+                region.pos.y += state->margin.top;
+            else if ((state->anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM))
+                region.pos.y -= state->margin.bottom;
+        }
+
+        if (region.dim.w < 0 || region.dim.h < 0) {
+            wlr_layer_surface_v1_destroy(layer_surface);
+            continue;
+        }
+
+        layer->set_region(region);
+
+        if (state->exclusive_zone > 0)
+            propagate_exclusivity(
+                placeable_region,
+                state->anchor,
+                state->exclusive_zone,
+                state->margin.top,
+                state->margin.right,
+                state->margin.bottom,
+                state->margin.left
+            );
+
+        wlr_scene_node_set_position(layer->mp_scene, region.pos.x, region.pos.y);
+        wlr_layer_surface_v1_configure(layer_surface, region.dim.w, region.dim.h);
+    }
+}
+
+void
+Output::arrange_layers()
+{
+    TRACE();
+
+    static const std::vector<SceneLayer> scene_layers_top_bottom = {
+        SCENE_LAYER_OVERLAY,
+        SCENE_LAYER_TOP,
+        SCENE_LAYER_BOTTOM,
+        SCENE_LAYER_BACKGROUND,
+    };
+
+    static const std::vector<SceneLayer> scene_layers_super_shell = {
+        SCENE_LAYER_OVERLAY,
+        SCENE_LAYER_TOP,
+    };
+
+    Region placeable_region = m_full_region;
+    struct wlr_keyboard* keyboard
+        = wlr_seat_get_keyboard(mp_server->m_seat.mp_wlr_seat);
+
+    // exclusive surfaces
+    for (SceneLayer scene_layer : scene_layers_top_bottom)
+        arrange_layer(this, placeable_region, m_layer_map.at(scene_layer), true);
+
+    // TODO: re-apply layout if placeable region changed
+    if (mp_context && m_placeable_region != placeable_region) {
+        set_placeable_region(placeable_region);
+        mp_model->apply_layout(mp_context->workspace());
+    }
+
+    // non-exclusive surfaces
+    for (SceneLayer scene_layer : scene_layers_top_bottom)
+        arrange_layer(this, placeable_region, m_layer_map.at(scene_layer), false);
+
+    for (SceneLayer scene_layer : scene_layers_super_shell)
+        for (Layer_ptr layer : Util::reverse(m_layer_map[scene_layer]))
+            if (layer->mp_layer_surface->current.keyboard_interactive
+                && layer->mp_layer_surface->mapped)
+            {
+                mp_server->relinquish_focus();
+
+                if (keyboard)
+                    wlr_seat_keyboard_notify_enter(
+                        mp_server->m_seat.mp_wlr_seat,
+                        layer->mp_layer_surface->surface,
+                        keyboard->keycodes,
+                        keyboard->num_keycodes,
+                        &keyboard->modifiers
+                    );
+                else
+                    wlr_seat_keyboard_notify_enter(
+                        mp_server->m_seat.mp_wlr_seat,
+                        layer->mp_layer_surface->surface,
+                        nullptr,
+                        0,
+                        nullptr
+                    );
+
+                return;
+            }
 }

@@ -6,6 +6,7 @@
 #include <kranewl/input/bindings.hh>
 #include <kranewl/layout.hh>
 #include <kranewl/placement.hh>
+#include <kranewl/tree/layer.hh>
 #include <kranewl/tree/view.hh>
 
 #include <optional>
@@ -57,6 +58,10 @@ public:
     void register_view(View_ptr, Workspace_ptr);
     void unregister_view(View_ptr);
     void destroy_view(View_ptr);
+
+    Layer_ptr create_layer(struct wlr_layer_surface_v1*, Output_ptr, SceneLayer);
+    void register_layer(Layer_ptr);
+    void destroy_layer(Layer_ptr);
 
     void focus_view(View_ptr);
     void place_view(Placement&);

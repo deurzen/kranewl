@@ -102,7 +102,7 @@ Server::Server(Model_ptr model)
           wlr_scene_attach_output_layout(scene, mp_output_layout);
           return scene;
       }()),
-      m_layers{
+      m_scene_layers{
           &wlr_scene_tree_create(&mp_scene->node)->node,
           &wlr_scene_tree_create(&mp_scene->node)->node,
           &wlr_scene_tree_create(&mp_scene->node)->node,
@@ -400,10 +400,58 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
 }
 
 void
-Server::handle_new_layer_shell_surface(struct wl_listener*, void*)
+Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Server_ptr server = wl_container_of(listener, server, ml_new_layer_shell_surface);
+    struct wlr_layer_surface_v1* layer_surface
+        = reinterpret_cast<struct wlr_layer_surface_v1*>(data);
+
+    if (!layer_surface->output)
+        layer_surface->output = server->mp_model->mp_output->mp_wlr_output;
+
+    SceneLayer scene_layer;
+    switch (layer_surface->pending.layer) {
+    case ZWLR_LAYER_SHELL_V1_LAYER_BACKGROUND:
+        scene_layer = SCENE_LAYER_BACKGROUND;
+        break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_BOTTOM:
+        scene_layer = SCENE_LAYER_BOTTOM;
+        break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_TOP:
+        scene_layer = SCENE_LAYER_TOP;
+        break;
+    case ZWLR_LAYER_SHELL_V1_LAYER_OVERLAY:
+        scene_layer = SCENE_LAYER_OVERLAY;
+        break;
+    default:
+        spdlog::error("No applicable scene layer found for layer surface");
+        scene_layer = SCENE_LAYER_NONE;
+        break;
+    }
+
+    Output_ptr output = reinterpret_cast<Output_ptr>(layer_surface->output->data);
+    Layer_ptr layer = server->mp_model->create_layer(
+        layer_surface,
+        output,
+        scene_layer
+    );
+
+    layer_surface->data = layer;
+    layer_surface->surface->data = layer->mp_scene
+        = wlr_scene_subsurface_tree_create(
+            server->m_scene_layers[scene_layer],
+            layer_surface->surface
+        );
+    layer->mp_scene->data = layer;
+
+    server->mp_model->register_layer(layer);
+
+	struct wlr_layer_surface_v1_state initial_state = layer_surface->current;
+	layer_surface->current = layer_surface->pending;
+    output->arrange_layers();
+	layer_surface->current = initial_state;
 }
 
 void

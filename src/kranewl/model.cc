@@ -429,7 +429,7 @@ Model::shuffle_main(Direction direction)
             mp_workspace->begin(),
             mp_workspace->begin() + main_count,
             [](View_ptr view1, View_ptr view2) -> bool {
-                return view1->m_last_touched < view2->m_last_touched;
+                return view1->last_touched() < view2->last_touched();
             }
         );
 
@@ -465,7 +465,7 @@ Model::shuffle_stack(Direction direction)
             mp_workspace->begin() + main_count,
             mp_workspace->end(),
             [](View_ptr view1, View_ptr view2) -> bool {
-                return view1->m_last_touched < view2->m_last_touched;
+                return view1->last_touched() < view2->last_touched();
             }
         );
 
@@ -1842,6 +1842,45 @@ Model::destroy_view(View_ptr view)
     m_view_map.erase(view->m_uid);
     delete view;
     spdlog::info("Destroyed view {}", view->m_uid_formatted);
+}
+
+Layer_ptr
+Model::create_layer(
+    struct wlr_layer_surface_v1* layer_surface,
+    Output_ptr output,
+    SceneLayer scene_layer
+)
+{
+    TRACE();
+
+    Layer_ptr layer = new Layer(
+        layer_surface,
+        mp_server,
+        this,
+        output,
+        scene_layer
+    );
+
+    return layer;
+}
+
+void
+Model::register_layer(Layer_ptr layer)
+{
+    TRACE();
+
+    layer->mp_output->add_layer(layer);
+    spdlog::info("Registered layer {}", layer->m_uid_formatted);
+}
+
+void
+Model::destroy_layer(Layer_ptr layer)
+{
+    TRACE();
+
+    layer->mp_output->remove_layer(layer);
+    delete layer;
+    spdlog::info("Destroyed layer {}", layer->m_uid_formatted);
 }
 
 bool

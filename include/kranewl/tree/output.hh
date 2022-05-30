@@ -3,6 +3,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/context.hh>
 #include <kranewl/geometry.hh>
+#include <kranewl/scene-layer.hh>
 #include <kranewl/tree/node.hh>
 
 extern "C" {
@@ -10,9 +11,13 @@ extern "C" {
 #include <wlr/types/wlr_output.h>
 }
 
+#include <unordered_map>
+#include <vector>
+
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
 typedef class Context* Context_ptr;
+typedef class Layer* Layer_ptr;
 
 typedef class Output final : public Node {
 public:
@@ -23,6 +28,7 @@ public:
         struct wlr_scene_output*,
         Region const&&
     );
+
     ~Output();
 
     static void handle_frame(struct wl_listener*, void*);
@@ -33,12 +39,20 @@ public:
 
     void set_context(Context_ptr);
     Context_ptr context() const;
+
     Region full_region() const;
     Region placeable_region() const;
+    void set_placeable_region(Region const&);
+
     bool contains(Pos) const;
     bool contains(Region) const;
 
     void focus_at_cursor();
+
+    void add_layer(Layer_ptr);
+    void remove_layer(Layer_ptr);
+
+    void arrange_layers();
 
 private:
     Context_ptr mp_context;
@@ -46,6 +60,8 @@ private:
     Region m_placeable_region;
 
     bool m_cursor_focus_on_present;
+
+    std::unordered_map<SceneLayer, std::vector<Layer_ptr>> m_layer_map;
 
 public:
     Server_ptr mp_server;

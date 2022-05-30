@@ -3,7 +3,8 @@
 #include <kranewl/input/cursor.hh>
 
 #include <kranewl/input/seat.hh>
-#include <kranewl/layer.hh>
+#include <kranewl/model.hh>
+#include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
@@ -79,17 +80,17 @@ view_at(
     double* sx, double* sy
 )
 {
-    static std::vector<Layer> focus_order = {
-        Layer::Overlay,
-        Layer::Top,
-        Layer::Free,
-        Layer::Tile,
-        Layer::Bottom,
+    static std::vector<SceneLayer> focus_order = {
+        SCENE_LAYER_OVERLAY,
+        SCENE_LAYER_TOP,
+        SCENE_LAYER_FREE,
+        SCENE_LAYER_TILE,
+        SCENE_LAYER_BOTTOM,
     };
 
     struct wlr_scene_node* node;
     for (auto const& layer : focus_order) {
-        if ((node = wlr_scene_node_at(server->m_layers[layer], lx, ly, sx, sy))) {
+        if ((node = wlr_scene_node_at(server->m_scene_layers[layer], lx, ly, sx, sy))) {
             if (node->type != WLR_SCENE_NODE_SURFACE)
                 return nullptr;
 

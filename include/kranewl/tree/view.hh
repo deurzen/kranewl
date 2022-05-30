@@ -3,9 +3,7 @@
 #include <kranewl/common.hh>
 #include <kranewl/decoration.hh>
 #include <kranewl/geometry.hh>
-#include <kranewl/layer.hh>
-#include <kranewl/model.hh>
-#include <kranewl/tree/surface.hh>
+#include <kranewl/scene-layer.hh>
 
 #include <vector>
 #include <chrono>
@@ -88,7 +86,7 @@ typedef struct View {
     void map();
     void unmap();
     void tile(Toggle);
-    void relayer(Layer);
+    void relayer(SceneLayer);
     void raise() const;
     void lower() const;
 
@@ -122,6 +120,10 @@ typedef struct View {
     void set_iconifyable(bool);
     void set_iconified(bool);
     void set_disowned(bool);
+
+    std::chrono::time_point<std::chrono::steady_clock> last_focused() const;
+    std::chrono::time_point<std::chrono::steady_clock> last_touched() const;
+    std::chrono::time_point<std::chrono::steady_clock> managed_since() const;
 
     uint32_t free_decoration_to_wlr_edges() const;
     uint32_t tile_decoration_to_wlr_edges() const;
@@ -184,10 +186,6 @@ typedef struct View {
 
     pid_t m_pid;
 
-    std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
-    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
-    std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
-
 protected:
 
     struct {
@@ -222,55 +220,16 @@ private:
     bool m_iconified;
     bool m_disowned;
 
-    Layer m_layer;
+    SceneLayer m_scene_layer;
 
     OutsideState m_outside_state;
+
+    std::chrono::time_point<std::chrono::steady_clock> m_last_focused;
+    std::chrono::time_point<std::chrono::steady_clock> m_last_touched;
+    std::chrono::time_point<std::chrono::steady_clock> m_managed_since;
 
     void set_inner_region(Region const&);
     void set_active_region(Region const&);
     void set_active_pos(Pos const&);
 
 }* View_ptr;
-
-typedef struct ViewChild* ViewChild_ptr;
-typedef struct SubsurfaceViewChild* SubsurfaceViewChild_ptr;
-typedef struct PopupViewChild* PopupViewChild_ptr;
-
-typedef struct ViewChild {
-    enum class Type {
-        Subsurface,
-        Popup,
-    };
-
-protected:
-    ViewChild(SubsurfaceViewChild_ptr);
-    ViewChild(PopupViewChild_ptr);
-
-    virtual ~ViewChild();
-
-public:
-    Uid m_uid;
-    Type m_type;
-
-    View_ptr mp_view;
-    ViewChild_ptr mp_parent;
-    std::vector<ViewChild_ptr> m_children;
-
-    struct wlr_scene_node* mp_scene;
-    struct wlr_scene_node* mp_scene_surface;
-
-    bool m_mapped;
-
-    float m_alpha;
-    uint32_t m_resize;
-
-    pid_t m_pid;
-
-    struct wl_listener ml_surface_commit;
-    struct wl_listener ml_surface_new_subsurface;
-    struct wl_listener ml_surface_map;
-    struct wl_listener ml_surface_unmap;
-    struct wl_listener ml_surface_destroy;
-    struct wl_listener ml_view_unmap;
-
-}* ViewChild_ptr;

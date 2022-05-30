@@ -1,8 +1,8 @@
 #include <trace.hh>
 
 #include <kranewl/context.hh>
-#include <kranewl/layer.hh>
 #include <kranewl/model.hh>
+#include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
@@ -376,14 +376,20 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         view->free_decoration_to_wlr_edges()
     );
 
-    view->mp_scene = &wlr_scene_tree_create(server->m_layers[Layer::Tile])->node;
+    view->mp_scene = &wlr_scene_tree_create(
+        server->m_scene_layers[SCENE_LAYER_TILE]
+    )->node;
     view->mp_wlr_surface->data = view->mp_scene_surface = wlr_scene_xdg_surface_create(
         view->mp_scene,
         view->mp_wlr_xdg_surface
     );
     view->mp_scene_surface->data = view;
 
-    view->relayer(view->floating() ? Layer::Free : Layer::Tile);
+    view->relayer(
+        view->floating()
+            ? SCENE_LAYER_FREE
+            : SCENE_LAYER_TILE
+    );
 
     for (std::size_t i = 0; i < 4; ++i) {
         view->m_protrusions[i] = wlr_scene_rect_create(

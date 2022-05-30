@@ -971,7 +971,7 @@ LayoutHandler::arrange_paper(
                 return true;
             }
 
-            return lhs->m_last_focused < rhs->m_last_focused;
+            return lhs->last_focused() < rhs->last_focused();
         }
     );
 
