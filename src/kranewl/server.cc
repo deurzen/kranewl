@@ -372,12 +372,8 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
     case WLR_XDG_SURFACE_ROLE_POPUP:
     {
         struct wlr_box mappable_box;
-
-        struct wlr_xdg_surface* parent
-            = wlr_xdg_surface_from_wlr_surface(xdg_surface->popup->parent);
-
         struct wlr_scene_node* parent_node
-            = reinterpret_cast<struct wlr_scene_node*>(parent->data);
+            = reinterpret_cast<struct wlr_scene_node*>(xdg_surface->popup->parent->data);
 
         xdg_surface->data
             = wlr_scene_xdg_surface_create(parent_node, xdg_surface);
@@ -391,7 +387,6 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
         mappable_box.y -= active_region.pos.y;
 
         wlr_xdg_popup_unconstrain_from_box(xdg_surface->popup, &mappable_box);
-
         return;
     }
     case WLR_XDG_SURFACE_ROLE_NONE: return;
@@ -402,14 +397,6 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
         xdg_surface,
         &server->m_seat
     );
-
-    /* view->mp_scene = wlr_scene_xdg_surface_create( */
-    /*     &server->mp_scene->node, */
-    /*     xdg_surface */
-    /* ); */
-
-    /* view->mp_scene->data = view; */
-    /* xdg_surface->data = view->mp_scene; */
 }
 
 void
