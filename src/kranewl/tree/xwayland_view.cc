@@ -20,7 +20,8 @@ XWaylandView::XWaylandView(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Server_ptr server,
     Model_ptr model,
-    Seat_ptr seat
+    Seat_ptr seat,
+    XWayland_ptr xwayland
 )
     : View(
           this,
@@ -30,6 +31,7 @@ XWaylandView::XWaylandView(
           seat,
           wlr_xwayland_surface->surface
       ),
+      mp_xwayland(xwayland),
       mp_wlr_xwayland_surface(wlr_xwayland_surface),
       ml_commit({ .notify = XWaylandView::handle_commit }),
       ml_request_move({ .notify = XWaylandView::handle_request_move }),
@@ -274,8 +276,12 @@ XWaylandView::handle_override_redirect(struct wl_listener* listener, void* data)
 
 }
 
-XWaylandUnmanaged::XWaylandUnmanaged(struct wlr_xwayland_surface* wlr_xwayland_surface)
-    : mp_wlr_xwayland_surface(wlr_xwayland_surface)
+XWaylandUnmanaged::XWaylandUnmanaged(
+    struct wlr_xwayland_surface* wlr_xwayland_surface,
+    XWayland_ptr xwayland
+)
+    : mp_wlr_xwayland_surface(wlr_xwayland_surface),
+      mp_xwayland(xwayland)
 {}
 
 XWaylandUnmanaged::~XWaylandUnmanaged()

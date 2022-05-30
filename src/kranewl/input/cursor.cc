@@ -54,7 +54,7 @@ Cursor::Cursor(
 {
     TRACE();
 
-    wlr_xcursor_manager_load(mp_cursor_manager, 1);
+    wlr_xcursor_manager_load(mp_cursor_manager, 1.f);
 
     wl_signal_add(&cursor->events.motion, &ml_cursor_motion);
     wl_signal_add(&cursor->events.motion_absolute, &ml_cursor_motion_absolute);

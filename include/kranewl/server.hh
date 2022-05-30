@@ -2,6 +2,7 @@
 
 #include <kranewl/geometry.hh>
 #include <kranewl/input/seat.hh>
+#include <kranewl/xwayland.hh>
 
 extern "C" {
 #include <wlr/backend.h>
@@ -45,9 +46,6 @@ private:
 #ifdef XWAYLAND
     static void handle_xwayland_ready(struct wl_listener*, void*);
     static void handle_new_xwayland_surface(struct wl_listener*, void*);
-    static void handle_xwayland_request_activate(struct wl_listener*, void*);
-    static void handle_xwayland_request_configure(struct wl_listener*, void*);
-    static void handle_xwayland_set_hints(struct wl_listener*, void*);
 #endif
 
     Model_ptr mp_model;
@@ -61,7 +59,8 @@ public:
     struct wlr_allocator* mp_allocator;
     struct wlr_compositor* mp_compositor;
 #ifdef XWAYLAND
-    struct wlr_xwayland* mp_xwayland;
+    struct wlr_xwayland* mp_wlr_xwayland;
+    XWayland m_xwayland;
 #endif
     struct wlr_data_device_manager* mp_data_device_manager;
     struct wlr_output_layout* mp_output_layout;
@@ -87,10 +86,6 @@ private:
     struct wl_listener ml_xdg_activation;
     struct wl_listener ml_new_input;
     struct wl_listener ml_xdg_new_toplevel_decoration;
-#ifdef XWAYLAND
-    struct wl_listener ml_xwayland_ready;
-    struct wl_listener ml_new_xwayland_surface;
-#endif
 
     const std::string m_socket;
 

@@ -10,6 +10,7 @@
 #include <kranewl/tree/xdg_view.hh>
 #ifdef XWAYLAND
 #include <kranewl/tree/xwayland_view.hh>
+#include <kranewl/xwayland.hh>
 #endif
 
 #include <spdlog/spdlog.h>
@@ -130,7 +131,8 @@ Server::Server(Model_ptr model)
           };
       }()),
 #ifdef XWAYLAND
-      mp_xwayland(wlr_xwayland_create(mp_display, mp_compositor, 1)),
+      mp_wlr_xwayland(wlr_xwayland_create(mp_display, mp_compositor, true)),
+      m_xwayland({mp_wlr_xwayland, this}),
 #endif
       mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
       mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
@@ -147,10 +149,6 @@ Server::Server(Model_ptr model)
       ml_xdg_activation({ .notify = Server::handle_xdg_activation }),
       ml_new_input({ .notify = Server::handle_new_input }),
       ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
-#ifdef XWAYLAND
-      ml_xwayland_ready({ .notify = Server::handle_xwayland_ready }),
-      ml_new_xwayland_surface({ .notify = Server::handle_new_xwayland_surface }),
-#endif
       m_socket(wl_display_add_socket_auto(mp_display))
 {
     TRACE();
@@ -188,17 +186,6 @@ Server::Server(Model_ptr model)
     // TODO: mp_relative_pointer_manager signals
     // TODO: mp_virtual_pointer_manager signals
     // TODO: mp_virtual_keyboard_manager signals
-
-#ifdef XWAYLAND
-    if (mp_xwayland) {
-        wl_signal_add(&mp_xwayland->events.ready, &ml_xwayland_ready);
-        wl_signal_add(&mp_xwayland->events.new_surface, &ml_new_xwayland_surface);
-        setenv("DISPLAY", mp_xwayland->display_name, 1);
-    } else {
-        spdlog::error("Failed to initiate XWayland");
-        spdlog::warn("Continuing without XWayland functionality");
-    }
-#endif
 
     if (!wlr_backend_start(mp_backend)) {
         wlr_backend_destroy(mp_backend);
@@ -363,11 +350,11 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
 {
     TRACE();
 
-    View_ptr view;
     Server_ptr server = wl_container_of(listener, server, ml_new_xdg_surface);
     struct wlr_xdg_surface* xdg_surface
         = reinterpret_cast<struct wlr_xdg_surface*>(data);
 
+    View_ptr view;
     switch (xdg_surface->role) {
     case WLR_XDG_SURFACE_ROLE_POPUP:
     {
@@ -554,40 +541,3 @@ Server::handle_xdg_toplevel_request_resize(struct wl_listener*, void*)
     TRACE();
 
 }
-
-#ifdef XWAYLAND
-void
-Server::handle_xwayland_ready(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_new_xwayland_surface(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xwayland_request_activate(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xwayland_request_configure(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xwayland_set_hints(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-#endif

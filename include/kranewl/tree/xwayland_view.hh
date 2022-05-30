@@ -1,5 +1,6 @@
 #pragma once
 
+#ifdef XWAYLAND
 #include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
 
@@ -9,14 +10,15 @@ typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
+typedef struct XWayland* XWayland_ptr;
 
-#ifdef XWAYLAND
 typedef struct XWaylandView final : public View {
     XWaylandView(
         struct wlr_xwayland_surface*,
         Server_ptr,
         Model_ptr,
-        Seat_ptr
+        Seat_ptr,
+        XWayland_ptr
     );
 
     ~XWaylandView();
@@ -56,6 +58,8 @@ typedef struct XWaylandView final : public View {
     static void handle_destroy(struct wl_listener*, void*);
     static void handle_override_redirect(struct wl_listener*, void*);
 
+    XWayland_ptr mp_xwayland;
+
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
     struct wl_listener ml_commit;
@@ -80,8 +84,10 @@ typedef struct XWaylandView final : public View {
 }* XWaylandView_ptr;
 
 typedef struct XWaylandUnmanaged final {
-    XWaylandUnmanaged(struct wlr_xwayland_surface*);
+    XWaylandUnmanaged(struct wlr_xwayland_surface*, XWayland_ptr);
     ~XWaylandUnmanaged();
+
+    XWayland_ptr mp_xwayland;
 
     Pos m_pos;
 

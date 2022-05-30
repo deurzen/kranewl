@@ -1823,7 +1823,8 @@ Model::create_xdg_shell_view(
 XWaylandView_ptr
 Model::create_xwayland_view(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
-    Seat_ptr seat
+    Seat_ptr seat,
+    XWayland_ptr xwayland
 )
 {
     TRACE();
@@ -1832,7 +1833,8 @@ Model::create_xwayland_view(
         wlr_xwayland_surface,
         mp_server,
         this,
-        seat
+        seat,
+        xwayland
     );
 
     m_view_map[view->m_uid] = view;
