@@ -2,7 +2,7 @@
 #include <trace.hh>
 
 #include <kranewl/tree/view.hh>
-#include <kranewl/tree/xwayland_view.hh>
+#include <kranewl/tree/xwayland-view.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>

@@ -4,7 +4,7 @@
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
-#include <kranewl/tree/xdg_view.hh>
+#include <kranewl/tree/xdg-view.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>

@@ -13,8 +13,8 @@
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
-#include <kranewl/tree/xdg_view.hh>
-#include <kranewl/tree/xwayland_view.hh>
+#include <kranewl/tree/xdg-view.hh>
+#include <kranewl/tree/xwayland-view.hh>
 #include <kranewl/workspace.hh>
 
 #include <spdlog/spdlog.h>

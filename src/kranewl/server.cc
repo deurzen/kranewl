@@ -7,9 +7,9 @@
 #include <kranewl/model.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
-#include <kranewl/tree/xdg_view.hh>
+#include <kranewl/tree/xdg-view.hh>
 #ifdef XWAYLAND
-#include <kranewl/tree/xwayland_view.hh>
+#include <kranewl/tree/xwayland-view.hh>
 #include <kranewl/xwayland.hh>
 #endif
 
