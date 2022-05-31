@@ -21,14 +21,14 @@ public:
           m_free_views({}, true),
           m_iconified_views({}, true),
           m_disowned_views({}, true),
-          m_focus_follows_mouse(false)
+          m_focus_follows_cursor(false)
     {}
 
     bool empty() const;
     bool contains(View_ptr) const;
 
-    bool focus_follows_mouse() const;
-    void set_focus_follows_mouse(bool);
+    bool focus_follows_cursor() const;
+    void set_focus_follows_cursor(bool);
 
     bool layout_is_free() const;
     bool layout_has_margin() const;
@@ -160,6 +160,6 @@ private:
     Cycle<View_ptr> m_iconified_views;
     Cycle<View_ptr> m_disowned_views;
 
-    bool m_focus_follows_mouse;
+    bool m_focus_follows_cursor;
 
 }* Workspace_ptr;

@@ -38,6 +38,7 @@ struct CursorInput {
 };
 
 typedef class Server* Server_ptr;
+typedef class Model* Model_ptr;
 typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
 typedef struct Node* Node_ptr;
@@ -51,12 +52,14 @@ typedef struct Cursor {
 
     Cursor(
         Server_ptr,
+        Model_ptr,
         Seat_ptr,
         struct wlr_cursor*,
         struct wlr_pointer_constraints_v1*,
         struct wlr_relative_pointer_manager_v1*,
         struct wlr_virtual_pointer_manager_v1*
     );
+
     ~Cursor();
 
     View_ptr view_under_cursor() const;
@@ -78,6 +81,7 @@ typedef struct Cursor {
     static void handle_request_set_cursor(struct wl_listener*, void*);
 
     Server_ptr mp_server;
+    Model_ptr mp_model;
 	Seat_ptr mp_seat;
 
     struct wlr_cursor* mp_wlr_cursor;

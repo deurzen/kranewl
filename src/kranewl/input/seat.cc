@@ -37,6 +37,7 @@ Seat::Seat(
       mp_keyboard_shortcuts_inhibit_manager(keyboard_shortcuts_inhibit_manager),
       mp_cursor(new Cursor(
           server,
+          model,
           this,
           cursor,
           pointer_constraints,

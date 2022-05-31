@@ -98,7 +98,7 @@ Output::handle_present(struct wl_listener* listener, void*)
     Output_ptr output = wl_container_of(listener, output, ml_present);
 
     if (output->m_cursor_focus_on_present && output == output->mp_model->mp_output) {
-        if (true /* TODO: focus_follows_mouse */) {
+        if (output->context()->workspace()->focus_follows_cursor()) {
             View_ptr view_under_cursor
                 = output->mp_seat->mp_cursor->view_under_cursor();
 

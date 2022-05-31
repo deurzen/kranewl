@@ -23,15 +23,15 @@ Workspace::contains(View_ptr view) const
 }
 
 bool
-Workspace::focus_follows_mouse() const
+Workspace::focus_follows_cursor() const
 {
-    return m_focus_follows_mouse;
+    return m_focus_follows_cursor;
 }
 
 void
-Workspace::set_focus_follows_mouse(bool focus_follows_mouse)
+Workspace::set_focus_follows_cursor(bool focus_follows_cursor)
 {
-    m_focus_follows_mouse = focus_follows_mouse;
+    m_focus_follows_cursor = focus_follows_cursor;
 }
 
 bool

@@ -8,6 +8,7 @@
 #include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/util.hh>
+#include <kranewl/workspace.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
@@ -30,6 +31,7 @@ extern "C" {
 
 Cursor::Cursor(
     Server_ptr server,
+    Model_ptr model,
     Seat_ptr seat,
     struct wlr_cursor* cursor,
     struct wlr_pointer_constraints_v1* pointer_constraints,
@@ -37,6 +39,7 @@ Cursor::Cursor(
     struct wlr_virtual_pointer_manager_v1* virtual_pointer_manager
 )
     : mp_server(server),
+      mp_model(model),
       mp_seat(seat),
       mp_wlr_cursor(cursor),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
@@ -363,7 +366,7 @@ cursor_motion_to_client(
 {
     static View_ptr prev_view = nullptr;
 
-    if (true /* TODO: focus_follows_cursor */ && time && view && view != prev_view && view->managed())
+    if (time && view && view != prev_view && view->mp_workspace->focus_follows_cursor() && view->managed())
         cursor->mp_seat->mp_model->focus_view(view);
 
     if (!surface) {
@@ -527,7 +530,7 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
         if (process_cursorbinding(cursor, button, modifiers))
             return;
 
-        if (false /* TODO: !focus_follows_cursor */) {
+        if (!cursor->mp_model->mp_workspace->focus_follows_cursor()) {
             View_ptr view = cursor->view_under_cursor();
 
             if (view && !view->focused() && view->managed())
