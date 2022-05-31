@@ -148,6 +148,7 @@ typedef struct View : public Node {
             || view->m_disowned;
     }
 
+    SceneLayer scene_layer() const { return m_scene_layer; }
     OutsideState outside_state() const;
 
     Server_ptr mp_server;

@@ -392,6 +392,37 @@ Model::sync_focus()
 }
 
 void
+Model::relayer_views(Workspace_ptr workspace)
+{
+    for (View_ptr view : *workspace) {
+        if (is_free(view)) {
+            if (view->scene_layer() != SceneLayer::SCENE_LAYER_FREE)
+                view->relayer(SceneLayer::SCENE_LAYER_FREE);
+                view->lower();
+        } else {
+            if (view->scene_layer() != SceneLayer::SCENE_LAYER_TILE) {
+                view->relayer(SceneLayer::SCENE_LAYER_TILE);
+            }
+        }
+    }
+
+    if (mp_focus)
+        mp_focus->raise();
+}
+
+void
+Model::relayer_views(Context_ptr context)
+{
+    relayer_views(context->workspace());
+}
+
+void
+Model::relayer_views(Output_ptr output)
+{
+    relayer_views(output->context());
+}
+
+void
 Model::cycle_focus(Direction direction)
 {
     TRACE();
@@ -933,6 +964,7 @@ Model::toggle_layout()
     TRACE();
 
     mp_workspace->toggle_layout();
+    relayer_views(mp_workspace);
     apply_layout(mp_workspace);
 }
 
@@ -942,6 +974,7 @@ Model::set_layout(LayoutHandler::LayoutKind layout)
     TRACE();
 
     mp_workspace->set_layout(layout);
+    relayer_views(mp_workspace);
     apply_layout(mp_workspace);
 }
 
@@ -977,6 +1010,7 @@ Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
         for (std::size_t i = 0; i < views.size(); ++i)
             views[i]->set_free_region(regions[i]);
 
+    relayer_views(mp_workspace);
     apply_layout(mp_workspace);
 }
 

@@ -85,9 +85,13 @@ public:
     void cursor_interactive(Cursor::Mode, View_ptr);
     void abort_cursor_interactive();
 
-    void sync_focus();
     void cycle_focus(Direction);
     void drag_focus(Direction);
+
+    void sync_focus();
+    void relayer_views(Workspace_ptr);
+    void relayer_views(Context_ptr);
+    void relayer_views(Output_ptr);
 
     void reverse_views();
     void rotate_views(Direction);
