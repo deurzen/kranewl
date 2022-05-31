@@ -1158,7 +1158,6 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
     }
 
     apply_layout(view->mp_workspace);
-    mp_output->focus_at_cursor();
 }
 
 void
@@ -1217,7 +1216,6 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
 
     Workspace_ptr workspace = view->mp_workspace;
     apply_layout(workspace);
-    mp_output->focus_at_cursor();
 }
 
 void
@@ -1342,7 +1340,6 @@ Model::set_contained_view(Toggle toggle, View_ptr view)
 
     Workspace_ptr workspace = view->mp_workspace;
     apply_layout(workspace);
-    mp_output->focus_at_cursor();
 }
 
 void
@@ -1426,7 +1423,6 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
             return;
 
         workspace->view_to_icon(view);
-        // TODO: set iconify state
         view->unmap();
         view->set_iconified(true);
         break;
@@ -1437,7 +1433,6 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
             return;
 
         workspace->icon_to_view(view);
-        // TODO: unset iconify state
         view->set_iconified(false);
         break;
     }
@@ -1456,7 +1451,6 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
     }
 
     apply_layout(workspace);
-    mp_output->focus_at_cursor();
     sync_focus();
 }
 
