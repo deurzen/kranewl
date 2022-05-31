@@ -66,6 +66,8 @@ public:
         Seat_ptr,
         XWayland_ptr
     );
+
+    void destroy_unmanaged(XWaylandUnmanaged_ptr);
 #endif
     void register_view(View_ptr, Workspace_ptr);
     void unregister_view(View_ptr);

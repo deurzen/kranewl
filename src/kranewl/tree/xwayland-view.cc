@@ -45,7 +45,6 @@ XWaylandView::XWaylandView(
       mp_wlr_xwayland_surface(wlr_xwayland_surface),
       ml_map({ .notify = XWaylandView::handle_map }),
       ml_unmap({ .notify = XWaylandView::handle_unmap }),
-      ml_commit({ .notify = XWaylandView::handle_commit }),
       ml_request_activate({ .notify = XWaylandView::handle_request_activate }),
       ml_request_configure({ .notify = XWaylandView::handle_request_configure }),
       ml_request_fullscreen({ .notify = XWaylandView::handle_request_fullscreen }),
@@ -91,18 +90,18 @@ XWaylandView::format_uid()
     m_uid_formatted = uid_ss.str();
 }
 
-Region
-XWaylandView::constraints()
-{
-    TRACE();
-
-}
-
 pid_t
 XWaylandView::pid()
 {
     TRACE();
     return mp_wlr_xwayland_surface->pid;
+}
+
+Region
+XWaylandView::constraints()
+{
+    TRACE();
+
 }
 
 bool
@@ -210,7 +209,7 @@ XWaylandView::activate(Toggle toggle)
             );
 
         wlr_xwayland_surface_activate(mp_wlr_xwayland_surface, true);
-		wlr_xwayland_surface_restack(
+        wlr_xwayland_surface_restack(
             mp_wlr_xwayland_surface,
             nullptr,
             XCB_STACK_MODE_ABOVE
@@ -365,8 +364,6 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
         wlr_scene_node_lower_to_bottom(&view->m_protrusions[i]->node);
     }
 
-    wl_signal_add(&xwayland_surface->surface->events.commit, &view->ml_commit);
-
     Workspace_ptr workspace = model->mp_workspace;
 
     view->set_mapped(true);
@@ -381,8 +378,6 @@ XWaylandView::handle_unmap(struct wl_listener* listener, void*)
 
     XWaylandView_ptr view = wl_container_of(listener, view, ml_unmap);
 
-    wl_list_remove(&view->ml_commit.link);
-
     view->activate(Toggle::Off);
     view->mp_model->unregister_view(view);
 
@@ -392,13 +387,6 @@ XWaylandView::handle_unmap(struct wl_listener* listener, void*)
 
     if (view->mp_model->mp_workspace)
         view->mp_model->apply_layout(view->mp_workspace);
-}
-
-void
-XWaylandView::handle_commit(struct wl_listener*, void*)
-{
-    TRACE();
-
 }
 
 void
@@ -534,9 +522,9 @@ XWaylandView::handle_set_override_redirect(struct wl_listener* listener, void* d
         = reinterpret_cast<struct wlr_xwayland_surface*>(data);
 
     if (xwayland_surface->mapped)
-        handle_unmap(&view->ml_unmap, nullptr);
+        XWaylandView::handle_unmap(&view->ml_unmap, nullptr);
 
-    handle_destroy(&view->ml_destroy, view);
+    XWaylandView::handle_destroy(&view->ml_destroy, view);
     xwayland_surface->data = nullptr;
 
     XWaylandUnmanaged_ptr unmanaged = view->mp_model->create_xwayland_unmanaged(
@@ -635,9 +623,10 @@ XWaylandUnmanaged::XWaylandUnmanaged(
       mp_output(nullptr),
       mp_xwayland(xwayland),
       m_region({}),
+      mp_wlr_surface(wlr_xwayland_surface->surface),
+      m_pid(0),
       ml_map({ .notify = handle_map }),
       ml_unmap({ .notify = handle_unmap }),
-      ml_commit({ .notify = handle_commit }),
       ml_set_override_redirect({ .notify = handle_set_override_redirect }),
       ml_set_geometry({ .notify = handle_set_geometry }),
       ml_request_activate({ .notify = handle_request_activate }),
@@ -648,7 +637,6 @@ XWaylandUnmanaged::XWaylandUnmanaged(
     wl_signal_add(&mp_wlr_xwayland_surface->events.map, &ml_map);
     wl_signal_add(&mp_wlr_xwayland_surface->events.unmap, &ml_unmap);
     wl_signal_add(&mp_wlr_xwayland_surface->events.set_override_redirect, &ml_set_override_redirect);
-    wl_signal_add(&mp_wlr_xwayland_surface->events.set_geometry, &ml_set_geometry);
     wl_signal_add(&mp_wlr_xwayland_surface->events.request_activate, &ml_request_activate);
     wl_signal_add(&mp_wlr_xwayland_surface->events.request_configure, &ml_request_configure);
     wl_signal_add(&mp_wlr_xwayland_surface->events.request_fullscreen, &ml_request_fullscreen);
@@ -663,70 +651,280 @@ XWaylandUnmanaged::format_uid()
 {
     std::stringstream uid_ss;
     uid_ss << "0x" << std::hex << uid() << std::dec;
+    uid_ss << " [" << m_pid << "]";
     uid_ss << " (XU)";
     m_uid_formatted = uid_ss.str();
 }
 
-void
-XWaylandUnmanaged::handle_map(struct wl_listener*, void*)
+pid_t
+XWaylandUnmanaged::pid()
 {
     TRACE();
-
+    return mp_wlr_xwayland_surface->pid;
 }
 
 void
-XWaylandUnmanaged::handle_unmap(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_map(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_map);
+    Server_ptr server = unmanaged->mp_server;
+    Model_ptr model = unmanaged->mp_model;
+
+    unmanaged->m_pid = unmanaged->pid();
+    unmanaged->format_uid();
+
+    struct wlr_xwayland_surface* xwayland_surface
+        = reinterpret_cast<struct wlr_xwayland_surface*>(data);
+    unmanaged->mp_wlr_surface = xwayland_surface->surface;
+
+    unmanaged->m_region = Region{
+        .pos = Pos{
+            .x = xwayland_surface->x,
+            .y = xwayland_surface->y,
+        },
+        .dim = Dim{
+            .w = xwayland_surface->width,
+            .h = xwayland_surface->height,
+        }
+    };
+
+    unmanaged->m_app_id = unmanaged->m_class = xwayland_surface->class_
+        ? xwayland_surface->class_
+        : "N/a";
+    unmanaged->m_instance = xwayland_surface->instance
+        ? xwayland_surface->instance
+        : "N/a";
+    unmanaged->m_title = xwayland_surface->title
+        ? xwayland_surface->title
+        : "N/a";
+    unmanaged->m_title_formatted = unmanaged->m_title; // TODO: format title
+
+    unmanaged->mp_scene = &wlr_scene_tree_create(
+        server->m_scene_layers[SCENE_LAYER_TILE]
+    )->node;
+
+    unmanaged->mp_wlr_surface->data = unmanaged->mp_scene_surface = wlr_scene_subsurface_tree_create(
+        unmanaged->mp_scene,
+        unmanaged->mp_wlr_surface
+    );
+    unmanaged->mp_scene_surface->data = unmanaged;
+
+    wlr_scene_node_reparent(
+        unmanaged->mp_scene,
+        unmanaged->mp_server->m_scene_layers[SCENE_LAYER_FREE]
+    );
+
+    wlr_scene_node_set_position(
+        unmanaged->mp_scene,
+        unmanaged->m_region.pos.x,
+        unmanaged->m_region.pos.y
+    );
+
+    wl_signal_add(&xwayland_surface->events.set_geometry, &unmanaged->ml_set_geometry);
+
+    struct wlr_seat* wlr_seat = unmanaged->mp_seat->mp_wlr_seat;
+
+    if (wlr_xwayland_or_surface_wants_focus(xwayland_surface)) {
+        wlr_xwayland_set_seat(unmanaged->mp_xwayland->mp_wlr_xwayland, wlr_seat);
+
+        struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(wlr_seat);
+        if (!keyboard) {
+            wlr_seat_keyboard_notify_enter(
+                wlr_seat,
+                xwayland_surface->surface,
+                nullptr,
+                0,
+                nullptr
+            );
+
+            return;
+        }
+
+        wlr_seat_keyboard_notify_enter(
+            wlr_seat,
+            xwayland_surface->surface,
+            keyboard->keycodes,
+            keyboard->num_keycodes,
+            &keyboard->modifiers
+        );
+    }
 }
 
 void
-XWaylandUnmanaged::handle_commit(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_unmap(struct wl_listener* listener, void*)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_unmap);
+    struct wlr_xwayland_surface* xwayland_surface = unmanaged->mp_wlr_xwayland_surface;
+    struct wlr_seat* wlr_seat = unmanaged->mp_seat->mp_wlr_seat;
+
+    wl_list_remove(&unmanaged->ml_set_geometry.link);
+
+    if (wlr_seat->keyboard_state.focused_surface == xwayland_surface->surface) {
+        if (xwayland_surface->parent && xwayland_surface->parent->surface
+                && wlr_xwayland_or_surface_wants_focus(xwayland_surface->parent))
+        {
+            struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(wlr_seat);
+            if (!keyboard) {
+                wlr_seat_keyboard_notify_enter(
+                    wlr_seat,
+                    xwayland_surface->parent->surface,
+                    nullptr,
+                    0,
+                    nullptr
+                );
+
+                return;
+            }
+
+            wlr_seat_keyboard_notify_enter(
+                wlr_seat,
+                xwayland_surface->parent->surface,
+                keyboard->keycodes,
+                keyboard->num_keycodes,
+                &keyboard->modifiers
+            );
+
+            return;
+        }
+
+        unmanaged->mp_model->refocus();
+    }
 }
 
 void
-XWaylandUnmanaged::handle_set_override_redirect(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_set_override_redirect(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_set_override_redirect);
+    struct wlr_xwayland_surface* xwayland_surface
+        = reinterpret_cast<struct wlr_xwayland_surface*>(data);
+
+    if (xwayland_surface->mapped)
+        XWaylandUnmanaged::handle_unmap(&unmanaged->ml_unmap, nullptr);
+
+    XWaylandUnmanaged::handle_destroy(&unmanaged->ml_destroy, unmanaged);
+    xwayland_surface->data = nullptr;
+
+    XWaylandView_ptr view = unmanaged->mp_model->create_xwayland_view(
+        xwayland_surface,
+        unmanaged->mp_seat,
+        unmanaged->mp_xwayland
+    );
+
+    if (xwayland_surface->mapped)
+        XWaylandView::handle_map(&view->ml_map, xwayland_surface);
 }
 
 void
-XWaylandUnmanaged::handle_set_geometry(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_set_geometry(struct wl_listener* listener, void*)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_set_geometry);
+    struct wlr_xwayland_surface* xwayland_surface = unmanaged->mp_wlr_xwayland_surface;
+
+    Pos new_pos = Pos{
+        .x = xwayland_surface->x,
+        .y = xwayland_surface->y,
+    };
+
+
+    if (unmanaged->m_region.pos != new_pos)
+    {
+        unmanaged->m_region.pos = new_pos;
+        wlr_scene_node_set_position(
+            unmanaged->mp_scene,
+            unmanaged->m_region.pos.x,
+            unmanaged->m_region.pos.y
+        );
+    }
 }
 
 void
-XWaylandUnmanaged::handle_request_activate(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_request_activate(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_request_activate);
+    struct wlr_xwayland_surface* xwayland_surface
+        = reinterpret_cast<struct wlr_xwayland_surface*>(data);
+
+    if (!xwayland_surface->mapped)
+        return;
+
+    struct wlr_seat* wlr_seat = unmanaged->mp_seat->mp_wlr_seat;
+
+    if (wlr_xwayland_or_surface_wants_focus(xwayland_surface)) {
+        wlr_xwayland_set_seat(unmanaged->mp_xwayland->mp_wlr_xwayland, wlr_seat);
+
+        struct wlr_keyboard* keyboard = wlr_seat_get_keyboard(wlr_seat);
+        if (!keyboard) {
+            wlr_seat_keyboard_notify_enter(
+                wlr_seat,
+                xwayland_surface->surface,
+                nullptr,
+                0,
+                nullptr
+            );
+
+            return;
+        }
+
+        wlr_seat_keyboard_notify_enter(
+            wlr_seat,
+            xwayland_surface->surface,
+            keyboard->keycodes,
+            keyboard->num_keycodes,
+            &keyboard->modifiers
+        );
+    }
 }
 
 void
-XWaylandUnmanaged::handle_request_configure(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_request_configure(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_request_configure);
+    struct wlr_xwayland_surface_configure_event* event
+        = reinterpret_cast<struct wlr_xwayland_surface_configure_event*>(data);
+
+    wlr_xwayland_surface_configure(
+        unmanaged->mp_wlr_xwayland_surface,
+        event->x,
+        event->y,
+        event->width,
+        event->height
+    );
 }
 
 void
 XWaylandUnmanaged::handle_request_fullscreen(struct wl_listener*, void*)
 {
     TRACE();
-
+    // TODO
 }
 
 void
-XWaylandUnmanaged::handle_destroy(struct wl_listener*, void*)
+XWaylandUnmanaged::handle_destroy(struct wl_listener* listener, void*)
 {
     TRACE();
 
+    XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_destroy);
+
+    wl_list_remove(&unmanaged->ml_map.link);
+    wl_list_remove(&unmanaged->ml_unmap.link);
+    wl_list_remove(&unmanaged->ml_set_override_redirect.link);
+    wl_list_remove(&unmanaged->ml_request_activate.link);
+    wl_list_remove(&unmanaged->ml_request_configure.link);
+    wl_list_remove(&unmanaged->ml_request_fullscreen.link);
+    wl_list_remove(&unmanaged->ml_destroy.link);
+
+    unmanaged->mp_model->destroy_unmanaged(unmanaged);
 }
 #endif

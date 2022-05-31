@@ -152,9 +152,16 @@ XWayland::handle_new_surface(struct wl_listener* listener, void* data)
     struct wlr_xwayland_surface* xwayland_surface
         = reinterpret_cast<struct wlr_xwayland_surface*>(data);
 
-    XWaylandView_ptr xwayland_view = xwayland->mp_model->create_xwayland_view(
-        xwayland_surface,
-        xwayland->mp_seat,
-        xwayland
-    );
+    if (xwayland_surface->override_redirect)
+        xwayland->mp_model->create_xwayland_unmanaged(
+            xwayland_surface,
+            xwayland->mp_seat,
+            xwayland
+        );
+    else
+        xwayland->mp_model->create_xwayland_view(
+            xwayland_surface,
+            xwayland->mp_seat,
+            xwayland
+        );
 }

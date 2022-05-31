@@ -280,6 +280,7 @@ Model::refocus()
         mp_workspace->activate_view(mp_focus);
     }
 
+    mp_focus->focus(Toggle::Off);
     mp_focus->focus(Toggle::On);
     mp_focus->set_urgent(false);
 
@@ -1861,8 +1862,20 @@ Model::create_xwayland_unmanaged(
     );
 
     m_unmanaged_map[node->uid()] = node;
+    spdlog::info("Created unmanaged X client {}", node->uid_formatted());
 
     return node;
+}
+
+void
+Model::destroy_unmanaged(XWaylandUnmanaged_ptr unmanaged)
+{
+    TRACE();
+
+    m_unmanaged_map.erase(unmanaged->uid());
+    spdlog::info("Destroyed unmanaged X client {}", unmanaged->uid_formatted());
+
+    delete unmanaged;
 }
 #endif
 

@@ -91,6 +91,8 @@ typedef struct XWaylandUnmanaged final : public Node {
 
     void format_uid() override;
 
+    pid_t pid();
+
     static void handle_map(struct wl_listener*, void*);
     static void handle_unmap(struct wl_listener*, void*);
     static void handle_commit(struct wl_listener*, void*);
@@ -111,7 +113,19 @@ typedef struct XWaylandUnmanaged final : public Node {
 
     Region m_region;
 
+    std::string m_title;
+    std::string m_title_formatted;
+    std::string m_app_id;
+    std::string m_class;
+    std::string m_instance;
+
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
+
+    struct wlr_surface* mp_wlr_surface;
+    struct wlr_scene_node* mp_scene;
+    struct wlr_scene_node* mp_scene_surface;
+
+    pid_t m_pid;
 
     struct wl_listener ml_map;
     struct wl_listener ml_unmap;
