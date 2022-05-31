@@ -463,7 +463,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
         wlr_keyboard_set_keymap(device->keyboard, keymap);
         xkb_keymap_unref(keymap);
         xkb_context_unref(context);
-        wlr_keyboard_set_repeat_info(device->keyboard, 200, 100);
+        wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
         wlr_seat_set_keyboard(server->m_seat.mp_wlr_seat, device);
 
         break;
