@@ -23,85 +23,105 @@ typedef struct XWaylandView final : public View {
 
     ~XWaylandView();
 
+    void format_uid() override;
+
     Region constraints() override;
     pid_t pid() override;
     bool prefers_floating() override;
-    View_ptr is_transient_for() override;
 
     void focus(Toggle) override;
     void activate(Toggle) override;
-    void set_tiled(Toggle) override;
     void set_fullscreen(Toggle) override;
-    void set_resizing(Toggle) override;
 
     void configure(Region const&, Extents const&, bool) override;
     void close() override;
     void close_popups() override;
-    void destroy() override;
 
-    static void handle_commit(struct wl_listener*, void*);
-    static void handle_request_move(struct wl_listener*, void*);
-    static void handle_request_resize(struct wl_listener*, void*);
-    static void handle_request_maximize(struct wl_listener*, void*);
-    static void handle_request_minimize(struct wl_listener*, void*);
-    static void handle_request_configure(struct wl_listener*, void*);
-    static void handle_request_fullscreen(struct wl_listener*, void*);
-    static void handle_request_activate(struct wl_listener*, void*);
-    static void handle_set_title(struct wl_listener*, void*);
-    static void handle_set_class(struct wl_listener*, void*);
-    static void handle_set_role(struct wl_listener*, void*);
-    static void handle_set_window_type(struct wl_listener*, void*);
-    static void handle_set_hints(struct wl_listener*, void*);
-    static void handle_set_decorations(struct wl_listener*, void*);
     static void handle_map(struct wl_listener*, void*);
     static void handle_unmap(struct wl_listener*, void*);
+    static void handle_commit(struct wl_listener*, void*);
+    static void handle_request_activate(struct wl_listener*, void*);
+    static void handle_request_configure(struct wl_listener*, void*);
+    static void handle_request_fullscreen(struct wl_listener*, void*);
+    static void handle_request_minimize(struct wl_listener*, void*);
+    static void handle_request_maximize(struct wl_listener*, void*);
+    static void handle_request_move(struct wl_listener*, void*);
+    static void handle_request_resize(struct wl_listener*, void*);
+    static void handle_set_override_redirect(struct wl_listener*, void*);
+    static void handle_set_title(struct wl_listener*, void*);
+    static void handle_set_class(struct wl_listener*, void*);
+    static void handle_set_hints(struct wl_listener*, void*);
     static void handle_destroy(struct wl_listener*, void*);
-    static void handle_override_redirect(struct wl_listener*, void*);
 
     XWayland_ptr mp_xwayland;
 
+    std::string m_class;
+    std::string m_instance;
+
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
-    struct wl_listener ml_commit;
-    struct wl_listener ml_request_move;
-    struct wl_listener ml_request_resize;
-    struct wl_listener ml_request_maximize;
-    struct wl_listener ml_request_minimize;
-    struct wl_listener ml_request_configure;
-    struct wl_listener ml_request_fullscreen;
-    struct wl_listener ml_request_activate;
-    struct wl_listener ml_set_title;
-    struct wl_listener ml_set_class;
-    struct wl_listener ml_set_role;
-    struct wl_listener ml_set_window_type;
-    struct wl_listener ml_set_hints;
-    struct wl_listener ml_set_decorations;
     struct wl_listener ml_map;
     struct wl_listener ml_unmap;
+    struct wl_listener ml_commit;
+    struct wl_listener ml_request_activate;
+    struct wl_listener ml_request_configure;
+    struct wl_listener ml_request_fullscreen;
+    struct wl_listener ml_request_minimize;
+    struct wl_listener ml_request_maximize;
+    struct wl_listener ml_request_move;
+    struct wl_listener ml_request_resize;
+    struct wl_listener ml_set_override_redirect;
+    struct wl_listener ml_set_title;
+    struct wl_listener ml_set_class;
+    struct wl_listener ml_set_hints;
     struct wl_listener ml_destroy;
-    struct wl_listener ml_override_redirect;
 
 }* XWaylandView_ptr;
 
-typedef struct XWaylandUnmanaged final {
-    XWaylandUnmanaged(struct wlr_xwayland_surface*, XWayland_ptr);
+typedef struct XWaylandUnmanaged final : public Node {
+    XWaylandUnmanaged(
+        struct wlr_xwayland_surface*,
+        Server_ptr,
+        Model_ptr,
+        Seat_ptr,
+        XWayland_ptr
+    );
+
     ~XWaylandUnmanaged();
+
+    void format_uid() override;
+
+    static void handle_map(struct wl_listener*, void*);
+    static void handle_unmap(struct wl_listener*, void*);
+    static void handle_commit(struct wl_listener*, void*);
+    static void handle_set_override_redirect(struct wl_listener*, void*);
+    static void handle_set_geometry(struct wl_listener*, void*);
+    static void handle_request_activate(struct wl_listener*, void*);
+    static void handle_request_configure(struct wl_listener*, void*);
+    static void handle_request_fullscreen(struct wl_listener*, void*);
+    static void handle_destroy(struct wl_listener*, void*);
+
+    Server_ptr mp_server;
+    Model_ptr mp_model;
+    Seat_ptr mp_seat;
+
+    Output_ptr mp_output;
 
     XWayland_ptr mp_xwayland;
 
-    Pos m_pos;
+    Region m_region;
 
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
+    struct wl_listener ml_map;
+    struct wl_listener ml_unmap;
+    struct wl_listener ml_commit;
+    struct wl_listener ml_set_override_redirect;
+    struct wl_listener ml_set_geometry;
     struct wl_listener ml_request_activate;
     struct wl_listener ml_request_configure;
     struct wl_listener ml_request_fullscreen;
-    struct wl_listener ml_commit;
-    struct wl_listener ml_set_geometry;
-    struct wl_listener ml_map;
-    struct wl_listener ml_unmap;
     struct wl_listener ml_destroy;
-    struct wl_listener ml_override_redirect;
 
 }* XWaylandUnmanaged_ptr;
 #endif

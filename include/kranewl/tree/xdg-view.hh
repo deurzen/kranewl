@@ -25,18 +25,14 @@ typedef struct XDGView final : public View {
     Region constraints() override;
     pid_t pid() override;
     bool prefers_floating() override;
-    View_ptr is_transient_for() override;
 
     void focus(Toggle) override;
     void activate(Toggle) override;
-    void set_tiled(Toggle) override;
     void set_fullscreen(Toggle) override;
-    void set_resizing(Toggle) override;
 
     void configure(Region const&, Extents const&, bool) override;
     void close() override;
     void close_popups() override;
-    void destroy() override;
 
     static void handle_commit(struct wl_listener*, void*);
     static void handle_request_move(struct wl_listener*, void*);

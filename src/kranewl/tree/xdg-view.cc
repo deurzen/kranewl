@@ -90,13 +90,6 @@ XDGView::prefers_floating()
 		&& (state->min_width == state->max_width || state->min_height == state->max_height));
 }
 
-View_ptr
-XDGView::is_transient_for()
-{
-    TRACE();
-
-}
-
 void
 XDGView::focus(Toggle toggle)
 {
@@ -111,6 +104,7 @@ XDGView::focus(Toggle toggle)
         set_focused(true);
         activate(toggle);
         render_decoration();
+        raise();
         break;
     }
     case Toggle::Off:
@@ -193,24 +187,10 @@ XDGView::activate(Toggle toggle)
 }
 
 void
-XDGView::set_tiled(Toggle)
-{
-    TRACE();
-
-}
-
-void
 XDGView::set_fullscreen(Toggle)
 {
     TRACE();
-
-}
-
-void
-XDGView::set_resizing(Toggle)
-{
-    TRACE();
-
+    // TODO
 }
 
 void
@@ -245,13 +225,6 @@ XDGView::close()
 
 void
 XDGView::close_popups()
-{
-    TRACE();
-
-}
-
-void
-XDGView::destroy()
 {
     TRACE();
 
@@ -295,7 +268,9 @@ XDGView::handle_set_title(struct wl_listener* listener, void* data)
     TRACE();
 
     XDGView_ptr view = wl_container_of(listener, view, ml_set_title);
-    view->m_title = view->mp_wlr_xdg_toplevel->title;
+    view->m_title = view->mp_wlr_xdg_toplevel->title
+        ? view->mp_wlr_xdg_toplevel->title
+        : "N/a";
     view->m_title_formatted = view->m_title;
     view->format_uid();
 }
@@ -327,6 +302,8 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     Model_ptr model = view->mp_model;
 
     view->m_pid = view->pid();
+    view->format_uid();
+
     view->set_floating(view->prefers_floating());
 
     struct wlr_xdg_surface* wlr_xdg_surface = view->mp_wlr_xdg_surface;
@@ -357,17 +334,13 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         .pos = Pos{0, 0},
         .dim = preferred_dim
     });
-
-    view->set_tile_region(Region{
-        .pos = Pos{0, 0},
-        .dim = preferred_dim
-    });
+    view->set_tile_region(view->free_region());
 
     view->m_app_id = wlr_xdg_toplevel->app_id
-        ? std::string(wlr_xdg_toplevel->app_id)
+        ? wlr_xdg_toplevel->app_id
         : "N/a";
     view->m_title = wlr_xdg_toplevel->title
-        ? std::string(wlr_xdg_toplevel->title)
+        ? wlr_xdg_toplevel->title
         : "N/a";
     view->m_title_formatted = view->m_title; // TODO: format title
 

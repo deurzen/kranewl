@@ -132,7 +132,7 @@ Server::Server(Model_ptr model)
       }()),
 #ifdef XWAYLAND
       mp_wlr_xwayland(wlr_xwayland_create(mp_display, mp_compositor, true)),
-      m_xwayland({mp_wlr_xwayland, this}),
+      m_xwayland({mp_wlr_xwayland, this, model, &m_seat}),
 #endif
       mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
       mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
@@ -433,13 +433,6 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
             layer_surface->surface
         );
     layer->mp_scene->data = layer;
-
-    server->mp_model->register_layer(layer);
-
-	struct wlr_layer_surface_v1_state initial_state = layer_surface->current;
-	layer_surface->current = layer_surface->pending;
-    output->arrange_layers();
-	layer_surface->current = initial_state;
 }
 
 void

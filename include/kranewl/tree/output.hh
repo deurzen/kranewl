@@ -24,6 +24,7 @@ public:
     Output(
         Server_ptr,
         Model_ptr,
+        Seat_ptr,
         struct wlr_output*,
         struct wlr_scene_output*,
         Region const&&
@@ -67,6 +68,7 @@ private:
 public:
     Server_ptr mp_server;
     Model_ptr mp_model;
+    Seat_ptr mp_seat;
 
     bool m_dirty;
 

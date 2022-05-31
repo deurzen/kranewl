@@ -51,10 +51,10 @@ Model::Model(
       mp_prev_context{nullptr},
       mp_prev_workspace{nullptr},
       m_view_map{},
+      m_unmanaged_map{},
       m_pid_map{},
       m_fullscreen_map{},
       m_sticky_views{},
-      m_unmanaged_views{},
       mp_focus(nullptr),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
@@ -177,6 +177,7 @@ Model::create_output(
     Output_ptr output = new Output(
         mp_server,
         this,
+        &mp_server->m_seat,
         wlr_output,
         wlr_scene_output,
         std::forward<Region const&&>(output_region)
@@ -339,7 +340,7 @@ Model::place_view(Placement& placement)
 
     spdlog::info(
         "Placing view {} at {}",
-        view->m_uid_formatted,
+        view->uid_formatted(),
         std::to_string(view->active_region())
     );
 
@@ -1814,7 +1815,7 @@ Model::create_xdg_shell_view(
         seat
     );
 
-    m_view_map[view->m_uid] = view;
+    m_view_map[view->uid()] = view;
 
     return view;
 }
@@ -1837,9 +1838,31 @@ Model::create_xwayland_view(
         xwayland
     );
 
-    m_view_map[view->m_uid] = view;
+    m_view_map[view->uid()] = view;
 
     return view;
+}
+
+XWaylandUnmanaged_ptr
+Model::create_xwayland_unmanaged(
+    struct wlr_xwayland_surface* wlr_xwayland_surface,
+    Seat_ptr seat,
+    XWayland_ptr xwayland
+)
+{
+    TRACE();
+
+    XWaylandUnmanaged_ptr node = new XWaylandUnmanaged(
+        wlr_xwayland_surface,
+        mp_server,
+        this,
+        seat,
+        xwayland
+    );
+
+    m_unmanaged_map[node->uid()] = node;
+
+    return node;
 }
 #endif
 
@@ -1850,7 +1873,7 @@ Model::register_view(View_ptr view, Workspace_ptr workspace)
 
     view->format_uid();
     move_view_to_workspace(view, workspace);
-    spdlog::info("Registered view {}", view->m_uid_formatted);
+    spdlog::info("Registered view {}", view->uid_formatted());
     sync_focus();
 }
 
@@ -1864,7 +1887,7 @@ Model::unregister_view(View_ptr view)
         apply_layout(view->mp_workspace);
     }
 
-    spdlog::info("Unregistered view {}", view->m_uid_formatted);
+    spdlog::info("Unregistered view {}", view->uid_formatted());
     mp_output->focus_at_cursor();
     sync_focus();
 }
@@ -1874,8 +1897,8 @@ Model::destroy_view(View_ptr view)
 {
     TRACE();
 
-    m_view_map.erase(view->m_uid);
-    spdlog::info("Destroyed view {}", view->m_uid_formatted);
+    m_view_map.erase(view->uid());
+    spdlog::info("Destroyed view {}", view->uid_formatted());
     delete view;
 }
 
@@ -1892,6 +1915,7 @@ Model::create_layer(
         layer_surface,
         mp_server,
         this,
+        &mp_server->m_seat,
         output,
         scene_layer
     );
@@ -1905,7 +1929,7 @@ Model::register_layer(Layer_ptr layer)
     TRACE();
 
     layer->mp_output->add_layer(layer);
-    spdlog::info("Registered layer {}", layer->m_uid_formatted);
+    spdlog::info("Registered layer {}", layer->uid_formatted());
 }
 
 bool

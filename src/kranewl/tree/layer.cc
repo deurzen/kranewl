@@ -23,18 +23,14 @@ Layer::Layer(
     struct wlr_layer_surface_v1* layer_surface,
     Server_ptr server,
     Model_ptr model,
+    Seat_ptr seat,
     Output_ptr output,
     SceneLayer scene_layer
 )
-    : Node(Type::LayerShell),
-      m_uid(reinterpret_cast<std::uintptr_t>(layer_surface)),
-      m_uid_formatted([this]() {
-          std::stringstream uid_ss;
-          uid_ss << "0x" << std::hex << m_uid;
-          return uid_ss.str();
-      }()),
+    : Node(Type::LayerShell, reinterpret_cast<std::uintptr_t>(layer_surface)),
       mp_server(server),
       mp_model(model),
+      mp_seat(seat),
       mp_output(output),
       m_scene_layer(scene_layer),
       mp_layer_surface(layer_surface),
@@ -55,6 +51,29 @@ Layer::~Layer()
 {}
 
 void
+Layer::format_uid()
+{
+    std::stringstream uid_ss;
+    uid_ss << "0x" << std::hex << uid() << std::dec;
+    uid_ss << " [" << m_pid << "]";
+    uid_ss << " (L)";
+    m_uid_formatted = uid_ss.str();
+}
+
+pid_t
+Layer::pid()
+{
+    TRACE();
+
+    pid_t pid;
+    struct wl_client* client
+        = wl_resource_get_client(mp_layer_surface->surface->resource);
+
+    wl_client_get_credentials(client, &pid, nullptr, nullptr);
+    return pid;
+}
+
+void
 Layer::set_mapped(bool mapped)
 {
     m_mapped = mapped;
@@ -73,13 +92,23 @@ Layer::handle_map(struct wl_listener* listener, void*)
 
     Layer_ptr layer = wl_container_of(listener, layer, ml_map);
 
+    layer->m_pid = layer->pid();
+    layer->format_uid();
+
+    layer->mp_model->register_layer(layer);
+
+	struct wlr_layer_surface_v1_state initial_state = layer->mp_layer_surface->current;
+	layer->mp_layer_surface->current = layer->mp_layer_surface->pending;
+    layer->mp_output->arrange_layers();
+	layer->mp_layer_surface->current = initial_state;
+
     wlr_surface_send_enter(
         layer->mp_layer_surface->surface,
         layer->mp_layer_surface->output
     );
 
-    if (layer->mp_server->m_seat.mp_cursor)
-        layer->mp_server->m_seat.mp_cursor->process_cursor_motion(0);
+    if (layer->mp_seat->mp_cursor)
+        layer->mp_seat->mp_cursor->process_cursor_motion(0);
 }
 
 static inline void
@@ -88,13 +117,13 @@ unmap_layer(Layer_ptr layer)
     TRACE();
 
     layer->mp_layer_surface->mapped = 0;
-    struct wlr_seat* seat = layer->mp_server->m_seat.mp_wlr_seat;
+    struct wlr_seat* seat = layer->mp_seat->mp_wlr_seat;
 
     if (layer->mp_layer_surface->surface == seat->keyboard_state.focused_surface)
         layer->mp_model->refocus();
 
-    if (layer->mp_server->m_seat.mp_cursor)
-        layer->mp_server->m_seat.mp_cursor->process_cursor_motion(0);
+    if (layer->mp_seat->mp_cursor)
+        layer->mp_seat->mp_cursor->process_cursor_motion(0);
 }
 
 void

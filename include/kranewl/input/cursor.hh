@@ -5,6 +5,7 @@
 extern "C" {
 #include <linux/input-event-codes.h>
 #include <wlr/backend.h>
+#include <wlr/util/edges.h>
 #include <xkbcommon/xkbcommon.h>
 }
 
@@ -39,6 +40,7 @@ struct CursorInput {
 typedef class Server* Server_ptr;
 typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
+typedef struct Node* Node_ptr;
 
 typedef struct Cursor {
     enum class Mode {
@@ -58,7 +60,9 @@ typedef struct Cursor {
     ~Cursor();
 
     View_ptr view_under_cursor() const;
+    Node_ptr node_under_cursor() const;
 
+    void initiate_cursor_interactive(Mode, View_ptr, uint32_t);
     void initiate_cursor_interactive(Mode, View_ptr);
     void abort_cursor_interactive();
 

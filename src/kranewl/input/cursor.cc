@@ -72,8 +72,8 @@ Cursor::~Cursor()
 
 }
 
-static inline View_ptr
-view_at(
+static inline Node_ptr
+node_at(
     Server_ptr server,
     double lx, double ly,
     struct wlr_surface** surface,
@@ -99,14 +99,47 @@ view_at(
             while (node && !node->data)
                 node = node->parent;
 
-            if (node && node->data && static_cast<Node_ptr>(node->data)->is_focusable())
-                return reinterpret_cast<View_ptr>(node->data);
+            if (node && node->data)
+                return reinterpret_cast<Node_ptr>(node->data);
 
             return nullptr;
         }
     }
 
     return nullptr;
+}
+
+static inline View_ptr
+view_at(
+    Server_ptr server,
+    double lx, double ly,
+    struct wlr_surface** surface,
+    double* sx, double* sy
+)
+{
+    Node_ptr node = node_at(server, lx, ly, surface, sx, sy);
+
+    if (node && node->is_view())
+        return reinterpret_cast<View_ptr>(node);
+
+    return nullptr;
+}
+
+Node_ptr
+Cursor::node_under_cursor() const
+{
+    double sx, sy;
+    struct wlr_surface* surface = nullptr;
+
+    Node_ptr node = node_at(
+        mp_server,
+        mp_wlr_cursor->x,
+        mp_wlr_cursor->y,
+        &surface,
+        &sx, &sy
+    );
+
+    return node;
 }
 
 View_ptr
@@ -127,6 +160,62 @@ Cursor::view_under_cursor() const
 }
 
 void
+Cursor::initiate_cursor_interactive(
+    Mode mode,
+    View_ptr view,
+    uint32_t edges
+)
+{
+    TRACE();
+
+    m_grab_state = {
+        .view = view,
+        .x = mp_wlr_cursor->x,
+        .y = mp_wlr_cursor->y,
+        .region = view->free_region(),
+        .edges = edges
+    };
+
+    switch (mode) {
+    case Mode::Move:
+    {
+        wlr_xcursor_manager_set_cursor_image(
+            mp_cursor_manager,
+            "grab",
+            mp_wlr_cursor
+        );
+        break;
+    }
+    case Mode::Resize:
+    {
+        char const* cursor;
+        if ((edges & WLR_EDGE_LEFT)) {
+            if ((edges & WLR_EDGE_TOP))
+                cursor = "top_left_corner";
+            else
+                cursor = "bottom_left_corner";
+        } else {
+            if ((edges & WLR_EDGE_TOP))
+                cursor = "top_right_corner";
+            else
+                cursor = "bottom_right_corner";
+        }
+
+        wlr_xcursor_manager_set_cursor_image(
+            mp_cursor_manager,
+            cursor,
+            mp_wlr_cursor
+        );
+
+        break;
+    }
+    default: break;
+    }
+
+    m_cursor_mode = mode;
+}
+
+void
 Cursor::initiate_cursor_interactive(Mode mode, View_ptr view)
 {
     TRACE();
@@ -144,7 +233,7 @@ Cursor::initiate_cursor_interactive(Mode mode, View_ptr view)
     {
         wlr_xcursor_manager_set_cursor_image(
             mp_cursor_manager,
-            "fleur",
+            "grab",
             mp_wlr_cursor
         );
         break;

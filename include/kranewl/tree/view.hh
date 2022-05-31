@@ -61,21 +61,19 @@ typedef struct View : public Node {
 
     virtual ~View();
 
+    void format_uid() override;
+
     virtual Region constraints() = 0;
     virtual pid_t pid() = 0;
     virtual bool prefers_floating() = 0;
-    virtual View_ptr is_transient_for() = 0;
 
     virtual void focus(Toggle) = 0;
     virtual void activate(Toggle) = 0;
-    virtual void set_tiled(Toggle) = 0;
     virtual void set_fullscreen(Toggle) = 0;
-    virtual void set_resizing(Toggle) = 0;
 
     virtual void configure(Region const&, Extents const&, bool) = 0;
     virtual void close() = 0;
     virtual void close_popups() = 0;
-    virtual void destroy() = 0;
 
     void map();
     void unmap();
@@ -125,6 +123,7 @@ typedef struct View : public Node {
     Pos const& free_pos() const { return m_free_region.pos; }
     Region const& tile_region() const { return m_tile_region; }
     Region const& active_region() const { return m_active_region; }
+    Region const& inner_region() const { return m_inner_region; }
     Region const& prev_region() const { return m_prev_region; }
     void set_free_region(Region const&);
     void set_free_pos(Pos const&);
@@ -141,20 +140,15 @@ typedef struct View : public Node {
     void set_tile_decoration(Decoration const&);
 
     void touch() { m_last_touched = std::chrono::steady_clock::now(); }
-    void format_uid();
 
     static bool
     is_free(View_ptr view)
     {
         return (view->m_floating && (!view->m_fullscreen || view->m_contained))
-            || view->m_disowned
-            || !view->m_managed;
+            || view->m_disowned;
     }
 
     OutsideState outside_state() const;
-
-    Uid m_uid;
-    std::string m_uid_formatted;
 
     Server_ptr mp_server;
     Model_ptr mp_model;

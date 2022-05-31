@@ -11,6 +11,8 @@ extern "C" {
 #include <array>
 
 typedef class Server* Server_ptr;
+typedef class Model* Model_ptr;
+typedef class Seat* Seat_ptr;
 
 typedef struct XWayland final {
     enum XAtom {
@@ -28,7 +30,13 @@ typedef struct XWayland final {
         XATOM_LAST,
     };
 
-    XWayland(struct wlr_xwayland*, Server_ptr);
+    XWayland(
+        struct wlr_xwayland*,
+        Server_ptr,
+        Model_ptr,
+        Seat_ptr
+    );
+
     ~XWayland();
 
     static void handle_ready(struct wl_listener*, void*);
@@ -40,6 +48,8 @@ typedef struct XWayland final {
     std::array<xcb_atom_t, XATOM_LAST> m_atoms;
 
     Server_ptr mp_server;
+    Model_ptr mp_model;
+    Seat_ptr mp_seat;
 
     struct wl_listener ml_ready;
     struct wl_listener ml_new_surface;

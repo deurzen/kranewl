@@ -1,7 +1,9 @@
 #include <trace.hh>
 
 #include <kranewl/input/seat.hh>
+#include <kranewl/model.hh>
 #include <kranewl/server.hh>
+#include <kranewl/tree/xwayland-view.hh>
 #include <kranewl/xwayland.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
@@ -25,11 +27,18 @@ extern "C" {
 
 #include <cstdlib>
 
-XWayland::XWayland(struct wlr_xwayland* xwayland, Server_ptr server)
+XWayland::XWayland(
+    struct wlr_xwayland* xwayland,
+    Server_ptr server,
+    Model_ptr model,
+    Seat_ptr seat
+)
     : mp_wlr_xwayland(xwayland),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
       m_atoms({}),
       mp_server(server),
+      mp_model(model),
+      mp_seat(seat),
       ml_ready({ .notify = XWayland::handle_ready }),
       ml_new_surface({ .notify = XWayland::handle_new_surface })
 {
@@ -115,7 +124,7 @@ XWayland::handle_ready(struct wl_listener* listener, void*)
 
     wlr_xwayland_set_seat(
         xwayland->mp_wlr_xwayland,
-        xwayland->mp_server->m_seat.mp_wlr_seat
+        xwayland->mp_seat->mp_wlr_seat
     );
 
     struct wlr_xcursor* xcursor;
@@ -139,4 +148,13 @@ XWayland::handle_new_surface(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XWayland_ptr xwayland = wl_container_of(listener, xwayland, ml_new_surface);
+    struct wlr_xwayland_surface* xwayland_surface
+        = reinterpret_cast<struct wlr_xwayland_surface*>(data);
+
+    XWaylandView_ptr xwayland_view = xwayland->mp_model->create_xwayland_view(
+        xwayland_surface,
+        xwayland->mp_seat,
+        xwayland
+    );
 }

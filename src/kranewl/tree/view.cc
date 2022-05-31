@@ -30,13 +30,7 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : Node(Type::XDGShell),
-      m_uid(uid),
-      m_uid_formatted([uid]() {
-          std::stringstream uid_ss;
-          uid_ss << "0x" << std::hex << uid;
-          return uid_ss.str();
-      }()),
+    : Node(Type::XDGShell, uid),
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
@@ -88,8 +82,7 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : Node(Type::XWaylandManaged),
-      m_uid(uid),
+    : Node(Type::XWaylandManaged, uid),
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
@@ -109,6 +102,7 @@ View::View(
       m_active_region({}),
       m_prev_region({}),
       m_inner_region({}),
+      m_activated(false),
       m_focused(false),
       m_mapped(false),
       m_managed(true),
@@ -125,7 +119,8 @@ View::View(
       m_scene_layer(SCENE_LAYER_NONE),
       m_last_focused(std::chrono::steady_clock::now()),
       m_last_touched(std::chrono::steady_clock::now()),
-      m_managed_since(std::chrono::steady_clock::now())
+      m_managed_since(std::chrono::steady_clock::now()),
+      m_outside_state(OutsideState::Unfocused)
 {
     wl_signal_init(&m_events.unmap);
 }
@@ -512,10 +507,10 @@ void
 View::format_uid()
 {
     std::stringstream uid_ss;
-    uid_ss << "0x" << std::hex << m_uid << std::dec;
+    uid_ss << "0x" << std::hex << uid() << std::dec;
     uid_ss << " [" << m_title;
     uid_ss << ", " << m_pid << "]";
-    uid_ss << " (" << (m_type == Type::XDGShell ? "W" : "X") << ")";
+    uid_ss << " (W)";
     m_uid_formatted = uid_ss.str();
 }
 

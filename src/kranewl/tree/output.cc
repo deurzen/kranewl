@@ -27,6 +27,7 @@ extern "C" {
 Output::Output(
     Server_ptr server,
     Model_ptr model,
+    Seat_ptr seat,
     struct wlr_output* wlr_output,
     struct wlr_scene_output* wlr_scene_output,
     Region const&& output_region
@@ -36,6 +37,7 @@ Output::Output(
       m_placeable_region(output_region),
       mp_server(server),
       mp_model(model),
+      mp_seat(seat),
       m_dirty(true),
       m_cursor_focus_on_present(false),
       m_layer_map{
@@ -98,7 +100,7 @@ Output::handle_present(struct wl_listener* listener, void*)
     if (output->m_cursor_focus_on_present && output == output->mp_model->mp_output) {
         if (true /* TODO: focus_follows_mouse */) {
             View_ptr view_under_cursor
-                = output->mp_server->m_seat.mp_cursor->view_under_cursor();
+                = output->mp_seat->mp_cursor->view_under_cursor();
 
             if (view_under_cursor && view_under_cursor->managed())
                 output->mp_model->focus_view(view_under_cursor);
@@ -427,7 +429,7 @@ Output::arrange_layers()
 
     Region placeable_region = m_full_region;
     struct wlr_keyboard* keyboard
-        = wlr_seat_get_keyboard(mp_server->m_seat.mp_wlr_seat);
+        = wlr_seat_get_keyboard(mp_seat->mp_wlr_seat);
 
     // exclusive surfaces
     for (SceneLayer scene_layer : scene_layers_top_bottom)
@@ -452,7 +454,7 @@ Output::arrange_layers()
 
                 if (keyboard)
                     wlr_seat_keyboard_notify_enter(
-                        mp_server->m_seat.mp_wlr_seat,
+                        mp_seat->mp_wlr_seat,
                         layer->mp_layer_surface->surface,
                         keyboard->keycodes,
                         keyboard->num_keycodes,
@@ -460,7 +462,7 @@ Output::arrange_layers()
                     );
                 else
                     wlr_seat_keyboard_notify_enter(
-                        mp_server->m_seat.mp_wlr_seat,
+                        mp_seat->mp_wlr_seat,
                         layer->mp_layer_surface->surface,
                         nullptr,
                         0,

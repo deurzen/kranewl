@@ -27,6 +27,7 @@ typedef struct XWayland* XWayland_ptr;
 typedef struct XDGView* XDGView_ptr;
 #ifdef XWAYLAND
 typedef struct XWaylandView* XWaylandView_ptr;
+typedef struct XWaylandUnmanaged* XWaylandUnmanaged_ptr;
 #endif
 class Config;
 
@@ -54,7 +55,17 @@ public:
 
     XDGView_ptr create_xdg_shell_view(struct wlr_xdg_surface*, Seat_ptr);
 #ifdef XWAYLAND
-    XWaylandView_ptr create_xwayland_view(struct wlr_xwayland_surface*, Seat_ptr, XWayland_ptr);
+    XWaylandView_ptr create_xwayland_view(
+        struct wlr_xwayland_surface*,
+        Seat_ptr,
+        XWayland_ptr
+    );
+
+    XWaylandUnmanaged_ptr create_xwayland_unmanaged(
+        struct wlr_xwayland_surface*,
+        Seat_ptr,
+        XWayland_ptr
+    );
 #endif
     void register_view(View_ptr, Workspace_ptr);
     void unregister_view(View_ptr);
@@ -191,11 +202,11 @@ private:
     Workspace_ptr mp_prev_workspace;
 
     std::unordered_map<Uid, View_ptr> m_view_map;
+    std::unordered_map<Uid, Node_ptr> m_unmanaged_map;
     std::unordered_map<pid_t, View_ptr> m_pid_map;
     std::unordered_map<View_ptr, Region> m_fullscreen_map;
 
     std::vector<View_ptr> m_sticky_views;
-    std::vector<View_ptr> m_unmanaged_views;
 
     View_ptr mp_focus;
 

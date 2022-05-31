@@ -13,18 +13,24 @@ extern "C" {
 
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
+typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 
-typedef struct Layer : public Node {
+typedef struct Layer final : public Node {
     Layer(
         struct wlr_layer_surface_v1*,
         Server_ptr,
         Model_ptr,
+        Seat_ptr,
         Output_ptr,
         SceneLayer
     );
 
     ~Layer();
+
+    void format_uid() override;
+
+    pid_t pid();
 
     static void handle_map(struct wl_listener*, void*);
     static void handle_unmap(struct wl_listener*, void*);
@@ -37,11 +43,9 @@ typedef struct Layer : public Node {
     Region const& region() { return m_region; }
     void set_region(Region const&);
 
-    Uid m_uid;
-    std::string m_uid_formatted;
-
     Server_ptr mp_server;
     Model_ptr mp_model;
+    Seat_ptr mp_seat;
 
     Output_ptr mp_output;
 
