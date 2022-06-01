@@ -6,6 +6,7 @@
 #include <kranewl/conf/config.hh>
 #include <kranewl/context.hh>
 #include <kranewl/cycle.t.hh>
+#include <kranewl/env.hh>
 #include <kranewl/exec.hh>
 #include <kranewl/input/cursor-bindings.hh>
 #include <kranewl/input/cursor.hh>
@@ -37,6 +38,7 @@ extern "C" {
 
 Model::Model(
     Config const& config,
+    std::string const& env_path,
     [[maybe_unused]] std::optional<std::string> autostart_path
 )
     : m_config{config},
@@ -60,6 +62,8 @@ Model::Model(
       m_cursor_bindings(Bindings::cursor_bindings)
 {
     TRACE();
+
+    parse_and_set_env_vars(env_path);
 
 #ifdef NDEBUG
     if (autostart_path) {

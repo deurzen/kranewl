@@ -34,7 +34,7 @@ class Config;
 class Model final
 {
 public:
-    Model(Config const&, std::optional<std::string>);
+    Model(Config const&, std::string const&, std::optional<std::string>);
     ~Model();
 
     void register_server(Server_ptr);
