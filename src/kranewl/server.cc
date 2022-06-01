@@ -50,6 +50,7 @@ extern "C" {
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
@@ -158,6 +159,7 @@ Server::Server(Model_ptr model)
     wlr_data_control_manager_v1_create(mp_display);
     wlr_gamma_control_manager_v1_create(mp_display);
     wlr_primary_selection_v1_device_manager_create(mp_display);
+    wlr_viewporter_create(mp_display);
 
     wlr_server_decoration_manager_set_default_mode(
         mp_server_decoration_manager,
