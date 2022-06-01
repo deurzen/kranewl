@@ -40,9 +40,10 @@ public:
     static void handle_destroy(struct wl_listener*, void*);
     static void handle_request_set_selection(struct wl_listener*, void*);
     static void handle_request_set_primary_selection(struct wl_listener*, void*);
-    static void handle_inhibit_manager_new_inhibitor(struct wl_listener*, void*);
-    static void handle_inhibit_manager_inhibit_activate(struct wl_listener*, void*);
-    static void handle_inhibit_manager_inhibit_deactivate(struct wl_listener*, void*);
+    static void handle_idle_new_inhibitor(struct wl_listener*, void*);
+    static void handle_idle_destroy_inhibitor(struct wl_listener*, void*);
+    static void handle_input_inhibit_activate(struct wl_listener*, void*);
+    static void handle_input_inhibit_deactivate(struct wl_listener*, void*);
 
 public:
     Server_ptr mp_server;
@@ -61,8 +62,9 @@ public:
     struct wl_listener ml_destroy;
     struct wl_listener ml_request_set_selection;
     struct wl_listener ml_request_set_primary_selection;
-    struct wl_listener ml_inhibit_manager_new_inhibitor;
-    struct wl_listener ml_inhibit_manager_inhibit_activate;
-    struct wl_listener ml_inhibit_manager_inhibit_deactivate;
+    struct wl_listener ml_idle_new_inhibitor;
+    struct wl_listener ml_idle_destroy_inhibitor;
+    struct wl_listener ml_input_inhibit_activate;
+    struct wl_listener ml_input_inhibit_deactivate;
 
 }* Seat_ptr;

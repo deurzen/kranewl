@@ -367,8 +367,19 @@ cursor_motion_to_client(
 {
     static View_ptr prev_view = nullptr;
 
-    if (time && view && view != prev_view && view->mp_workspace->focus_follows_cursor() && view->managed())
-        cursor->mp_seat->mp_model->focus_view(view);
+    if (time) {
+        wlr_idle_notify_activity(
+            cursor->mp_seat->mp_idle,
+            cursor->mp_seat->mp_wlr_seat
+        );
+
+        if (view && view != prev_view
+            && view->mp_workspace->focus_follows_cursor() && view->managed())
+        {
+            cursor->mp_seat->mp_model->focus_view(view);
+            prev_view = view;
+        }
+    }
 
     if (!surface) {
         wlr_seat_pointer_notify_clear_focus(cursor->mp_seat->mp_wlr_seat);
@@ -383,8 +394,6 @@ cursor_motion_to_client(
 
     wlr_seat_pointer_notify_enter(cursor->mp_seat->mp_wlr_seat, surface, sx, sy);
     wlr_seat_pointer_notify_motion(cursor->mp_seat->mp_wlr_seat, time, sx, sy);
-
-    prev_view = view;
 }
 
 void
@@ -571,11 +580,12 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
     TRACE();
 
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_axis);
+    Seat_ptr seat = cursor->mp_seat;
     struct wlr_event_pointer_axis* event
         = reinterpret_cast<struct wlr_event_pointer_axis*>(data);
 
     struct wlr_keyboard* keyboard
-        = wlr_seat_get_keyboard(cursor->mp_seat->mp_wlr_seat);
+        = wlr_seat_get_keyboard(seat->mp_wlr_seat);
 
     uint32_t button = 0;
     uint32_t modifiers = keyboard
@@ -599,15 +609,17 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
         default: break;
         }
 
-    if (!process_cursorbinding(cursor, button, modifiers))
+    if (!process_cursorbinding(cursor, button, modifiers)) {
+        wlr_idle_notify_activity(seat->mp_idle, seat->mp_wlr_seat);
         wlr_seat_pointer_notify_axis(
-            cursor->mp_seat->mp_wlr_seat,
+            seat->mp_wlr_seat,
             event->time_msec,
             event->orientation,
             event->delta,
             event->delta_discrete,
             event->source
         );
+    }
 }
 
 void
