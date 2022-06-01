@@ -7,10 +7,13 @@
 
 extern "C" {
 #include <wlr/types/wlr_cursor.h>
-#include <wlr/types/wlr_seat.h>
-#include <wlr/types/wlr_xcursor_manager.h>
+#include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_idle_inhibit_v1.h>
 #include <wlr/types/wlr_input_inhibitor.h>
+#include <wlr/types/wlr_primary_selection.h>
+#include <wlr/types/wlr_primary_selection_v1.h>
+#include <wlr/types/wlr_seat.h>
+#include <wlr/types/wlr_xcursor_manager.h>
 }
 
 Seat::Seat(
@@ -101,17 +104,35 @@ Seat::handle_destroy(struct wl_listener*, void*)
 }
 
 void
-Seat::handle_request_set_selection(struct wl_listener*, void*)
+Seat::handle_request_set_selection(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Seat_ptr seat = wl_container_of(listener, seat, ml_request_set_selection);
+    struct wlr_seat_request_set_selection_event* event
+        = reinterpret_cast<struct wlr_seat_request_set_selection_event*>(data);
+
+    wlr_seat_set_selection(
+        seat->mp_wlr_seat,
+        event->source,
+        event->serial
+    );
 }
 
 void
-Seat::handle_request_set_primary_selection(struct wl_listener*, void*)
+Seat::handle_request_set_primary_selection(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Seat_ptr seat = wl_container_of(listener, seat, ml_request_set_primary_selection);
+    struct wlr_seat_request_set_primary_selection_event* event
+        = reinterpret_cast<struct wlr_seat_request_set_primary_selection_event*>(data);
+
+    wlr_seat_set_primary_selection(
+        seat->mp_wlr_seat,
+        event->source,
+        event->serial
+    );
 }
 
 void
