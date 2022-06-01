@@ -434,6 +434,12 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
             layer_surface->surface
         );
     layer->mp_scene->data = layer;
+
+    server->mp_model->register_layer(layer);
+    struct wlr_layer_surface_v1_state initial_state = layer->mp_layer_surface->current;
+    layer->mp_layer_surface->current = layer->mp_layer_surface->pending;
+    layer->mp_output->arrange_layers();
+    layer->mp_layer_surface->current = initial_state;
 }
 
 void

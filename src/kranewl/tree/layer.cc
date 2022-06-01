@@ -98,13 +98,6 @@ Layer::handle_map(struct wl_listener* listener, void*)
     layer->m_pid = layer->pid();
     layer->format_uid();
 
-    layer->mp_model->register_layer(layer);
-
-    struct wlr_layer_surface_v1_state initial_state = layer->mp_layer_surface->current;
-    layer->mp_layer_surface->current = layer->mp_layer_surface->pending;
-    layer->mp_output->arrange_layers();
-    layer->mp_layer_surface->current = initial_state;
-
     wlr_surface_send_enter(
         layer->mp_layer_surface->surface,
         layer->mp_layer_surface->output
