@@ -413,6 +413,44 @@ static const KeyBindings key_bindings = {
     CALL(activate_workspace_current_context(9))
 },
 
+// workspace client movers
+{ { XKB_KEY_braceright, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_next_workspace(Direction::Forward))
+},
+{ { XKB_KEY_braceleft, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_next_workspace(Direction::Backward))
+},
+{ { XKB_KEY_exclam, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(0))
+},
+{ { XKB_KEY_at, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(1))
+},
+{ { XKB_KEY_numbersign, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(2))
+},
+{ { XKB_KEY_dollar, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(3))
+},
+{ { XKB_KEY_percent, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(4))
+},
+{ { XKB_KEY_asciicircum, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(5))
+},
+{ { XKB_KEY_ampersand, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(6))
+},
+{ { XKB_KEY_asterisk, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(7))
+},
+{ { XKB_KEY_parenleft, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(8))
+},
+{ { XKB_KEY_parenright, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(move_focus_to_workspace(9))
+},
+
 // context activators
 { { XKB_KEY_Escape, MODKEY | WLR_MODIFIER_CTRL },
     CALL(toggle_context())
@@ -452,44 +490,6 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_0, MODKEY | WLR_MODIFIER_CTRL },
     CALL(activate_context(9))
-},
-
-// workspace client movers
-{ { XKB_KEY_braceright, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_next_workspace(Direction::Forward))
-},
-{ { XKB_KEY_braceleft, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_next_workspace(Direction::Backward))
-},
-{ { XKB_KEY_exclam, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(0))
-},
-{ { XKB_KEY_at, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(1))
-},
-{ { XKB_KEY_numbersign, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(2))
-},
-{ { XKB_KEY_dollar, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(3))
-},
-{ { XKB_KEY_percent, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(4))
-},
-{ { XKB_KEY_asciicircum, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(5))
-},
-{ { XKB_KEY_ampersand, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(6))
-},
-{ { XKB_KEY_asterisk, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(7))
-},
-{ { XKB_KEY_parenleft, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(8))
-},
-{ { XKB_KEY_parenright, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(9))
 },
 };
 
