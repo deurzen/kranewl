@@ -1147,8 +1147,7 @@ Model::apply_layout(Workspace_ptr workspace)
     TRACE();
 
     Output_ptr output = workspace->context()->output();
-
-    if (workspace != output->context()->workspace() || !output)
+    if (!output || workspace != output->context()->workspace())
         return;
 
     for (Placement placement : workspace->arrange(output->placeable_region()))
