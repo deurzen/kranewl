@@ -314,15 +314,6 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
     preferred_dim.h += extents.top + extents.bottom;
     view->set_preferred_dim(preferred_dim);
 
-    view->set_free_region(Region{
-        .pos = Pos{
-            .x = xwayland_surface->x - extents.left,
-            .y = xwayland_surface->y - extents.top
-        },
-        .dim = preferred_dim
-    });
-    view->set_tile_region(view->free_region());
-
     view->m_app_id = view->m_class = xwayland_surface->class_
         ? xwayland_surface->class_
         : "N/a";
@@ -364,7 +355,21 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
         wlr_scene_node_lower_to_bottom(&view->m_protrusions[i]->node);
     }
 
+    Region region = Region{
+        .pos = Pos{
+            .x = xwayland_surface->x - extents.left,
+            .y = xwayland_surface->y - extents.top
+        },
+        .dim = preferred_dim
+    };
+
     Workspace_ptr workspace = model->mp_workspace;
+    Output_ptr output = workspace->context()->output();
+    if (output)
+        output->place_at_center(region);
+
+    view->set_free_region(region);
+    view->set_tile_region(region);
 
     view->set_mapped(true);
     view->render_decoration();

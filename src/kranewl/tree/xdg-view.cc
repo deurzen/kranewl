@@ -337,12 +337,6 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         .h = state->min_height
     });
 
-    view->set_free_region(Region{
-        .pos = Pos{0, 0},
-        .dim = preferred_dim
-    });
-    view->set_tile_region(view->free_region());
-
     view->m_app_id = wlr_xdg_toplevel->app_id
         ? wlr_xdg_toplevel->app_id
         : "N/a";
@@ -406,6 +400,18 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         workspace = context->workspace();
     } else
         workspace = model->mp_workspace;
+
+    Region region = Region{
+        .pos = Pos{0, 0},
+        .dim = preferred_dim
+    };
+
+    Output_ptr output = workspace->context()->output();
+    if (output)
+        output->place_at_center(region);
+
+    view->set_free_region(region);
+    view->set_tile_region(region);
 
     view->set_mapped(true);
     view->render_decoration();

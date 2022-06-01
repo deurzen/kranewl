@@ -3,6 +3,7 @@
 #include <kranewl/model.hh>
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
+#include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg-view.hh>
 
@@ -298,6 +299,13 @@ View::unmap()
         wlr_scene_node_set_enabled(mp_scene, false);
         m_mapped = false;
     }
+}
+
+void
+View::center()
+{
+    if (mp_output)
+        mp_output->place_at_center(m_free_region);
 }
 
 void

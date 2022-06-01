@@ -77,6 +77,7 @@ typedef struct View : public Node {
 
     void map();
     void unmap();
+    void center();
     void tile(Toggle);
     void relayer(SceneLayer);
     void raise() const;

@@ -192,6 +192,18 @@ Output::set_placeable_region(Region const& region)
     m_placeable_region = region;
 }
 
+void
+Output::place_at_center(Region& region) const
+{
+    TRACE();
+
+    region.pos.x = m_placeable_region.pos.x
+        + (m_placeable_region.dim.w - region.dim.w) / 2;
+
+    region.pos.y = m_placeable_region.pos.y
+        + (m_placeable_region.dim.h - region.dim.h) / 2;
+}
+
 bool
 Output::contains(Pos pos) const
 {

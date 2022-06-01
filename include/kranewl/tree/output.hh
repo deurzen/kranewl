@@ -45,6 +45,8 @@ public:
     Region placeable_region() const;
     void set_placeable_region(Region const&);
 
+    void place_at_center(Region&) const;
+
     bool contains(Pos) const;
     bool contains(Region) const;
 

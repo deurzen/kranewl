@@ -1508,24 +1508,16 @@ Model::center_view(View_ptr view)
 {
     TRACE();
 
-    if (!is_free(view))
+    if (!is_free(view) || !view->mp_output)
         return;
 
-    Region region = view->free_region();
-    const Region screen_region
-        = view->mp_context->output()->placeable_region();
-
-    region.pos.x = screen_region.pos.x
-        + (screen_region.dim.w - region.dim.w) / 2;
-
-    region.pos.y = screen_region.pos.y
-        + (screen_region.dim.h - region.dim.h) / 2;
+    view->center();
 
     Placement placement = Placement {
         Placement::PlacementMethod::Free,
         view,
         view->free_decoration(),
-        region
+        view->free_region()
     };
 
     place_view(placement);
