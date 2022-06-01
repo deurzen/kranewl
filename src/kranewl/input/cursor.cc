@@ -462,13 +462,15 @@ process_cursorbinding(Cursor_ptr cursor, uint32_t button, uint32_t modifiers)
 {
     TRACE();
 
+    modifiers &= ~WLR_MODIFIER_CAPS;
+
     if (!button || !modifiers)
         return false;
 
     CursorInput input = CursorInput{
         .target = CursorInput::Target::Global,
         .button = static_cast<CursorInput::Button>(button),
-        .modifiers = modifiers & ~WLR_MODIFIER_CAPS
+        .modifiers = modifiers
     };
 
     View_ptr view = cursor->view_under_cursor();
