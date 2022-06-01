@@ -181,6 +181,21 @@ struct Region final {
     Pos pos;
     Dim dim;
 
+    static inline Region
+    from_box(struct wlr_box box)
+    {
+        return Region{
+            .pos = {
+                .x = box.x,
+                .y = box.y
+            },
+            .dim = {
+                .w = box.width,
+                .h = box.height
+            }
+        };
+    }
+
     operator struct wlr_box() const
     {
         struct wlr_box box;
