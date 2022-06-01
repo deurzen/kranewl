@@ -517,8 +517,8 @@ LayoutHandler::arrange_float(
         begin,
         end,
         std::back_inserter(placements),
-        [this](View_ptr view) -> Placement {
-            return Placement {
+        [this](View_ptr view) -> Placement{
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
@@ -555,8 +555,8 @@ LayoutHandler::arrange_single_float(
         begin,
         end,
         std::back_inserter(placements),
-        [this](View_ptr view) -> Placement {
-            return Placement {
+        [this](View_ptr view) -> Placement{
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
@@ -600,7 +600,7 @@ LayoutHandler::arrange_center(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this](View_ptr view) -> Placement {
+        [=,this](View_ptr view) -> Placement{
             Region region = screen_region;
 
             int w = static_cast<int>(static_cast<float>(region.dim.w) * w_ratio);
@@ -614,7 +614,7 @@ LayoutHandler::arrange_center(
 
             region.dim = { w, h };
 
-            return Placement {
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
@@ -639,7 +639,7 @@ LayoutHandler::arrange_monocle(
         end,
         std::back_inserter(placements),
         [=,this](View_ptr view) {
-            return Placement {
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
@@ -663,7 +663,7 @@ LayoutHandler::arrange_main_deck(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -702,36 +702,36 @@ LayoutHandler::arrange_main_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement{
             if (i < data->main_count) {
                 ++i;
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             screen_region.pos.x,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             n_stack == 0 ? screen_region.dim.w : w_main,
                             h_main
                         }
                     }
                 };
             } else {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x_stack,
                             screen_region.pos.y
                                 + static_cast<int>((i++ - data->main_count) * h_stack)
                         },
-                        Dim {
+                        Dim{
                             w_stack,
                             h_stack
                         }
@@ -756,7 +756,7 @@ LayoutHandler::arrange_stack_deck(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -793,19 +793,19 @@ LayoutHandler::arrange_stack_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement{
             if (i < data->main_count) {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             screen_region.pos.x,
                             screen_region.pos.y
                                 + static_cast<int>(i++) * h_main
                         },
-                        Dim {
+                        Dim{
                             n_stack == 0 ? screen_region.dim.w : w_main,
                             h_main
                         }
@@ -813,16 +813,16 @@ LayoutHandler::arrange_stack_deck(
                 };
             } else {
                 ++i;
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x_stack,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             w_stack,
                             h_stack
                         }
@@ -847,7 +847,7 @@ LayoutHandler::arrange_double_deck(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -884,34 +884,34 @@ LayoutHandler::arrange_double_deck(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement{
             if (i++ < data->main_count) {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             screen_region.pos.x,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             n_stack == 0 ? screen_region.dim.w : w_main,
                             h_main
                         }
                     }
                 };
             } else {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x_stack,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             w_stack,
                             h_stack
                         }
@@ -938,7 +938,7 @@ LayoutHandler::arrange_paper(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -982,22 +982,22 @@ LayoutHandler::arrange_paper(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&after_active,&i](View_ptr view) -> Placement {
+        [=,this,&after_active,&i](View_ptr view) -> Placement{
             int x = screen_region.pos.x + static_cast<int>(i++ * w);
 
             if ((!contains_active && *last_active == view) || view->focused()) {
                 after_active = true;
 
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             cw,
                             screen_region.dim.h
                         }
@@ -1007,16 +1007,16 @@ LayoutHandler::arrange_paper(
                 if (after_active)
                     x += cw - w;
 
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x,
                             screen_region.pos.y
                         },
-                        Dim {
+                        Dim{
                             w,
                             screen_region.dim.h
                         }
@@ -1054,7 +1054,7 @@ LayoutHandler::arrange_double_stack(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -1091,36 +1091,36 @@ LayoutHandler::arrange_double_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
+        [=,this,&i](View_ptr view) -> Placement{
             if (i < data->main_count) {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             screen_region.pos.x,
                             screen_region.pos.y
                                 + static_cast<int>(i++) * h_main
                         },
-                        Dim {
+                        Dim{
                             n_stack == 0 ? screen_region.dim.w : w_main,
                             h_main
                         }
                     }
                 };
             } else {
-                return Placement {
+                return Placement{
                     mp_layout->config.method,
                     view,
                     mp_layout->config.decoration,
-                    Region {
-                        Pos {
+                    Region{
+                        Pos{
                             x_stack,
                             screen_region.pos.y
                                 + static_cast<int>((i++ - data->main_count) * h_stack)
                         },
-                        Dim {
+                        Dim{
                             w_stack,
                             h_stack
                         }
@@ -1157,7 +1157,7 @@ LayoutHandler::arrange_horizontal_stack(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -1174,17 +1174,17 @@ LayoutHandler::arrange_horizontal_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
-            return Placement {
+        [=,this,&i](View_ptr view) -> Placement{
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
-                Region {
-                    Pos {
+                Region{
+                    Pos{
                         screen_region.pos.x + static_cast<int>(i++ * w),
                         screen_region.pos.y
                     },
-                    Dim {
+                    Dim{
                         w,
                         screen_region.dim.h
                     }
@@ -1220,7 +1220,7 @@ LayoutHandler::arrange_vertical_stack(
     int n = static_cast<int>(end - begin);
 
     if (n == 1) {
-        placements.emplace_back(Placement {
+        placements.emplace_back(Placement{
             mp_layout->config.method,
             *begin,
             NO_DECORATION,
@@ -1237,17 +1237,17 @@ LayoutHandler::arrange_vertical_stack(
         begin,
         end,
         std::back_inserter(placements),
-        [=,this,&i](View_ptr view) -> Placement {
-            return Placement {
+        [=,this,&i](View_ptr view) -> Placement{
+            return Placement{
                 mp_layout->config.method,
                 view,
                 mp_layout->config.decoration,
-                Region {
-                    Pos {
+                Region{
+                    Pos{
                         screen_region.pos.x,
                         screen_region.pos.y + static_cast<int>(i++ * h)
                     },
-                    Dim {
+                    Dim{
                         screen_region.dim.w,
                         h
                     }
