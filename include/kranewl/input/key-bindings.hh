@@ -491,6 +491,80 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_0, MODKEY | WLR_MODIFIER_CTRL },
     CALL(activate_context(9))
 },
+
+// external commands
+{ { XKB_KEY_XF86AudioPlay, {} },
+    CALL_EXTERNAL(playerctl play-pause)
+},
+{ { XKB_KEY_p, MODKEY | SECKEY },
+    CALL_EXTERNAL(playerctl play-pause)
+},
+{ { XKB_KEY_XF86AudioPrev, {} },
+    CALL_EXTERNAL(playerctl previous)
+},
+{ { XKB_KEY_k, MODKEY | SECKEY },
+    CALL_EXTERNAL(playerctl previous)
+},
+{ { XKB_KEY_XF86AudioNext, {} },
+    CALL_EXTERNAL(playerctl next)
+},
+{ { XKB_KEY_j, MODKEY | SECKEY },
+    CALL_EXTERNAL(playerctl next)
+},
+{ { XKB_KEY_XF86AudioStop, {} },
+    CALL_EXTERNAL(playerctl stop)
+},
+{ { XKB_KEY_BackSpace, MODKEY | SECKEY },
+    CALL_EXTERNAL(playerctl stop)
+},
+{ { XKB_KEY_XF86AudioMute, {} },
+    CALL_EXTERNAL(amixer -D pulse sset Master toggle)
+},
+{ { XKB_KEY_XF86AudioLowerVolume, {} },
+    CALL_EXTERNAL(amixer -D pulse sset Master 5%-)
+},
+{ { XKB_KEY_XF86AudioRaiseVolume, {} },
+    CALL_EXTERNAL(amixer -D pulse sset Master 5%+)
+},
+{ { XKB_KEY_XF86AudioMute, WLR_MODIFIER_SHIFT },
+    CALL_EXTERNAL(amixer -D pulse sset Capture toggle)
+},
+{ { XKB_KEY_XF86AudioMicMute, {} },
+    CALL_EXTERNAL(amixer -D pulse sset Capture toggle)
+},
+{ { XKB_KEY_space, WLR_MODIFIER_CTRL },
+    CALL_EXTERNAL(dunstctl close)
+},
+{ { XKB_KEY_space, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+    CALL_EXTERNAL(dunstctl close-all)
+},
+{ { XKB_KEY_comma, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+    CALL_EXTERNAL(dunstctl history-pop)
+},
+{ { XKB_KEY_Return, MODKEY },
+    CALL_EXTERNAL(alacritty)
+},
+{ { XKB_KEY_Return, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(spawn_external("alacritty --class kranewl:cf,Alacritty"))
+},
+{ { XKB_KEY_semicolon, MODKEY },
+    CALL_EXTERNAL(nemo)
+},
+{ { XKB_KEY_p, MODKEY },
+    CALL_EXTERNAL(dmenu_run)
+},
+{ { XKB_KEY_q, MODKEY },
+    CALL_EXTERNAL(qutebrowser)
+},
+{ { XKB_KEY_Q, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL_EXTERNAL(firefox)
+},
+{ { XKB_KEY_q, MODKEY | WLR_MODIFIER_CTRL },
+    CALL_EXTERNAL(chromium)
+},
+{ { XKB_KEY_apostrophe, MODKEY },
+    CALL_EXTERNAL(blueberry)
+},
 };
 
 }
