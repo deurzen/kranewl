@@ -105,6 +105,18 @@ static const CursorBindings cursor_bindings = {
         model.activate_next_workspace(Direction::Backward);
     })
 },
+{ { GLOBAL, SCROLLDOWN, MODKEY | WLR_MODIFIER_CTRL },
+    CALL_NOFOCUS({
+        static_cast<void>(view);
+        model.activate_next_context(Direction::Forward);
+    })
+},
+{ { GLOBAL, SCROLLUP, MODKEY | WLR_MODIFIER_CTRL },
+    CALL_NOFOCUS({
+        static_cast<void>(view);
+        model.activate_next_context(Direction::Backward);
+    })
+},
 { { VIEW, FORWARD, MODKEY },
     CALL_NOFOCUS({
         if (view)
