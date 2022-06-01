@@ -38,15 +38,7 @@ private:
     static void handle_xdg_activation(struct wl_listener*, void*);
     static void handle_new_input(struct wl_listener*, void*);
     static void handle_xdg_new_toplevel_decoration(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_map(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_unmap(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_destroy(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_request_move(struct wl_listener*, void*);
-    static void handle_xdg_toplevel_request_resize(struct wl_listener*, void*);
-#ifdef XWAYLAND
-    static void handle_xwayland_ready(struct wl_listener*, void*);
-    static void handle_new_xwayland_surface(struct wl_listener*, void*);
-#endif
+    static void handle_new_virtual_keyboard(struct wl_listener*, void*);
 
     Model_ptr mp_model;
 
@@ -76,6 +68,7 @@ private:
     struct wlr_presentation* mp_presentation;
     struct wlr_server_decoration_manager* mp_server_decoration_manager;
     struct wlr_xdg_decoration_manager_v1* mp_xdg_decoration_manager;
+    struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
 
     struct wl_listener ml_new_output;
     struct wl_listener ml_output_layout_change;
@@ -86,6 +79,7 @@ private:
     struct wl_listener ml_xdg_activation;
     struct wl_listener ml_new_input;
     struct wl_listener ml_xdg_new_toplevel_decoration;
+    struct wl_listener ml_new_virtual_keyboard;
 
     const std::string m_socket;
 

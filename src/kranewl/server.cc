@@ -61,9 +61,6 @@ extern "C" {
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
 #ifdef XWAYLAND
-#define Cursor Cursor_
-#include <X11/Xlib.h>
-#undef Cursor
 #include <wlr/xwayland.h>
 #endif
 }
@@ -140,6 +137,7 @@ Server::Server(Model_ptr model)
       mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
       mp_server_decoration_manager(wlr_server_decoration_manager_create(mp_display)),
       mp_xdg_decoration_manager(wlr_xdg_decoration_manager_v1_create(mp_display)),
+      mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
       mp_output_manager(wlr_output_manager_v1_create(mp_display)),
       ml_new_output({ .notify = Server::handle_new_output }),
       ml_output_layout_change({ .notify = Server::handle_output_layout_change }),
@@ -150,6 +148,7 @@ Server::Server(Model_ptr model)
       ml_xdg_activation({ .notify = Server::handle_xdg_activation }),
       ml_new_input({ .notify = Server::handle_new_input }),
       ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
+      ml_new_virtual_keyboard({ .notify = Server::handle_new_virtual_keyboard }),
       m_socket(wl_display_add_socket_auto(mp_display))
 {
     TRACE();
@@ -181,6 +180,7 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
+    wl_signal_add(&mp_virtual_keyboard_manager->events.new_virtual_keyboard, &ml_new_virtual_keyboard);
 
     // TODO: mp_keyboard_shortcuts_inhibit_manager signals
     // TODO: mp_pointer_constraints signals
@@ -449,6 +449,22 @@ Server::handle_xdg_activation(struct wl_listener*, void*)
 
 }
 
+static inline void
+create_keyboard(Server_ptr server, struct wlr_input_device* device)
+{
+        Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
+
+        struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+        struct xkb_keymap* keymap
+            = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
+
+        wlr_keyboard_set_keymap(device->keyboard, keymap);
+        xkb_keymap_unref(keymap);
+        xkb_context_unref(context);
+        wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
+        wlr_seat_set_keyboard(server->m_seat.mp_wlr_seat, device);
+}
+
 void
 Server::handle_new_input(struct wl_listener* listener, void* data)
 {
@@ -461,17 +477,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD:
     {
-        Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
-
-        struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-        struct xkb_keymap* keymap
-            = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
-
-        wlr_keyboard_set_keymap(device->keyboard, keymap);
-        xkb_keymap_unref(keymap);
-        xkb_context_unref(context);
-        wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
-        wlr_seat_set_keyboard(server->m_seat.mp_wlr_seat, device);
+        create_keyboard(server, device);
 
         break;
     }
@@ -508,36 +514,14 @@ Server::handle_xdg_new_toplevel_decoration(struct wl_listener*, void* data)
 }
 
 void
-Server::handle_xdg_toplevel_map(struct wl_listener*, void*)
+Server::handle_new_virtual_keyboard(struct wl_listener* listener, void* data)
 {
     TRACE();
 
-}
+    Server_ptr server = wl_container_of(listener, server, ml_new_virtual_keyboard);
+    struct wlr_virtual_keyboard_v1* virtual_keyboard
+        = reinterpret_cast<struct wlr_virtual_keyboard_v1*>(data);
 
-void
-Server::handle_xdg_toplevel_unmap(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xdg_toplevel_destroy(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xdg_toplevel_request_move(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Server::handle_xdg_toplevel_request_resize(struct wl_listener*, void*)
-{
-    TRACE();
-
+    struct wlr_input_device* device = &virtual_keyboard->input_device;
+    create_keyboard(server, device);
 }
