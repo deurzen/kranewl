@@ -900,13 +900,16 @@ Model::activate_context(Context_ptr next_context)
 
     abort_cursor_interactive();
 
-    Context_ptr prev_context = mp_output->context();
+    for (View_ptr view : *mp_workspace)
+        view->unmap();
+
+    Context_ptr prev_context = mp_context;
     mp_prev_context = prev_context;
 
     Output_ptr next_output = mp_output;
     Output_ptr prev_output = next_context->output();
 
-    if (next_output != prev_output)
+    if (prev_output && next_output != prev_output)
         prev_output->set_context(prev_context);
 
     next_output->set_context(next_context);
