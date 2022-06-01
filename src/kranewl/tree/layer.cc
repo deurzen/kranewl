@@ -74,7 +74,7 @@ Layer::pid()
 }
 
 void
-Layer::set_mapped(bool mapped)
+Layer::set_mapped(int mapped)
 {
     m_mapped = mapped;
 }
@@ -117,6 +117,8 @@ unmap_layer(Layer_ptr layer)
     TRACE();
 
     layer->mp_layer_surface->mapped = 0;
+    layer->set_mapped(0);
+
     struct wlr_seat* seat = layer->mp_seat->mp_wlr_seat;
 
     if (layer->mp_layer_surface->surface == seat->keyboard_state.focused_surface)

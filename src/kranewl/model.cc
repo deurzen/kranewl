@@ -1869,6 +1869,31 @@ Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
 
     context->set_focus_follows_cursor(focus_follows_cursor);
 }
+
+void
+Model::set_show_layers(Toggle toggle)
+{
+    set_show_layers(toggle, mp_output);
+}
+
+void
+Model::set_show_layers(Toggle toggle, Output_ptr output)
+{
+    if (!output)
+        return;
+
+    bool show_layers;
+
+    switch (toggle) {
+    case Toggle::On:      show_layers = true;                      break;
+    case Toggle::Off:     show_layers = false;                     break;
+    case Toggle::Reverse: show_layers = !output->showing_layers(); break;
+    default: return;
+    }
+
+    if (output->showing_layers() != show_layers) {
+        output->set_showing_layers(show_layers);
+    }
 }
 
 XDGView_ptr

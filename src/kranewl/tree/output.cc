@@ -154,6 +154,28 @@ Output::handle_destroy(struct wl_listener*, void* data)
 }
 
 void
+Output::set_showing_layers(bool showing_layers)
+{
+    TRACE();
+
+    static const std::vector<SceneLayer> scene_layers = {
+        SCENE_LAYER_BACKGROUND,
+        SCENE_LAYER_BOTTOM,
+        SCENE_LAYER_TOP,
+        SCENE_LAYER_OVERLAY,
+    };
+
+    for (SceneLayer scene_layer : scene_layers) {
+        for (Layer_ptr layer : m_layer_map.at(scene_layer)) {
+        }
+
+        m_layer_map.at(scene_layer).clear();
+    }
+
+    m_showing_layers = showing_layers;
+}
+
+void
 Output::set_context(Context_ptr context)
 {
     TRACE();

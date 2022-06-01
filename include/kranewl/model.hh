@@ -188,6 +188,9 @@ public:
     void set_focus_follows_cursor(Toggle, Workspace_ptr);
     void set_focus_follows_cursor(Toggle, Context_ptr);
 
+    void set_show_layers(Toggle);
+    void set_show_layers(Toggle, Output_ptr);
+
     bool is_free(View_ptr) const;
 
     void spawn_external(std::string&&) const;

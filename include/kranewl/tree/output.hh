@@ -38,6 +38,9 @@ public:
     static void handle_mode(struct wl_listener*, void*);
     static void handle_destroy(struct wl_listener*, void*);
 
+    bool showing_layers() const { return m_showing_layers; }
+    void set_showing_layers(bool showing_layers);
+
     void set_context(Context_ptr);
     Context_ptr context() const;
 
@@ -62,6 +65,7 @@ private:
     Region m_placeable_region;
 
     bool m_cursor_focus_on_present;
+    bool m_showing_layers;
 
     std::unordered_map<SceneLayer, std::vector<Layer_ptr>> m_layer_map;
 

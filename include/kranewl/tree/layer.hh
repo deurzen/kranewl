@@ -32,13 +32,14 @@ typedef struct Layer final : public Node {
 
     pid_t pid();
 
+    int mapped() const { return m_mapped; }
+    void set_mapped(int);
+
     static void handle_map(struct wl_listener*, void*);
     static void handle_unmap(struct wl_listener*, void*);
     static void handle_surface_commit(struct wl_listener*, void*);
+    static void handle_new_popup(struct wl_listener*, void*);
     static void handle_destroy(struct wl_listener*, void*);
-
-    bool mapped() const { return m_mapped; }
-    void set_mapped(bool);
 
     Region const& region() { return m_region; }
     void set_region(Region const&);
