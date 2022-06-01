@@ -33,8 +33,8 @@ struct CursorInput {
     };
 
     Target target;
-	Button button;
-	uint32_t modifiers;
+    Button button;
+    uint32_t modifiers;
 };
 
 typedef class Server* Server_ptr;
@@ -78,11 +78,12 @@ typedef struct Cursor {
     static void handle_cursor_frame(struct wl_listener*, void*);
     static void handle_request_start_drag(struct wl_listener*, void*);
     static void handle_start_drag(struct wl_listener*, void*);
+    static void handle_destroy_drag(struct wl_listener*, void*);
     static void handle_request_set_cursor(struct wl_listener*, void*);
 
     Server_ptr mp_server;
     Model_ptr mp_model;
-	Seat_ptr mp_seat;
+    Seat_ptr mp_seat;
 
     struct wlr_cursor* mp_wlr_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
@@ -105,6 +106,7 @@ typedef struct Cursor {
     struct wl_listener ml_cursor_frame;
     struct wl_listener ml_request_start_drag;
     struct wl_listener ml_start_drag;
+    struct wl_listener ml_destroy_drag;
     struct wl_listener ml_request_set_cursor;
 
 }* Cursor_ptr;

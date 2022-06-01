@@ -53,6 +53,7 @@ Cursor::Cursor(
       ml_cursor_frame({ .notify = Cursor::handle_cursor_frame }),
       ml_request_start_drag({ .notify = Cursor::handle_request_start_drag }),
       ml_start_drag({ .notify = Cursor::handle_start_drag }),
+      ml_destroy_drag({ .notify = Cursor::handle_destroy_drag }),
       ml_request_set_cursor({ .notify = Cursor::handle_request_set_cursor })
 {
     TRACE();
@@ -621,32 +622,80 @@ Cursor::handle_request_start_drag(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    Cursor_ptr cursor = wl_container_of(listener, cursor, ml_request_start_drag);
+    struct wlr_seat_request_start_drag_event* event
+        = reinterpret_cast<struct wlr_seat_request_start_drag_event*>(data);
+
+    if (wlr_seat_validate_pointer_grab_serial(
+            cursor->mp_seat->mp_wlr_seat, event->origin, event->serial))
+    {
+        wlr_seat_start_pointer_drag(
+            cursor->mp_seat->mp_wlr_seat,
+            event->drag,
+            event->serial
+        );
+    } else
+        wlr_data_source_destroy(event->drag->source);
+}
+
+void
+Cursor::handle_start_drag(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
+    Cursor_ptr cursor = wl_container_of(listener, cursor, ml_start_drag);
+    struct wlr_drag* drag = reinterpret_cast<struct wlr_drag*>(data);
+
+    if (drag->icon)
+        drag->icon->data = wlr_scene_subsurface_tree_create(
+            cursor->mp_server->m_scene_layers[SceneLayer::SCENE_LAYER_NOFOCUS],
+            drag->icon->surface
+        );
+
+    cursor->mp_seat->mp_cursor->process_cursor_motion(0);
+
+    View_ptr view = cursor->view_under_cursor();
+    if (view && cursor->m_cursor_mode == Mode::Passthrough)
+        view->mp_model->cursor_interactive(Cursor::Mode::Move, view);
+
+	wl_signal_add(&drag->events.destroy, &cursor->ml_destroy_drag);
+}
+
+void
+Cursor::handle_destroy_drag(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
+    Cursor_ptr cursor = wl_container_of(listener, cursor, ml_destroy_drag);
+    struct wlr_drag* drag = reinterpret_cast<struct wlr_drag*>(data);
+
+    if (drag->icon)
+        wlr_scene_node_destroy(reinterpret_cast<wlr_scene_node*>(drag->icon->data));
+
+    cursor->mp_model->refocus();
+    cursor->mp_seat->mp_cursor->process_cursor_motion(0);
+}
+
+void
+Cursor::handle_request_set_cursor(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_request_set_cursor);
     struct wlr_seat_pointer_request_set_cursor_event* event
         = reinterpret_cast<struct wlr_seat_pointer_request_set_cursor_event*>(data);
 
+    if (cursor->m_cursor_mode != Mode::Passthrough)
+        return;
+
     struct wlr_seat_client* focused_client
         = cursor->mp_seat->mp_wlr_seat->pointer_state.focused_client;
 
-    if (focused_client == event->seat_client)
+    if (event->seat_client == focused_client)
         wlr_cursor_set_surface(
             cursor->mp_wlr_cursor,
             event->surface,
             event->hotspot_x,
             event->hotspot_y
         );
-}
-
-void
-Cursor::handle_start_drag(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
-Cursor::handle_request_set_cursor(struct wl_listener*, void*)
-{
-    TRACE();
-
 }
