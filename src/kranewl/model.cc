@@ -1869,7 +1869,6 @@ Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
 
     context->set_focus_follows_cursor(focus_follows_cursor);
 }
-}
 
 XDGView_ptr
 Model::create_xdg_shell_view(
