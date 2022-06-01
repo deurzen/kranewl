@@ -126,6 +126,7 @@ Server::Server(Model_ptr model)
       m_xwayland({mp_wlr_xwayland, this, model, &m_seat}),
 #endif
       mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
+      mp_xdg_activation(wlr_xdg_activation_v1_create(mp_display)),
       mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
       mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
       mp_server_decoration_manager(wlr_server_decoration_manager_create(mp_display)),
@@ -138,9 +139,9 @@ Server::Server(Model_ptr model)
       ml_output_manager_test({ .notify = Server::handle_output_manager_test }),
       ml_new_xdg_surface({ .notify = Server::handle_new_xdg_surface }),
       ml_new_layer_shell_surface({ .notify = Server::handle_new_layer_shell_surface }),
-      ml_xdg_activation({ .notify = Server::handle_xdg_activation }),
       ml_new_input({ .notify = Server::handle_new_input }),
       ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
+      ml_xdg_request_activate({ .notify = Server::handle_xdg_request_activate }),
       ml_new_virtual_keyboard({ .notify = Server::handle_new_virtual_keyboard }),
       m_socket(wl_display_add_socket_auto(mp_display))
 {
@@ -171,6 +172,7 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
     wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
     wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_xdg_new_toplevel_decoration);
+    wl_signal_add(&mp_xdg_activation->events.request_activate, &ml_xdg_request_activate);
     wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
@@ -430,13 +432,6 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
     layer->mp_layer_surface->current = initial_state;
 }
 
-void
-Server::handle_xdg_activation(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
 static inline void
 create_keyboard(Server_ptr server, struct wlr_input_device* device)
 {
@@ -499,6 +494,25 @@ Server::handle_xdg_new_toplevel_decoration(struct wl_listener*, void* data)
         decoration,
         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
     );
+}
+
+void
+Server::handle_xdg_request_activate(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
+    Server_ptr server = wl_container_of(listener, server, ml_xdg_request_activate);
+    struct wlr_xdg_activation_v1_request_activate_event* event
+        = reinterpret_cast<struct wlr_xdg_activation_v1_request_activate_event*>(data);
+
+    if (!wlr_surface_is_xdg_surface(event->surface))
+        return;
+
+    XDGView_ptr view
+        = reinterpret_cast<XDGView_ptr>(wlr_xdg_surface_from_wlr_surface(event->surface)->data);
+
+    if (view != server->mp_model->focused_view())
+        view->set_urgent(true);
 }
 
 void

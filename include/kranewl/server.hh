@@ -35,9 +35,9 @@ private:
     static void handle_output_manager_test(struct wl_listener*, void*);
     static void handle_new_xdg_surface(struct wl_listener*, void*);
     static void handle_new_layer_shell_surface(struct wl_listener*, void*);
-    static void handle_xdg_activation(struct wl_listener*, void*);
     static void handle_new_input(struct wl_listener*, void*);
     static void handle_xdg_new_toplevel_decoration(struct wl_listener*, void*);
+    static void handle_xdg_request_activate(struct wl_listener*, void*);
     static void handle_new_virtual_keyboard(struct wl_listener*, void*);
 
     Model_ptr mp_model;
@@ -76,9 +76,9 @@ private:
     struct wl_listener ml_output_manager_test;
     struct wl_listener ml_new_xdg_surface;
     struct wl_listener ml_new_layer_shell_surface;
-    struct wl_listener ml_xdg_activation;
     struct wl_listener ml_new_input;
     struct wl_listener ml_xdg_new_toplevel_decoration;
+    struct wl_listener ml_xdg_request_activate;
     struct wl_listener ml_new_virtual_keyboard;
 
     const std::string m_socket;
