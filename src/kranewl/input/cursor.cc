@@ -33,19 +33,13 @@ Cursor::Cursor(
     Server_ptr server,
     Model_ptr model,
     Seat_ptr seat,
-    struct wlr_cursor* cursor,
-    struct wlr_pointer_constraints_v1* pointer_constraints,
-    struct wlr_relative_pointer_manager_v1* relative_pointer_manager,
-    struct wlr_virtual_pointer_manager_v1* virtual_pointer_manager
+    struct wlr_cursor* cursor
 )
     : mp_server(server),
       mp_model(model),
       mp_seat(seat),
       mp_wlr_cursor(cursor),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
-      mp_pointer_constraints(pointer_constraints),
-      mp_relative_pointer_manager(relative_pointer_manager),
-      mp_virtual_pointer_manager(virtual_pointer_manager),
       ml_cursor_motion({ .notify = Cursor::handle_cursor_motion }),
       ml_cursor_motion_absolute({ .notify = Cursor::handle_cursor_motion_absolute }),
       ml_cursor_button({ .notify = Cursor::handle_cursor_button }),

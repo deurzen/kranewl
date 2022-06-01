@@ -38,23 +38,19 @@ extern "C" {
 #include <wlr/types/wlr_input_device.h>
 #include <wlr/types/wlr_input_inhibitor.h>
 #include <wlr/types/wlr_keyboard.h>
-#include <wlr/types/wlr_keyboard_shortcuts_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_pointer.h>
-#include <wlr/types/wlr_pointer_constraints_v1.h>
 #include <wlr/types/wlr_presentation_time.h>
 #include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
-#include <wlr/types/wlr_relative_pointer_v1.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_server_decoration.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
-#include <wlr/types/wlr_virtual_pointer_v1.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
@@ -121,11 +117,7 @@ Server::Server(Model_ptr model)
               cursor,
               wlr_input_inhibit_manager_create(mp_display),
               wlr_idle_inhibit_v1_create(mp_display),
-              wlr_pointer_constraints_v1_create(mp_display),
-              wlr_relative_pointer_manager_v1_create(mp_display),
-              wlr_virtual_pointer_manager_v1_create(mp_display),
-              wlr_virtual_keyboard_manager_v1_create(mp_display),
-              wlr_keyboard_shortcuts_inhibit_v1_create(mp_display)
+              wlr_virtual_keyboard_manager_v1_create(mp_display)
           };
       }()),
 #ifdef XWAYLAND
@@ -181,12 +173,6 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
     wl_signal_add(&mp_virtual_keyboard_manager->events.new_virtual_keyboard, &ml_new_virtual_keyboard);
-
-    // TODO: mp_keyboard_shortcuts_inhibit_manager signals
-    // TODO: mp_pointer_constraints signals
-    // TODO: mp_relative_pointer_manager signals
-    // TODO: mp_virtual_pointer_manager signals
-    // TODO: mp_virtual_keyboard_manager signals
 
     if (!wlr_backend_start(mp_backend)) {
         wlr_backend_destroy(mp_backend);

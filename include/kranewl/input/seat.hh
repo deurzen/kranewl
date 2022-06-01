@@ -25,11 +25,7 @@ public:
         struct wlr_cursor*,
         struct wlr_input_inhibit_manager*,
         struct wlr_idle_inhibit_manager_v1*,
-        struct wlr_pointer_constraints_v1*,
-        struct wlr_relative_pointer_manager_v1*,
-        struct wlr_virtual_pointer_manager_v1*,
-        struct wlr_virtual_keyboard_manager_v1*,
-        struct wlr_keyboard_shortcuts_inhibit_manager_v1*
+        struct wlr_virtual_keyboard_manager_v1*
     );
     ~Seat();
 
@@ -54,7 +50,6 @@ public:
     struct wlr_input_inhibit_manager* mp_input_inhibit_manager;
     struct wlr_idle_inhibit_manager_v1* mp_idle_inhibit_manager;
     struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
-    struct wlr_keyboard_shortcuts_inhibit_manager_v1* mp_keyboard_shortcuts_inhibit_manager;
 
     Cursor_ptr mp_cursor;
     std::vector<Keyboard_ptr> m_keyboards;

@@ -25,11 +25,7 @@ Seat::Seat(
     struct wlr_cursor* cursor,
     struct wlr_input_inhibit_manager* input_inhibit_manager,
     struct wlr_idle_inhibit_manager_v1* idle_inhibit_manager,
-    struct wlr_pointer_constraints_v1* pointer_constraints,
-    struct wlr_relative_pointer_manager_v1* relative_pointer_manager,
-    struct wlr_virtual_pointer_manager_v1* virtual_pointer_manager,
-    struct wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager,
-    struct wlr_keyboard_shortcuts_inhibit_manager_v1* keyboard_shortcuts_inhibit_manager
+    struct wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager
 )
     : mp_server(server),
       mp_model(model),
@@ -38,15 +34,11 @@ Seat::Seat(
       mp_input_inhibit_manager(input_inhibit_manager),
       mp_idle_inhibit_manager(idle_inhibit_manager),
       mp_virtual_keyboard_manager(virtual_keyboard_manager),
-      mp_keyboard_shortcuts_inhibit_manager(keyboard_shortcuts_inhibit_manager),
       mp_cursor(new Cursor(
           server,
           model,
           this,
-          cursor,
-          pointer_constraints,
-          relative_pointer_manager,
-          virtual_pointer_manager
+          cursor
       )),
       m_keyboards(),
       ml_destroy({ .notify = Seat::handle_destroy }),
@@ -157,7 +149,7 @@ Seat::handle_idle_destroy_inhibitor(struct wl_listener* listener, void*)
 
     Seat_ptr seat = wl_container_of(listener, seat, ml_idle_destroy_inhibitor);
 
-	wlr_idle_set_enabled(
+    wlr_idle_set_enabled(
         seat->mp_idle,
         seat->mp_wlr_seat,
         wl_list_length(&seat->mp_idle_inhibit_manager->inhibitors) <= 1

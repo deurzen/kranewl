@@ -54,10 +54,7 @@ typedef struct Cursor {
         Server_ptr,
         Model_ptr,
         Seat_ptr,
-        struct wlr_cursor*,
-        struct wlr_pointer_constraints_v1*,
-        struct wlr_relative_pointer_manager_v1*,
-        struct wlr_virtual_pointer_manager_v1*
+        struct wlr_cursor*
     );
 
     ~Cursor();
@@ -87,9 +84,6 @@ typedef struct Cursor {
 
     struct wlr_cursor* mp_wlr_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
-    struct wlr_pointer_constraints_v1* mp_pointer_constraints;
-    struct wlr_relative_pointer_manager_v1* mp_relative_pointer_manager;
-    struct wlr_virtual_pointer_manager_v1* mp_virtual_pointer_manager;
 
     Mode m_cursor_mode;
     struct {
