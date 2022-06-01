@@ -110,6 +110,7 @@ Server::Server(Model_ptr model)
           &wlr_scene_tree_create(&mp_scene->node)->node,
           &wlr_scene_tree_create(&mp_scene->node)->node,
           &wlr_scene_tree_create(&mp_scene->node)->node,
+          &wlr_scene_tree_create(&mp_scene->node)->node,
           &wlr_scene_tree_create(&mp_scene->node)->node
       },
       m_seat([this]() {

@@ -65,7 +65,7 @@ public:
     struct wlr_data_device_manager* mp_data_device_manager;
     struct wlr_output_layout* mp_output_layout;
     struct wlr_scene* mp_scene;
-    std::array<struct wlr_scene_node*, 7> m_scene_layers;
+    std::array<struct wlr_scene_node*, 8> m_scene_layers;
     Seat m_seat;
 
 private:

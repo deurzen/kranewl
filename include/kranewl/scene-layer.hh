@@ -10,5 +10,6 @@ enum SceneLayer : unsigned short {
     SCENE_LAYER_FREE       = 3,
     SCENE_LAYER_TOP        = 4,
     SCENE_LAYER_OVERLAY    = 5,
-    SCENE_LAYER_NOFOCUS    = 6,
+    SCENE_LAYER_POPUP      = 6,
+    SCENE_LAYER_NOFOCUS    = 7,
 };
