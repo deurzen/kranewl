@@ -2,4 +2,4 @@
 
 #include <string>
 
-void exec_external(std::string& command);
+void exec_external(std::string const&);
