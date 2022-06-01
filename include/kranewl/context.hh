@@ -17,7 +17,8 @@ public:
           mp_output(nullptr),
           mp_active(nullptr),
           mp_prev_active(nullptr),
-          m_workspaces({}, true)
+          m_workspaces({}, true),
+          m_focus_follows_cursor(false)
     {}
 
     Index
@@ -120,6 +121,18 @@ public:
         return m_sticky_clients;
     }
 
+    bool
+    focus_follows_cursor() const
+    {
+        return m_focus_follows_cursor;
+    }
+
+    void
+    set_focus_follows_cursor(bool focus_follows_cursor)
+    {
+        m_focus_follows_cursor = focus_follows_cursor;
+    }
+
     std::deque<Workspace_ptr>::iterator
     begin()
     {
@@ -179,5 +192,7 @@ private:
 
     Cycle<Workspace_ptr> m_workspaces;
     std::unordered_set<Client_ptr> m_sticky_clients;
+
+    bool m_focus_follows_cursor;
 
 }* Context_ptr;

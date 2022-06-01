@@ -1830,25 +1830,42 @@ Model::deiconify_all()
 }
 
 void
-Model::set_focus_follows_cursor(Toggle toggle, Index index)
-{
-    if (index < m_workspaces.size())
-        set_focus_follows_cursor(toggle, m_workspaces[index]);
-}
-
-void
 Model::set_focus_follows_cursor(Toggle toggle, Workspace_ptr workspace)
 {
     bool focus_follows_cursor;
 
     switch (toggle) {
-    case Toggle::On:      focus_follows_cursor = true;                              break;
-    case Toggle::Off:     focus_follows_cursor = false;                             break;
+    case Toggle::On:      focus_follows_cursor = true;                               break;
+    case Toggle::Off:     focus_follows_cursor = false;                              break;
     case Toggle::Reverse: focus_follows_cursor = !workspace->focus_follows_cursor(); break;
     default: return;
     }
 
     workspace->set_focus_follows_cursor(focus_follows_cursor);
+}
+
+void
+Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
+{
+    bool focus_follows_cursor;
+
+    switch (toggle) {
+    case Toggle::On:      focus_follows_cursor = true;                             break;
+    case Toggle::Off:     focus_follows_cursor = false;                            break;
+    case Toggle::Reverse: focus_follows_cursor = !context->focus_follows_cursor(); break;
+    default: return;
+    }
+
+    for (Workspace_ptr workspace : *context)
+        set_focus_follows_cursor(
+            focus_follows_cursor
+                ? Toggle::On
+                : Toggle::Off,
+            workspace
+        );
+
+    context->set_focus_follows_cursor(focus_follows_cursor);
+}
 }
 
 XDGView_ptr

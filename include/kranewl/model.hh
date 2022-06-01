@@ -185,8 +185,8 @@ public:
     void pop_deiconify();
     void deiconify_all();
 
-    void set_focus_follows_cursor(Toggle, Index);
     void set_focus_follows_cursor(Toggle, Workspace_ptr);
+    void set_focus_follows_cursor(Toggle, Context_ptr);
 
     bool is_free(View_ptr) const;
 

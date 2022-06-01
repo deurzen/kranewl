@@ -161,6 +161,9 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_M, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_workspace))
 },
+{ { XKB_KEY_M, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+    CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_context))
+},
 
 // workspace layout modifiers
 { { XKB_KEY_F, MODKEY | WLR_MODIFIER_SHIFT },
