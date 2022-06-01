@@ -4,6 +4,10 @@ kranewl:
 	cmake -S . -B build
 	make -C build
 
+release:
+	cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
+	make -C build
+
 test: kranewl
 	ctest --verbose --test-dir build
 
