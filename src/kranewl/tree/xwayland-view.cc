@@ -482,7 +482,7 @@ XWaylandView::handle_request_move(struct wl_listener* listener, void*)
     if (!xwayland_surface->mapped)
         return;
 
-    if (!view->mp_model->is_free(view) || view->fullscreen())
+    if (!view->mp_model->is_free(view))
         return;
 
     view->mp_model->cursor_interactive(Cursor::Mode::Move, view);
@@ -499,7 +499,7 @@ XWaylandView::handle_request_resize(struct wl_listener* listener, void* data)
     if (!xwayland_surface->mapped)
         return;
 
-    if (!view->mp_model->is_free(view) || view->fullscreen())
+    if (!view->mp_model->is_free(view))
         return;
 
     struct wlr_xwayland_resize_event* event
