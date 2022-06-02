@@ -41,6 +41,7 @@ private:
     static void handle_xdg_new_toplevel_decoration(struct wl_listener*, void*);
     static void handle_xdg_request_activate(struct wl_listener*, void*);
     static void handle_new_virtual_keyboard(struct wl_listener*, void*);
+    static void handle_drm_lease_request(struct wl_listener*, void*);
 
     Model_ptr mp_model;
 
@@ -49,28 +50,32 @@ public:
     struct wl_event_loop* mp_event_loop;
 
     struct wlr_backend* mp_backend;
+    struct wlr_backend* mp_headless_backend;
     struct wlr_renderer* mp_renderer;
     struct wlr_allocator* mp_allocator;
     struct wlr_compositor* mp_compositor;
 #ifdef XWAYLAND
     struct wlr_xwayland* mp_wlr_xwayland;
-    XWayland m_xwayland;
+    XWayland_ptr mp_xwayland;
 #endif
     struct wlr_data_device_manager* mp_data_device_manager;
     struct wlr_output_layout* mp_output_layout;
     struct wlr_scene* mp_scene;
     std::array<struct wlr_scene_node*, 8> m_scene_layers;
-    Seat m_seat;
+    Seat_ptr mp_seat;
+    struct wlr_output* mp_fallback_output;
+    struct wlr_output_manager_v1* mp_output_manager;
+    struct wlr_drm_lease_v1_manager* mp_drm_lease_manager;
 
 private:
     struct wlr_xdg_shell* mp_xdg_shell;
     struct wlr_layer_shell_v1* mp_layer_shell;
     struct wlr_xdg_activation_v1* mp_xdg_activation;
-    struct wlr_output_manager_v1* mp_output_manager;
     struct wlr_presentation* mp_presentation;
     struct wlr_server_decoration_manager* mp_server_decoration_manager;
     struct wlr_xdg_decoration_manager_v1* mp_xdg_decoration_manager;
     struct wlr_virtual_keyboard_manager_v1* mp_virtual_keyboard_manager;
+    struct wlr_xdg_foreign_registry* mp_foreign_registry;
 
     struct wl_listener ml_new_output;
     struct wl_listener ml_output_layout_change;
@@ -82,7 +87,8 @@ private:
     struct wl_listener ml_xdg_new_toplevel_decoration;
     struct wl_listener ml_xdg_request_activate;
     struct wl_listener ml_new_virtual_keyboard;
+    struct wl_listener ml_drm_lease_request;
 
-    const std::string m_socket;
+    std::string m_socket;
 
 }* Server_ptr;

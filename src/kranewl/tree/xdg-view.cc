@@ -107,9 +107,9 @@ XDGView::focus(Toggle toggle)
         raise();
 
         wlr_idle_set_enabled(
-            mp_server->m_seat.mp_idle,
-            mp_server->m_seat.mp_wlr_seat,
-            wl_list_empty(&mp_server->m_seat.mp_idle_inhibit_manager->inhibitors)
+            mp_server->mp_seat->mp_idle,
+            mp_server->mp_seat->mp_wlr_seat,
+            wl_list_empty(&mp_server->mp_seat->mp_idle_inhibit_manager->inhibitors)
         );
 
         break;

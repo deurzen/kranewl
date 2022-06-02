@@ -24,13 +24,16 @@ extern "C" {
 #include <wayland-server-core.h>
 #include <wayland-util.h>
 #include <wlr/backend.h>
+#include <wlr/backend/headless.h>
 #include <wlr/backend/multi.h>
+#include <wlr/backend/session.h>
 #include <wlr/render/allocator.h>
 #include <wlr/render/wlr_renderer.h>
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_cursor.h>
 #include <wlr/types/wlr_data_control_v1.h>
 #include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_drm_lease_v1.h>
 #include <wlr/types/wlr_export_dmabuf_v1.h>
 #include <wlr/types/wlr_gamma_control_v1.h>
 #include <wlr/types/wlr_idle.h>
@@ -44,7 +47,6 @@ extern "C" {
 #include <wlr/types/wlr_output_management_v1.h>
 #include <wlr/types/wlr_pointer.h>
 #include <wlr/types/wlr_presentation_time.h>
-#include <wlr/types/wlr_primary_selection.h>
 #include <wlr/types/wlr_primary_selection_v1.h>
 #include <wlr/types/wlr_scene.h>
 #include <wlr/types/wlr_screencopy_v1.h>
@@ -54,6 +56,10 @@ extern "C" {
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
+#include <wlr/types/wlr_xdg_foreign_registry.h>
+#include <wlr/types/wlr_xdg_foreign_registry.h>
+#include <wlr/types/wlr_xdg_foreign_v1.h>
+#include <wlr/types/wlr_xdg_foreign_v2.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
 #include <wlr/types/wlr_xdg_shell.h>
 #include <wlr/util/box.h>
@@ -66,73 +72,37 @@ extern "C" {
 #undef class
 
 extern "C" {
+#include <unistd.h>
 #include <xkbcommon/xkbcommon.h>
 }
 
 #include <cstdlib>
+
+static inline bool
+drop_privileges()
+{
+    if (getuid() != geteuid() || getgid() != getegid())
+        if (setuid(getuid()) || setgid(getgid()))
+            return false;
+
+    if (!geteuid() || !getegid()) {
+        spdlog::error("Running as root is prohibited");
+        return false;
+    }
+
+    if (setgid(0) != -1 || setuid(0) != -1) {
+        spdlog::error("Unable to drop root privileges");
+        return false;
+    }
+
+    return true;
+}
 
 Server::Server(Model_ptr model)
     : mp_model([this,model]() {
         model->register_server(this);
         return model;
       }()),
-      mp_display(wl_display_create()),
-      mp_event_loop(wl_display_get_event_loop(mp_display)),
-      mp_backend(wlr_backend_autocreate(mp_display)),
-      mp_renderer([](struct wl_display* display, struct wlr_backend* backend) {
-          struct wlr_renderer* renderer = wlr_renderer_autocreate(backend);
-          wlr_renderer_init_wl_display(renderer, display);
-          return renderer;
-      }(mp_display, mp_backend)),
-      mp_allocator(wlr_allocator_autocreate(mp_backend, mp_renderer)),
-      mp_compositor(wlr_compositor_create(mp_display, mp_renderer)),
-      mp_data_device_manager(wlr_data_device_manager_create(mp_display)),
-      mp_output_layout([this]() {
-          struct wlr_output_layout* output_layout = wlr_output_layout_create();
-          wlr_xdg_output_manager_v1_create(mp_display, output_layout);
-          return output_layout;
-      }()),
-      mp_scene([this]() {
-          struct wlr_scene* scene = wlr_scene_create();
-          wlr_scene_attach_output_layout(scene, mp_output_layout);
-          return scene;
-      }()),
-      m_scene_layers{
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node,
-          &wlr_scene_tree_create(&mp_scene->node)->node
-      },
-      m_seat([this]() {
-          struct wlr_cursor* cursor = wlr_cursor_create();
-          wlr_cursor_attach_output_layout(cursor, mp_output_layout);
-          return Seat{
-              this,
-              mp_model,
-              wlr_seat_create(mp_display, "seat0"),
-              wlr_idle_create(mp_display),
-              cursor,
-              wlr_input_inhibit_manager_create(mp_display),
-              wlr_idle_inhibit_v1_create(mp_display),
-              wlr_virtual_keyboard_manager_v1_create(mp_display)
-          };
-      }()),
-#ifdef XWAYLAND
-      mp_wlr_xwayland(wlr_xwayland_create(mp_display, mp_compositor, true)),
-      m_xwayland({mp_wlr_xwayland, this, model, &m_seat}),
-#endif
-      mp_layer_shell(wlr_layer_shell_v1_create(mp_display)),
-      mp_xdg_activation(wlr_xdg_activation_v1_create(mp_display)),
-      mp_xdg_shell(wlr_xdg_shell_create(mp_display)),
-      mp_presentation(wlr_presentation_create(mp_display, mp_backend)),
-      mp_server_decoration_manager(wlr_server_decoration_manager_create(mp_display)),
-      mp_xdg_decoration_manager(wlr_xdg_decoration_manager_v1_create(mp_display)),
-      mp_virtual_keyboard_manager(wlr_virtual_keyboard_manager_v1_create(mp_display)),
-      mp_output_manager(wlr_output_manager_v1_create(mp_display)),
       ml_new_output({ .notify = Server::handle_new_output }),
       ml_output_layout_change({ .notify = Server::handle_output_layout_change }),
       ml_output_manager_apply({ .notify = Server::handle_output_manager_apply }),
@@ -143,30 +113,159 @@ Server::Server(Model_ptr model)
       ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
       ml_xdg_request_activate({ .notify = Server::handle_xdg_request_activate }),
       ml_new_virtual_keyboard({ .notify = Server::handle_new_virtual_keyboard }),
-      m_socket(wl_display_add_socket_auto(mp_display))
+      ml_drm_lease_request({ .notify = Server::handle_drm_lease_request })
+{}
+
+Server::~Server()
 {
     TRACE();
 
-    if (m_socket.empty()) {
-        wlr_backend_destroy(mp_backend);
-        wl_display_destroy(mp_display);
-        std::exit(EXIT_FAILURE);
-        spdlog::critical("Could not set up server socket");
+    delete mp_seat;
+#ifdef XWAYLAND
+    delete mp_xwayland;
+#endif
+
+#ifdef XWAYLAND
+    wlr_xwayland_destroy(mp_xwayland->mp_wlr_xwayland);
+#endif
+    wl_display_destroy_clients(mp_display);
+    wl_display_destroy(mp_display);
+}
+
+static inline void
+err(struct wl_display* display, std::string const&& message)
+{
+    spdlog::critical(message);
+    wl_display_destroy_clients(display);
+    wl_display_destroy(display);
+    std::exit(EXIT_FAILURE);
+}
+
+void
+Server::initialize()
+{
+    TRACE();
+
+    mp_display = wl_display_create();
+    mp_event_loop = wl_display_get_event_loop(mp_display);
+
+    mp_backend = wlr_backend_autocreate(mp_display);
+    if (!mp_backend) {
+        err(mp_display, "Could not autocreate backend");
         return;
     }
 
+    if (!drop_privileges()) {
+        err(mp_display, "Could not drop privileges");
+        return;
+    }
+
+    mp_output_layout = wlr_output_layout_create();
+    wlr_xdg_output_manager_v1_create(mp_display, mp_output_layout);
+
+    mp_renderer = wlr_renderer_autocreate(mp_backend);
+    wlr_renderer_init_wl_display(mp_renderer, mp_display);
+    if (!mp_renderer) {
+        wlr_backend_destroy(mp_backend);
+        err(mp_display, "Could not autocreate renderer");
+        return;
+    }
+
+    mp_allocator = wlr_allocator_autocreate(mp_backend, mp_renderer);
+    if (!mp_allocator) {
+        wlr_backend_destroy(mp_backend);
+        err(mp_display, "Could not autocreate allocator");
+        return;
+    }
+
+    mp_compositor = wlr_compositor_create(mp_display, mp_renderer);
+    mp_data_device_manager = wlr_data_device_manager_create(mp_display);
+
+    mp_scene = wlr_scene_create();
+    wlr_scene_attach_output_layout(mp_scene, mp_output_layout);
+    m_scene_layers = {
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node,
+        &wlr_scene_tree_create(&mp_scene->node)->node
+    };
+
+    struct wlr_cursor* cursor = wlr_cursor_create();
+    wlr_cursor_attach_output_layout(cursor, mp_output_layout);
+    mp_seat = new Seat(
+        this,
+        mp_model,
+        wlr_seat_create(mp_display, "seat0"),
+        wlr_idle_create(mp_display),
+        cursor,
+        wlr_input_inhibit_manager_create(mp_display),
+        wlr_idle_inhibit_v1_create(mp_display),
+        wlr_virtual_keyboard_manager_v1_create(mp_display)
+    );
+
+#ifdef XWAYLAND
+    mp_wlr_xwayland = wlr_xwayland_create(mp_display, mp_compositor, true);
+    mp_xwayland = new XWayland(mp_wlr_xwayland, this, mp_model, mp_seat);
+#endif
+
+    mp_layer_shell = wlr_layer_shell_v1_create(mp_display);
+    mp_xdg_activation = wlr_xdg_activation_v1_create(mp_display);
+    mp_xdg_shell = wlr_xdg_shell_create(mp_display);
+    mp_presentation = wlr_presentation_create(mp_display, mp_backend);
+    mp_server_decoration_manager = wlr_server_decoration_manager_create(mp_display);
+    mp_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(mp_display);
+    mp_virtual_keyboard_manager = wlr_virtual_keyboard_manager_v1_create(mp_display);
+    mp_output_manager = wlr_output_manager_v1_create(mp_display);
+    mp_foreign_registry = wlr_xdg_foreign_registry_create(mp_display);
+    mp_drm_lease_manager
+        = wlr_drm_lease_v1_manager_create(mp_display, mp_backend);
+
+    wlr_server_decoration_manager_set_default_mode(
+        mp_server_decoration_manager,
+        WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
+    );
     wlr_export_dmabuf_manager_v1_create(mp_display);
     wlr_screencopy_manager_v1_create(mp_display);
     wlr_data_control_manager_v1_create(mp_display);
     wlr_gamma_control_manager_v1_create(mp_display);
     wlr_primary_selection_v1_device_manager_create(mp_display);
     wlr_viewporter_create(mp_display);
+    wlr_xdg_foreign_v1_create(mp_display, mp_foreign_registry);
+    wlr_xdg_foreign_v2_create(mp_display, mp_foreign_registry);
 
-    wlr_server_decoration_manager_set_default_mode(
-        mp_server_decoration_manager,
-        WLR_SERVER_DECORATION_MANAGER_MODE_SERVER
-    );
+    m_socket = wl_display_add_socket_auto(mp_display);
+    if (m_socket.empty()) {
+        wlr_backend_destroy(mp_backend);
+        err(mp_display, "Could not set up server socket");
+        return;
+    }
 
+    mp_headless_backend = wlr_headless_backend_create(mp_display);
+    if (!mp_headless_backend) {
+        wlr_backend_destroy(mp_backend);
+        err(mp_display, "Could not create headless backend");
+        return;
+    } else
+        wlr_multi_backend_add(mp_backend, mp_headless_backend);
+
+    mp_fallback_output
+        = wlr_headless_add_output(mp_headless_backend, 800, 600);
+    wlr_output_set_name(mp_fallback_output, "FALLBACK");
+
+    setenv("WAYLAND_DISPLAY", m_socket.c_str(), true);
+    setenv("XDG_CURRENT_DESKTOP", "kranewl", true);
+
+    spdlog::info("Server initialized at WAYLAND_DISPLAY={}", m_socket);
+}
+
+void
+Server::start()
+{
+    spdlog::info("Linking signal handlers");
     wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
@@ -178,41 +277,33 @@ Server::Server(Model_ptr model)
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
     wl_signal_add(&mp_virtual_keyboard_manager->events.new_virtual_keyboard, &ml_new_virtual_keyboard);
 
-    if (!wlr_backend_start(mp_backend)) {
-        wlr_backend_destroy(mp_backend);
-        wl_display_destroy(mp_display);
-        spdlog::critical("Could not start backend");
-        std::exit(1);
-        return;
+    if (mp_drm_lease_manager)
+        wl_signal_add(&mp_drm_lease_manager->events.request, &ml_drm_lease_request);
+    else {
+        spdlog::error("Could not create wlr_drm_lease_device_v1");
+        spdlog::warn("VR will not be available");
     }
 
-    setenv("WAYLAND_DISPLAY", m_socket.c_str(), true);
-    setenv("XDG_CURRENT_DESKTOP", "kranewl", true);
-
-    spdlog::info("Server initiated on WAYLAND_DISPLAY={}", m_socket);
-}
-
-Server::~Server()
-{
-    TRACE();
-
-    wl_display_destroy_clients(mp_display);
-    wl_display_destroy(mp_display);
+    spdlog::info("Starting backend");
+    if (!wlr_backend_start(mp_backend)) {
+        wlr_backend_destroy(mp_backend);
+        err(mp_display, "Could not start backend");
+        return;
+    }
 }
 
 void
-Server::run() noexcept
+Server::run()
 {
     TRACE();
-
+    spdlog::info("Running compositor");
     wl_display_run(mp_display);
 }
 
 void
-Server::terminate() noexcept
+Server::terminate()
 {
     TRACE();
-
     wl_display_terminate(mp_display);
 }
 
@@ -220,7 +311,7 @@ void
 Server::relinquish_focus()
 {
     struct wlr_surface* focused_surface
-        = m_seat.mp_wlr_seat->keyboard_state.focused_surface;
+        = mp_seat->mp_wlr_seat->keyboard_state.focused_surface;
 
     if (focused_surface) {
         if (wlr_surface_is_layer_surface(focused_surface)) {
@@ -247,7 +338,8 @@ Server::relinquish_focus()
         }
     }
 
-    wlr_seat_keyboard_notify_clear_focus(m_seat.mp_wlr_seat);
+    wlr_seat_keyboard_notify_clear_focus(mp_seat->mp_wlr_seat);
+}
 }
 
 void
@@ -257,6 +349,20 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
 
     Server_ptr server = wl_container_of(listener, server, ml_new_output);
     struct wlr_output* wlr_output = reinterpret_cast<struct wlr_output*>(data);
+
+    if (wlr_output == server->mp_fallback_output)
+        return;
+
+    if (wlr_output->non_desktop) {
+        spdlog::warn("Detected non-desktop output; not configuring");
+        if (server->mp_drm_lease_manager)
+            wlr_drm_lease_v1_manager_offer_output(
+                server->mp_drm_lease_manager,
+                wlr_output
+            );
+
+        return;
+    }
 
     if (!wlr_output_init_render(wlr_output, server->mp_allocator, server->mp_renderer)) {
         spdlog::error("Could not initialize rendering to output");
@@ -372,7 +478,7 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
 
     xdg_surface->data = view = server->mp_model->create_xdg_shell_view(
         xdg_surface,
-        &server->m_seat
+        server->mp_seat
     );
 }
 
@@ -434,17 +540,17 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
 static inline void
 create_keyboard(Server_ptr server, struct wlr_input_device* device)
 {
-        Keyboard_ptr keyboard = server->m_seat.create_keyboard(device);
+    Keyboard_ptr keyboard = server->mp_seat->create_keyboard(device);
 
-        struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-        struct xkb_keymap* keymap
-            = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
+    struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+    struct xkb_keymap* keymap
+        = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
-        wlr_keyboard_set_keymap(device->keyboard, keymap);
-        xkb_keymap_unref(keymap);
-        xkb_context_unref(context);
-        wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
-        wlr_seat_set_keyboard(server->m_seat.mp_wlr_seat, device);
+    wlr_keyboard_set_keymap(device->keyboard, keymap);
+    xkb_keymap_unref(keymap);
+    xkb_context_unref(context);
+    wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
+    wlr_seat_set_keyboard(server->mp_seat->mp_wlr_seat, device);
 }
 
 void
@@ -466,7 +572,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     case WLR_INPUT_DEVICE_POINTER:
     {
         wlr_cursor_attach_input_device(
-            server->m_seat.mp_cursor->mp_wlr_cursor,
+            server->mp_seat->mp_cursor->mp_wlr_cursor,
             device
         );
         break;
@@ -475,10 +581,10 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     }
 
     uint32_t caps = WL_SEAT_CAPABILITY_POINTER;
-    if (!server->m_seat.m_keyboards.empty())
+    if (!server->mp_seat->m_keyboards.empty())
         caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
-    wlr_seat_set_capabilities(server->m_seat.mp_wlr_seat, caps);
+    wlr_seat_set_capabilities(server->mp_seat->mp_wlr_seat, caps);
 }
 
 void
@@ -525,4 +631,19 @@ Server::handle_new_virtual_keyboard(struct wl_listener* listener, void* data)
 
     struct wlr_input_device* device = &virtual_keyboard->input_device;
     create_keyboard(server, device);
+}
+
+void
+Server::handle_drm_lease_request(struct wl_listener*, void* data)
+{
+    TRACE();
+
+    struct wlr_drm_lease_request_v1* request
+        = reinterpret_cast<struct wlr_drm_lease_request_v1*>(data);
+    struct wlr_drm_lease_v1* lease = wlr_drm_lease_request_v1_grant(request);
+
+    if (!lease) {
+        spdlog::error("Could not grant DRM lease request");
+        wlr_drm_lease_request_v1_reject(request);
+    }
 }

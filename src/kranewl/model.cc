@@ -191,7 +191,7 @@ Model::create_output(
     Output_ptr output = new Output(
         mp_server,
         this,
-        &mp_server->m_seat,
+        mp_server->mp_seat,
         wlr_output,
         wlr_scene_output,
         std::forward<Region const&&>(output_region)
@@ -473,14 +473,14 @@ Model::cursor_interactive(Cursor::Mode mode, View_ptr view)
     TRACE();
 
     if (is_free(view))
-        mp_server->m_seat.mp_cursor->initiate_cursor_interactive(mode, view);
+        mp_server->mp_seat->mp_cursor->initiate_cursor_interactive(mode, view);
 }
 
 void
 Model::abort_cursor_interactive()
 {
     TRACE();
-    mp_server->m_seat.mp_cursor->abort_cursor_interactive();
+    mp_server->mp_seat->mp_cursor->abort_cursor_interactive();
 }
 
 void
@@ -963,11 +963,11 @@ Model::activate_workspace(Workspace_ptr next_workspace)
 
     if (prev_workspace->focus_follows_cursor()) {
         View_ptr view_under_cursor
-            = mp_server->m_seat.mp_cursor->view_under_cursor();
+            = mp_server->mp_seat->mp_cursor->view_under_cursor();
 
         if (view_under_cursor)
             view_under_cursor->set_last_cursor_pos(
-                mp_server->m_seat.mp_cursor->cursor_pos()
+                mp_server->mp_seat->mp_cursor->cursor_pos()
             );
     }
 
@@ -992,7 +992,7 @@ Model::activate_workspace(Workspace_ptr next_workspace)
             = mp_focus ? mp_focus->last_cursor_pos() : std::nullopt;
 
         if (last_cursor_pos) {
-            mp_server->m_seat.mp_cursor->set_cursor_pos(*last_cursor_pos);
+            mp_server->mp_seat->mp_cursor->set_cursor_pos(*last_cursor_pos);
             mp_focus->set_last_cursor_pos(std::nullopt);
         } else
             mp_output->focus_at_cursor();
@@ -2122,7 +2122,7 @@ Model::create_layer(
         layer_surface,
         mp_server,
         this,
-        &mp_server->m_seat,
+        mp_server->mp_seat,
         output,
         scene_layer
     );
