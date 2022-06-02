@@ -316,8 +316,8 @@ Server::handle_output_manager_test(struct wl_listener*, void*)
 
 }
 
-static inline View_ptr
-view_from_popup(struct wlr_xdg_popup* popup)
+static inline XDGView_ptr
+xdg_view_from_popup(struct wlr_xdg_popup* popup)
 {
     struct wlr_xdg_surface* surface = popup->base;
 
@@ -331,7 +331,7 @@ view_from_popup(struct wlr_xdg_popup* popup)
             surface = wlr_xdg_surface_from_wlr_surface(surface->popup->parent);
             break;
         }
-        case WLR_XDG_SURFACE_ROLE_TOPLEVEL: return reinterpret_cast<View_ptr>(surface->data);
+        case WLR_XDG_SURFACE_ROLE_TOPLEVEL: return reinterpret_cast<XDGView_ptr>(surface->data);
         case WLR_XDG_SURFACE_ROLE_NONE:     return nullptr;
         }
 }
@@ -349,18 +349,17 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
     switch (xdg_surface->role) {
     case WLR_XDG_SURFACE_ROLE_POPUP:
     {
-        struct wlr_box mappable_box;
-        struct wlr_scene_node* parent_node
-            = reinterpret_cast<struct wlr_scene_node*>(xdg_surface->popup->parent->data);
+        xdg_surface->surface->data = wlr_scene_xdg_surface_create(
+            reinterpret_cast<struct wlr_scene_node*>(xdg_surface->popup->parent->data),
+            xdg_surface
+        );
 
-        xdg_surface->data
-            = wlr_scene_xdg_surface_create(parent_node, xdg_surface);
-
-        if (!(view = view_from_popup(xdg_surface->popup)) || !view->mp_output)
+        XDGView_ptr view;
+        if (!(view = xdg_view_from_popup(xdg_surface->popup)) || !view->mp_output)
             return;
 
         Region const& active_region = view->active_region();
-        mappable_box = view->mp_output->placeable_region();
+        struct wlr_box mappable_box = view->mp_output->placeable_region();
         mappable_box.x -= active_region.pos.x;
         mappable_box.y -= active_region.pos.y;
 
