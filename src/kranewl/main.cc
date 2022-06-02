@@ -28,6 +28,11 @@ drop_privileges()
         return false;
     }
 
+    if (setgid(0) != -1 || setuid(0) != -1) {
+        spdlog::error("Unable to drop root privileges");
+        return false;
+    }
+
     return true;
 }
 
