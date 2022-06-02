@@ -65,10 +65,7 @@ Cursor::Cursor(
 }
 
 Cursor::~Cursor()
-{
-    TRACE();
-
-}
+{}
 
 static inline Node_ptr
 node_at(
