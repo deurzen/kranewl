@@ -387,7 +387,7 @@ Model::sync_focus()
         mp_focus->focus(Toggle::Off);
 
     if (active) {
-        active->focus(Toggle::On);
+        focus_view(active);
         mp_focus = active;
     } else if (mp_workspace->empty()) {
         mp_server->relinquish_focus();
