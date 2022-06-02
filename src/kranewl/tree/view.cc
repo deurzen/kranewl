@@ -51,6 +51,7 @@ View::View(
       m_active_region({}),
       m_prev_region({}),
       m_inner_region({}),
+      m_last_cursor_pos({}),
       m_activated(false),
       m_focused(false),
       m_mapped(false),

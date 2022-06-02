@@ -59,8 +59,12 @@ typedef struct Cursor {
 
     ~Cursor();
 
-    View_ptr view_under_cursor() const;
+    Pos cursor_pos() const;
+    void set_cursor_pos(Pos const&);
+
     Node_ptr node_under_cursor() const;
+    View_ptr view_under_cursor() const;
+    Pos cursor_relative_to(View_ptr) const;
 
     void initiate_cursor_interactive(Mode, View_ptr, uint32_t);
     void initiate_cursor_interactive(Mode, View_ptr);

@@ -856,6 +856,16 @@ Model::activate_workspace(Workspace_ptr next_workspace)
     Context_ptr next_context = next_workspace->context();
     Context_ptr prev_context = prev_workspace->context();
 
+    if (prev_workspace->focus_follows_cursor()) {
+        View_ptr view_under_cursor
+            = mp_server->m_seat.mp_cursor->view_under_cursor();
+
+        if (view_under_cursor)
+            view_under_cursor->set_last_cursor_pos(
+                mp_server->m_seat.mp_cursor->cursor_pos()
+            );
+    }
+
     if (next_context == prev_context) {
         for (View_ptr view : *prev_workspace)
             if (!view->sticky())
@@ -870,8 +880,18 @@ Model::activate_workspace(Workspace_ptr next_workspace)
     mp_workspace = next_workspace;
 
     apply_layout(next_workspace);
-    mp_output->focus_at_cursor();
     sync_focus();
+
+    if (mp_workspace->focus_follows_cursor()) {
+        std::optional<Pos> const& last_cursor_pos
+            = mp_focus ? mp_focus->last_cursor_pos() : std::nullopt;
+
+        if (last_cursor_pos) {
+            mp_server->m_seat.mp_cursor->set_cursor_pos(*last_cursor_pos);
+            mp_focus->set_last_cursor_pos(std::nullopt);
+        } else
+            mp_output->focus_at_cursor();
+    }
 }
 
 void

@@ -133,6 +133,8 @@ typedef struct View : public Node {
     Dim const& preferred_dim() const { return m_preferred_dim; }
     void set_minimum_dim(Dim const& minimum_dim) { m_minimum_dim = minimum_dim; }
     void set_preferred_dim(Dim const& preferred_dim) { m_preferred_dim = preferred_dim; }
+    std::optional<Pos> const& last_cursor_pos() const { return m_last_cursor_pos; }
+    void set_last_cursor_pos(std::optional<Pos> const& last_cursor_pos) { m_last_cursor_pos = last_cursor_pos; }
 
     Decoration const& free_decoration() const { return m_free_decoration; }
     Decoration const& tile_decoration() const { return m_tile_decoration; }
@@ -192,6 +194,7 @@ private:
     Region m_active_region;
     Region m_prev_region;
     Region m_inner_region;
+    std::optional<Pos> m_last_cursor_pos;
 
     bool m_activated;
     bool m_focused;

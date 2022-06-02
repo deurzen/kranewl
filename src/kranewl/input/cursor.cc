@@ -123,6 +123,21 @@ view_at(
     return nullptr;
 }
 
+Pos
+Cursor::cursor_pos() const
+{
+    return Pos{
+        .x = mp_wlr_cursor->x,
+        .y = mp_wlr_cursor->y
+    };
+}
+
+void
+Cursor::set_cursor_pos(Pos const& pos)
+{
+    wlr_cursor_warp(mp_wlr_cursor, nullptr, pos.x, pos.y);
+}
+
 Node_ptr
 Cursor::node_under_cursor() const
 {
@@ -155,6 +170,15 @@ Cursor::view_under_cursor() const
     );
 
     return view;
+}
+
+Pos
+Cursor::cursor_relative_to(View_ptr view) const
+{
+    return Pos{
+        .x = mp_wlr_cursor->x - view->active_region().pos.x,
+        .y = mp_wlr_cursor->y - view->active_region().pos.y,
+    };
 }
 
 void
