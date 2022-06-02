@@ -72,6 +72,10 @@ public:
     Model_ptr mp_model;
     Seat_ptr mp_seat;
 
+    std::vector<struct wlr_output_mode*> m_modes;
+    struct wlr_output_mode* mp_current_mode;
+
+    bool m_enabled;
     bool m_dirty;
 
     struct wlr_output* mp_wlr_output;

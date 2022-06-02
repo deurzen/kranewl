@@ -49,6 +49,10 @@ public:
     Context_ptr context(Index) const;
     Output_ptr output(Index) const;
 
+    Cycle<Output_ptr> const& outputs() const;
+    Cycle<Context_ptr> const& contexts() const;
+    Cycle<Workspace_ptr> const& workspaces() const;
+
     KeyBindings const& key_bindings() const;
     CursorBindings const& cursor_bindings() const;
 

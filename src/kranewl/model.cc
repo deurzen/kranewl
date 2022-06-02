@@ -167,6 +167,24 @@ Model::output(Index index) const
     return nullptr;
 }
 
+Cycle<Output_ptr> const&
+Model::outputs() const
+{
+    return m_outputs;
+}
+
+Cycle<Context_ptr> const&
+Model::contexts() const
+{
+    return m_contexts;
+}
+
+Cycle<Workspace_ptr> const&
+Model::workspaces() const
+{
+    return m_workspaces;
+}
+
 KeyBindings const&
 Model::key_bindings() const
 {

@@ -340,6 +340,30 @@ Server::relinquish_focus()
 
     wlr_seat_keyboard_notify_clear_focus(mp_seat->mp_wlr_seat);
 }
+
+static inline void
+update_output_manager_config(Server_ptr server, Model_ptr model)
+{
+    struct wlr_output_configuration_v1* config
+        = wlr_output_configuration_v1_create();
+
+    for (Output_ptr output : model->outputs()) {
+        struct wlr_output_configuration_head_v1* config_head
+            = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
+
+        struct wlr_box output_box
+            = *wlr_output_layout_get_box(server->mp_output_layout, output->mp_wlr_output);
+
+        config_head->state.enabled = output->mp_current_mode && output->m_enabled;
+        config_head->state.mode = output->mp_current_mode;
+
+        if (!wlr_box_empty(&output_box)) {
+            config_head->state.x = output_box.x;
+            config_head->state.y = output_box.y;
+        }
+    }
+
+    wlr_output_manager_v1_set_configuration(server->mp_output_manager, config);
 }
 
 void
@@ -399,6 +423,7 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
     );
 
     wlr_output->data = output;
+    update_output_manager_config(server, server->mp_model);
 }
 
 void

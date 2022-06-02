@@ -38,6 +38,9 @@ Output::Output(
       mp_server(server),
       mp_model(model),
       mp_seat(seat),
+      m_modes({wlr_output->pending.mode}),
+      mp_current_mode(wlr_output->pending.mode),
+      m_enabled(true),
       m_dirty(true),
       m_cursor_focus_on_present(false),
       m_layer_map{
