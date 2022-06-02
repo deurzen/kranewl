@@ -538,7 +538,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_space, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_EXTERNAL(dunstctl close-all)
 },
-{ { XKB_KEY_comma, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_less, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_EXTERNAL(dunstctl history-pop)
 },
 { { XKB_KEY_Return, MODKEY },
