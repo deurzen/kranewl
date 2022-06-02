@@ -413,7 +413,7 @@ static const KeyBindings key_bindings = {
     CALL(activate_workspace_current_context(9))
 },
 
-// workspace client movers
+// workspace view movers
 { { XKB_KEY_braceright, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(move_focus_to_next_workspace(Direction::Forward))
 },
@@ -490,6 +490,56 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_0, MODKEY | WLR_MODIFIER_CTRL },
     CALL(activate_context(9))
+},
+
+// view jump criteria
+{ { XKB_KEY_b, MODKEY },
+    CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByAppIdEquals,
+        "qutebrowser"
+    }))
+},
+{ { XKB_KEY_B, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByAppIdEquals,
+        "firefox"
+    }))
+},
+{ { XKB_KEY_b, MODKEY | WLR_MODIFIER_CTRL },
+    CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByAppIdContains,
+        "chromium"
+    }))
+},
+{ { XKB_KEY_space, MODKEY | SECKEY },
+    CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByAppIdEquals,
+        "spotify"
+    }))
+},
+{ { XKB_KEY_e, MODKEY },
+    CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByTitleContains,
+        "[vim]"
+    }))
+},
+{ { XKB_KEY_comma, MODKEY },
+    CALL(jump_view({
+        model.mp_workspace->index(),
+        Workspace::ViewSelector::SelectionCriterium::AtFirst
+    }))
+},
+{ { XKB_KEY_period, MODKEY },
+    CALL(jump_view({
+        model.mp_workspace->index(),
+        Workspace::ViewSelector::SelectionCriterium::AtMain
+    }))
+},
+{ { XKB_KEY_slash, MODKEY },
+    CALL(jump_view({
+        model.mp_workspace->index(),
+        Workspace::ViewSelector::SelectionCriterium::AtLast
+    }))
 },
 
 // external commands

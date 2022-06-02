@@ -7,6 +7,7 @@
 #include <kranewl/layout.hh>
 #include <kranewl/placement.hh>
 #include <kranewl/tree/layer.hh>
+#include <kranewl/search.hh>
 #include <kranewl/tree/view.hh>
 
 #include <optional>
@@ -81,6 +82,10 @@ public:
     void focus_view(View_ptr);
     void refocus();
     void place_view(Placement&);
+
+    bool view_matches_search(View_ptr, SearchSelector const&) const;
+    View_ptr search_view(SearchSelector const&);
+    void jump_view(SearchSelector const&);
 
     void focus_output(Output_ptr);
 
@@ -220,6 +225,7 @@ private:
     std::vector<View_ptr> m_sticky_views;
 
     View_ptr mp_focus;
+    View_ptr mp_jumped_from;
 
     const KeyBindings m_key_bindings;
     const CursorBindings m_cursor_bindings;

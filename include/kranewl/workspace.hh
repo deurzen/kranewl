@@ -11,6 +11,66 @@ typedef struct View* View_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace final {
 public:
+    struct ViewSelector
+    {
+        enum class SelectionCriterium {
+            AtFirst,
+            AtLast,
+            AtMain,
+            AtIndex
+        };
+
+        ViewSelector(const SelectionCriterium criterium)
+            : m_index(std::nullopt)
+        {
+            switch (criterium) {
+            case SelectionCriterium::AtFirst: m_tag = ViewSelectorTag::AtFirst; return;
+            case SelectionCriterium::AtLast:  m_tag = ViewSelectorTag::AtLast;  return;
+            case SelectionCriterium::AtMain:  m_tag = ViewSelectorTag::AtMain;  return;
+            default: return;
+            }
+        }
+
+        ViewSelector(const std::size_t index)
+            : m_tag(ViewSelectorTag::AtIndex),
+              m_index(index)
+        {}
+
+        ~ViewSelector() = default;
+
+        SelectionCriterium
+        criterium() const
+        {
+            switch (m_tag) {
+            case ViewSelectorTag::AtFirst: return SelectionCriterium::AtFirst;
+            case ViewSelectorTag::AtLast:  return SelectionCriterium::AtLast;
+            case ViewSelectorTag::AtMain:  return SelectionCriterium::AtMain;
+            case ViewSelectorTag::AtIndex: return SelectionCriterium::AtIndex;
+            default: break;
+            }
+
+            return {};
+        }
+
+        std::size_t
+        index() const
+        {
+            return *m_index;
+        }
+
+    private:
+        enum class ViewSelectorTag {
+            AtFirst,
+            AtLast,
+            AtMain,
+            AtIndex
+        };
+
+        ViewSelectorTag m_tag;
+        std::optional<std::size_t> m_index;
+
+    };
+
     Workspace(Index index, std::string name, Context_ptr context)
         : m_index(index),
           m_name(name),
@@ -53,6 +113,7 @@ public:
 
     View_ptr next_view() const;
     View_ptr prev_view() const;
+    std::optional<View_ptr> find_view(ViewSelector const&) const;
 
     void cycle(Direction);
     void drag(Direction);

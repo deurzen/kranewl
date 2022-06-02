@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <iomanip>
 #include <optional>
+#include <set>
 
 // https://github.com/swaywm/wlroots/issues/682
 #include <pthread.h>
@@ -54,6 +55,7 @@ Model::Model(Config const& config)
       m_fullscreen_map{},
       m_sticky_views{},
       mp_focus(nullptr),
+      mp_jumped_from(nullptr),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
 {
@@ -360,6 +362,106 @@ Model::place_view(Placement& placement)
         view->active_decoration().extents(),
         false
     );
+}
+
+bool
+Model::view_matches_search(View_ptr view, SearchSelector const& selector) const
+{
+    TRACE();
+
+    switch (selector.criterium()) {
+    case SearchSelector::SelectionCriterium::OnWorkspaceBySelector:
+    {
+        auto const& [index,selector_] = selector.workspace_selector();
+
+        if (index <= m_workspaces.size()) {
+            Workspace_ptr workspace = m_workspaces[index];
+            std::optional<View_ptr> view_ = workspace->find_view(selector_);
+
+            return view_ && view_ == view;
+        }
+
+        return false;
+    }
+    case SearchSelector::SelectionCriterium::ByTitleEquals:
+        return view->m_title == selector.string_value();
+    case SearchSelector::SelectionCriterium::ByAppIdEquals:
+        return view->m_app_id == selector.string_value();
+    case SearchSelector::SelectionCriterium::ByTitleContains:
+        return view->m_title.find(selector.string_value()) != std::string::npos;
+    case SearchSelector::SelectionCriterium::ByAppIdContains:
+        return view->m_app_id.find(selector.string_value()) != std::string::npos;
+    case SearchSelector::SelectionCriterium::ForCondition:
+        return selector.filter()(view);
+    default: break;
+    }
+
+    return false;
+}
+
+View_ptr
+Model::search_view(SearchSelector const& selector)
+{
+    TRACE();
+
+    static constexpr struct LastFocusedComparer final {
+        bool
+        operator()(const View_ptr lhs, const View_ptr rhs) const
+        {
+            return lhs->last_focused() < rhs->last_focused();
+        }
+    } last_focused_comparer{};
+
+    std::set<View_ptr, LastFocusedComparer> views{{}, last_focused_comparer};
+
+    switch (selector.criterium()) {
+    case SearchSelector::SelectionCriterium::OnWorkspaceBySelector:
+    {
+        auto const& [index,selector_] = selector.workspace_selector();
+
+        if (index <= m_workspaces.size()) {
+            Workspace_ptr workspace = m_workspaces[index];
+            std::optional<View_ptr> view = workspace->find_view(selector_);
+
+            if (view && (*view)->managed())
+                views.insert(*view);
+        }
+
+        break;
+    }
+    default:
+    {
+        for (auto const&[_,view] : m_view_map)
+            if (view->managed() && view_matches_search(view, selector))
+                views.insert(view);
+
+        break;
+    }
+    }
+
+    return views.empty()
+        ? nullptr
+        : *views.rbegin();
+}
+
+void
+Model::jump_view(SearchSelector const& selector)
+{
+    TRACE();
+
+    View_ptr view = search_view(selector);
+
+    if (view) {
+        if (view == mp_focus) {
+            if (mp_jumped_from && view != mp_jumped_from)
+                view = mp_jumped_from;
+        }
+
+        if (mp_focus)
+            mp_jumped_from = mp_focus;
+
+        focus_view(view);
+    }
 }
 
 void

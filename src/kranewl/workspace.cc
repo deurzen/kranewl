@@ -171,6 +171,44 @@ Workspace::prev_view() const
     return nullptr;
 }
 
+std::optional<View_ptr>
+Workspace::find_view(ViewSelector const& selector) const
+{
+    if (m_views.empty())
+        return std::nullopt;
+
+    switch (selector.criterium()) {
+    case ViewSelector::SelectionCriterium::AtFirst:
+    {
+        return m_views[0];
+    }
+    case ViewSelector::SelectionCriterium::AtLast:
+    {
+        return m_views[Util::last_index(m_views.as_deque())];
+    }
+    case ViewSelector::SelectionCriterium::AtMain:
+    {
+        std::size_t main_count = m_layout_handler.main_count();
+
+        if (main_count <= m_views.size())
+            return m_views[main_count];
+
+        break;
+    }
+    case ViewSelector::SelectionCriterium::AtIndex:
+    {
+        std::size_t index = selector.index();
+
+        if (index <= m_views.size())
+            return m_views[index];
+
+        break;
+    }
+    }
+
+    return std::nullopt;
+}
+
 void
 Workspace::cycle(Direction direction)
 {
