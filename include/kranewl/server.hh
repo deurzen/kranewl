@@ -2,6 +2,7 @@
 
 #include <kranewl/geometry.hh>
 #include <kranewl/input/seat.hh>
+#include <kranewl/xdg-decoration.hh>
 #include <kranewl/xwayland.hh>
 
 extern "C" {
@@ -13,10 +14,12 @@ extern "C" {
 #include <array>
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 typedef class Model* Model_ptr;
 typedef class Server* Server_ptr;
 typedef struct View* View_ptr;
+typedef struct XDGDecoration* XDGDecoration_ptr;
 
 typedef class Server final {
 public:
@@ -38,7 +41,7 @@ private:
     static void handle_new_xdg_surface(struct wl_listener*, void*);
     static void handle_new_layer_shell_surface(struct wl_listener*, void*);
     static void handle_new_input(struct wl_listener*, void*);
-    static void handle_xdg_new_toplevel_decoration(struct wl_listener*, void*);
+    static void handle_new_xdg_toplevel_decoration(struct wl_listener*, void*);
     static void handle_xdg_request_activate(struct wl_listener*, void*);
     static void handle_new_virtual_keyboard(struct wl_listener*, void*);
     static void handle_drm_lease_request(struct wl_listener*, void*);
@@ -67,6 +70,8 @@ public:
     struct wlr_output_manager_v1* mp_output_manager;
     struct wlr_drm_lease_v1_manager* mp_drm_lease_manager;
 
+    std::unordered_map<Uid, XDGDecoration_ptr> m_decorations;
+
 private:
     struct wlr_xdg_shell* mp_xdg_shell;
     struct wlr_layer_shell_v1* mp_layer_shell;
@@ -84,7 +89,7 @@ private:
     struct wl_listener ml_new_xdg_surface;
     struct wl_listener ml_new_layer_shell_surface;
     struct wl_listener ml_new_input;
-    struct wl_listener ml_xdg_new_toplevel_decoration;
+    struct wl_listener ml_new_xdg_toplevel_decoration;
     struct wl_listener ml_xdg_request_activate;
     struct wl_listener ml_new_virtual_keyboard;
     struct wl_listener ml_drm_lease_request;

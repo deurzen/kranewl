@@ -8,6 +8,7 @@
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg-view.hh>
+#include <kranewl/xdg-decoration.hh>
 #ifdef XWAYLAND
 #include <kranewl/tree/xwayland-view.hh>
 #include <kranewl/xwayland.hh>
@@ -110,7 +111,7 @@ Server::Server(Model_ptr model)
       ml_new_xdg_surface({ .notify = Server::handle_new_xdg_surface }),
       ml_new_layer_shell_surface({ .notify = Server::handle_new_layer_shell_surface }),
       ml_new_input({ .notify = Server::handle_new_input }),
-      ml_xdg_new_toplevel_decoration({ .notify = Server::handle_xdg_new_toplevel_decoration }),
+      ml_new_xdg_toplevel_decoration({ .notify = Server::handle_new_xdg_toplevel_decoration }),
       ml_xdg_request_activate({ .notify = Server::handle_xdg_request_activate }),
       ml_new_virtual_keyboard({ .notify = Server::handle_new_virtual_keyboard }),
       ml_drm_lease_request({ .notify = Server::handle_drm_lease_request })
@@ -270,7 +271,7 @@ Server::start()
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
     wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
     wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
-    wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_xdg_new_toplevel_decoration);
+    wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_new_xdg_toplevel_decoration);
     wl_signal_add(&mp_xdg_activation->events.request_activate, &ml_xdg_request_activate);
     wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
@@ -613,17 +614,24 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
 }
 
 void
-Server::handle_xdg_new_toplevel_decoration(struct wl_listener*, void* data)
+Server::handle_new_xdg_toplevel_decoration(struct wl_listener* listener, void* data)
 {
     TRACE();
 
-    struct wlr_xdg_toplevel_decoration_v1* decoration
+    Server_ptr server = wl_container_of(listener, server, ml_new_xdg_toplevel_decoration);
+    struct wlr_xdg_toplevel_decoration_v1* xdg_decoration
         = reinterpret_cast<struct wlr_xdg_toplevel_decoration_v1*>(data);
+    XDGView_ptr view = reinterpret_cast<XDGView_ptr>(xdg_decoration->surface->data);
 
-    wlr_xdg_toplevel_decoration_v1_set_mode(
-        decoration,
-        WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE
-    );
+    XDGDecoration_ptr decoration
+        = new XDGDecoration(server, server->mp_model, view, xdg_decoration);
+    view->mp_decoration = decoration;
+    server->m_decorations[decoration->m_uid] = decoration;
+
+	wl_signal_add(&xdg_decoration->events.destroy, &decoration->ml_destroy);
+	wl_signal_add(&xdg_decoration->events.request_mode, &decoration->ml_request_mode);
+
+    XDGDecoration::handle_request_mode(&decoration->ml_request_mode, xdg_decoration);
 }
 
 void

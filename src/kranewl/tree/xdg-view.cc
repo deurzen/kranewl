@@ -19,6 +19,7 @@ extern "C" {
 #include <wlr/types/wlr_idle_inhibit_v1.h>
 #include <wlr/types/wlr_layer_shell_v1.h>
 #include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_shell.h>
 }
 #undef static
@@ -41,6 +42,7 @@ XDGView::XDGView(
       ),
       mp_wlr_xdg_surface(wlr_xdg_surface),
       mp_wlr_xdg_toplevel(wlr_xdg_surface->toplevel),
+      mp_decoration(nullptr),
       ml_commit({ .notify = XDGView::handle_commit }),
       ml_request_move({ .notify = XDGView::handle_request_move }),
       ml_request_resize({ .notify = XDGView::handle_request_resize }),
@@ -455,6 +457,9 @@ XDGView::handle_destroy(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_unmap.link);
     wl_list_remove(&view->ml_destroy.link);
 	wl_list_remove(&view->m_events.unmap.listener_list);
+
+    if (view->mp_decoration)
+        view->mp_decoration->mp_view = nullptr;
 
 	view->mp_wlr_xdg_toplevel = nullptr;
 	view->mp_wlr_xdg_surface = nullptr;

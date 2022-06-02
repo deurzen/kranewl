@@ -11,6 +11,7 @@ typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
+typedef struct XDGDecoration* XDGDecoration_ptr;
 
 typedef struct XDGView final : public View {
     XDGView(
@@ -47,6 +48,8 @@ typedef struct XDGView final : public View {
 
     struct wlr_xdg_surface* mp_wlr_xdg_surface;
     struct wlr_xdg_toplevel* mp_wlr_xdg_toplevel;
+
+    XDGDecoration_ptr mp_decoration;
 
     struct wl_listener ml_commit;
     struct wl_listener ml_request_move;
