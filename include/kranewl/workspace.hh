@@ -21,7 +21,7 @@ public:
           m_free_views({}, true),
           m_iconified_views({}, true),
           m_disowned_views({}, true),
-          m_focus_follows_cursor(false)
+          m_focus_follows_cursor(true)
     {}
 
     bool empty() const;

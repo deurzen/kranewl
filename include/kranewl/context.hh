@@ -18,7 +18,7 @@ public:
           mp_active(nullptr),
           mp_prev_active(nullptr),
           m_workspaces({}, true),
-          m_focus_follows_cursor(false)
+          m_focus_follows_cursor(true)
     {}
 
     Index
