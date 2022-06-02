@@ -52,8 +52,8 @@ Keyboard::handle_modifiers(struct wl_listener* listener, void*)
     );
 }
 
-static bool
-process_keybinding(Model_ptr model, KeyboardInput input)
+static inline bool
+process_key_binding(Model_ptr model, KeyboardInput input)
 {
     TRACE();
 
@@ -94,18 +94,33 @@ Keyboard::handle_key(struct wl_listener* listener, void* data)
     );
 
     bool key_press_handled = false;
-
-    if (!seat->mp_input_inhibit_manager->active_inhibitor
-        && event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
-    {
+    if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
         for (int i = 0; i < symcount; ++i)
-            key_press_handled |= process_keybinding(
-                seat->mp_model,
-                KeyboardInput{
-                    keysyms[i],
-                    modifiers & ~WLR_MODIFIER_CAPS
+            if (keysyms[i] >= XKB_KEY_XF86Switch_VT_1 &&
+                    keysyms[i] <= XKB_KEY_XF86Switch_VT_12)
+            {
+                struct wlr_session* session
+                    = wlr_backend_get_session(seat->mp_server->mp_backend);
+
+                if (session) {
+                    unsigned vt = keysyms[i] - XKB_KEY_XF86Switch_VT_1 + 1;
+                    spdlog::info("Switching to VT {}", vt);
+                    wlr_session_change_vt(session, vt);
                 }
-            );
+
+                return;
+            }
+
+        if (!seat->mp_input_inhibit_manager->active_inhibitor) {
+            for (int i = 0; i < symcount; ++i)
+                key_press_handled |= process_key_binding(
+                    seat->mp_model,
+                    KeyboardInput{
+                        keysyms[i],
+                        modifiers & ~WLR_MODIFIER_CAPS
+                    }
+                );
+        }
     }
 
 	if (!key_press_handled) {
