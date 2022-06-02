@@ -64,11 +64,13 @@ main(int argc, char** argv)
     Model model{config};
     Server server{&model};
 
-    model.initialize(
-        options.env_path,
-        options.autostart_path
-    );
+    signal(SIGPIPE, SIG_IGN);
 
+    server.initialize();
+    model.evaluate_user_env_vars(options.env_path);
+    server.start();
+    model.run_user_autostart(options.autostart_path);
     server.run();
+
     return EXIT_SUCCESS;
 }

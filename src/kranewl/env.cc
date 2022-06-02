@@ -1,5 +1,9 @@
 #include <kranewl/env.hh>
 
+extern "C" {
+#include <sys/stat.h>
+}
+
 #include <cctype>
 #include <cstdint>
 #include <cstdlib>
@@ -8,6 +12,16 @@
 #include <regex>
 
 #include <spdlog/spdlog.h>
+
+bool
+file_exists(std::string const& path)
+{
+    struct stat buffer;
+    if (!stat(path.c_str(), &buffer))
+        return true;
+
+    return false;
+}
 
 static inline std::string
 evaluate_value(std::string const& value)
@@ -34,6 +48,9 @@ evaluate_value(std::string const& value)
 void
 parse_and_set_env_vars(std::string const& env_path)
 {
+    if (!file_exists(env_path))
+        return;
+
     struct Assignment_ctype : std::ctype<char> {
         Assignment_ctype()
             : std::ctype<char>(get_table())

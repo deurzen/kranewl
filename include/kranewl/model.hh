@@ -38,7 +38,8 @@ public:
     Model(Config const&);
     ~Model();
 
-    void initialize(std::string const&, std::optional<std::string>);
+    void evaluate_user_env_vars(std::string const&);
+    void run_user_autostart(std::optional<std::string>);
 
     void register_server(Server_ptr);
     void exit();

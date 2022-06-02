@@ -23,8 +23,10 @@ public:
     Server(Model_ptr);
     ~Server();
 
-    void run() noexcept;
-    void terminate() noexcept;
+    void initialize();
+    void start();
+    void run();
+    void terminate();
 
     void relinquish_focus();
 

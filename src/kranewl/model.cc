@@ -98,17 +98,20 @@ Model::~Model()
 {}
 
 void
-Model::initialize(
-    std::string const& env_path,
+Model::evaluate_user_env_vars(std::string const& env_path)
+{
+    TRACE();
+    parse_and_set_env_vars(env_path);
+}
+
+void
+Model::run_user_autostart(
     [[maybe_unused]] std::optional<std::string> autostart_path
 )
 {
     TRACE();
-
-    parse_and_set_env_vars(env_path);
-
 #ifdef NDEBUG
-    if (autostart_path) {
+    if (autostart_path && file_exists(*autostart_path)) {
         spdlog::info("Executing autostart file at {}", *autostart_path);
         exec_external(*autostart_path);
     }
