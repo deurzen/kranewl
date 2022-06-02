@@ -12,33 +12,40 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
-    -w
-    # -fdiagnostics-show-option
-    # -Weffc++
-    # -Wall -Wextra -Wshadow -Wnon-virtual-dtor -pedantic
-    # -Wnon-virtual-dtor
-    # -Wold-style-cast
-    # -Wcast-align
-    # -Wunused
-    # -Woverloaded-virtual
-    # -Wpedantic
-    # -Wconversion
-    # -Wsign-conversion
-    # -Wmisleading-indentation
-    # -Wduplicated-cond
-    # -Wduplicated-branches
-    # -Wlogical-op
-    # -Wnull-dereference
-    # -Wuseless-cast
-    # -Wdouble-promotion
-    # -Wformat=2
-    -DXWAYLAND
-    -O0
-    # debug options
-    -g
-    # -DTRACING_DISABLED
-    # -finstrument-functions -finstrument-functions-exclude-file-list=/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/backward,/usr/lib/gcc/x86_64-pc-linux-gnu/11.2.1/include/g++-v11/x86_64-pc-linux-gnu,/usr/local/include -ldl -Wl,--export-dynamic
+    $<$<CONFIG:DEBUG>:-fdiagnostics-show-option>
+    $<$<CONFIG:DEBUG>:-Weffc++>
+    $<$<CONFIG:DEBUG>:-Wall>
+    $<$<CONFIG:DEBUG>:-Wextra>
+    $<$<CONFIG:DEBUG>:-Wshadow>
+    $<$<CONFIG:DEBUG>:-Wnon-virtual-dtor>
+    $<$<CONFIG:DEBUG>:-pedantic>
+    $<$<CONFIG:DEBUG>:-Wnon-virtual-dtor>
+    $<$<CONFIG:DEBUG>:-Wold-style-cast>
+    $<$<CONFIG:DEBUG>:-Wcast-align>
+    $<$<CONFIG:DEBUG>:-Wunused>
+    $<$<CONFIG:DEBUG>:-Woverloaded-virtual>
+    $<$<CONFIG:DEBUG>:-Wpedantic>
+    $<$<CONFIG:DEBUG>:-Wconversion>
+    $<$<CONFIG:DEBUG>:-Wsign-conversion>
+    $<$<CONFIG:DEBUG>:-Wmisleading-indentation>
+    $<$<CONFIG:DEBUG>:-Wduplicated-cond>
+    $<$<CONFIG:DEBUG>:-Wduplicated-branches>
+    $<$<CONFIG:DEBUG>:-Wlogical-op>
+    $<$<CONFIG:DEBUG>:-Wnull-dereference>
+    $<$<CONFIG:DEBUG>:-Wuseless-cast>
+    $<$<CONFIG:DEBUG>:-Wdouble-promotion>
+    $<$<CONFIG:DEBUG>:-Wformat=2>
+    $<$<CONFIG:DEBUG>:-DXWAYLAND>
+    $<$<CONFIG:DEBUG>:-O0>
+    $<$<CONFIG:DEBUG>:-g>
+    $<$<CONFIG:RELEASE>:-w>
+    $<$<CONFIG:RELEASE>:-DXWAYLAND>
+    $<$<CONFIG:RELEASE>:-DTRACING_DISABLED>
+    $<$<CONFIG:RELEASE>:-O2>
+)
 
+add_compile_definitions(
+    $<$<CONFIG:DEBUG>:DEBUG>
 )
 
 find_program(CCACHE ccache)
@@ -201,6 +208,9 @@ target_include_directories(kranec PRIVATE
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/protocols
 )
+
+install(TARGETS kranewl)
+install(TARGETS kranec)
 
 include(CTest)
 
