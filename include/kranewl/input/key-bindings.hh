@@ -150,10 +150,10 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_r, MODKEY },
     CALL(reverse_views())
 },
-{ { XKB_KEY_semicolon, MODKEY | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_colon, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(rotate_views(Direction::Forward))
 },
-{ { XKB_KEY_comma, MODKEY | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_less, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(rotate_views(Direction::Backward))
 },
 
@@ -214,7 +214,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_V, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(set_layout(LayoutHandler::LayoutKind::VerticalStack))
 },
-{ { XKB_KEY_V, MODKEY | WLR_MODIFIER_CTRL },
+{ { XKB_KEY_v, MODKEY | WLR_MODIFIER_CTRL },
     CALL(set_layout(LayoutHandler::LayoutKind::CompactVerticalStack))
 },
 { { XKB_KEY_F, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
@@ -308,7 +308,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_minus, MODKEY },
     CALL(change_gap_size(-2))
 },
-{ { XKB_KEY_equal, MODKEY | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_plus, MODKEY | WLR_MODIFIER_SHIFT },
     CALL(reset_gap_size())
 },
 { { XKB_KEY_i, MODKEY },
@@ -353,22 +353,22 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_Down, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(change_margin(Edge::Bottom, -5))
 },
-{ { XKB_KEY_comma, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_less, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(cycle_layout_data(Direction::Backward))
 },
-{ { XKB_KEY_period, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_greater, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(cycle_layout_data(Direction::Forward))
 },
-{ { XKB_KEY_slash, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_question, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(toggle_layout_data())
 },
 { { XKB_KEY_Delete, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(copy_data_from_prev_layout())
 },
-{ { XKB_KEY_equal, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_plus, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(reset_margin())
 },
-{ { XKB_KEY_equal, MODKEY | SECKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
+{ { XKB_KEY_plus, MODKEY | SECKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL(reset_layout_data())
 },
 
