@@ -12,29 +12,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
-    $<$<CONFIG:DEBUG>:-fdiagnostics-show-option>
-    $<$<CONFIG:DEBUG>:-Weffc++>
-    $<$<CONFIG:DEBUG>:-Wall>
-    $<$<CONFIG:DEBUG>:-Wextra>
-    $<$<CONFIG:DEBUG>:-Wshadow>
-    $<$<CONFIG:DEBUG>:-Wnon-virtual-dtor>
-    $<$<CONFIG:DEBUG>:-pedantic>
-    $<$<CONFIG:DEBUG>:-Wnon-virtual-dtor>
-    $<$<CONFIG:DEBUG>:-Wold-style-cast>
-    $<$<CONFIG:DEBUG>:-Wcast-align>
-    $<$<CONFIG:DEBUG>:-Wunused>
-    $<$<CONFIG:DEBUG>:-Woverloaded-virtual>
-    $<$<CONFIG:DEBUG>:-Wpedantic>
-    $<$<CONFIG:DEBUG>:-Wconversion>
-    $<$<CONFIG:DEBUG>:-Wsign-conversion>
-    $<$<CONFIG:DEBUG>:-Wmisleading-indentation>
-    $<$<CONFIG:DEBUG>:-Wduplicated-cond>
-    $<$<CONFIG:DEBUG>:-Wduplicated-branches>
-    $<$<CONFIG:DEBUG>:-Wlogical-op>
-    $<$<CONFIG:DEBUG>:-Wnull-dereference>
-    $<$<CONFIG:DEBUG>:-Wuseless-cast>
-    $<$<CONFIG:DEBUG>:-Wdouble-promotion>
-    $<$<CONFIG:DEBUG>:-Wformat=2>
+    $<$<CONFIG:DEBUG>:-w>
     $<$<CONFIG:DEBUG>:-DXWAYLAND>
     $<$<CONFIG:DEBUG>:-O0>
     $<$<CONFIG:DEBUG>:-g>
