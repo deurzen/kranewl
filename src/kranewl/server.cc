@@ -150,7 +150,7 @@ Server::Server(Model_ptr model)
     if (m_socket.empty()) {
         wlr_backend_destroy(mp_backend);
         wl_display_destroy(mp_display);
-        std::exit(1);
+        std::exit(EXIT_FAILURE);
         spdlog::critical("Could not set up server socket");
         return;
     }
