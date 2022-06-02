@@ -36,11 +36,7 @@ extern "C" {
 #undef namespace
 #undef class
 
-Model::Model(
-    Config const& config,
-    std::string const& env_path,
-    [[maybe_unused]] std::optional<std::string> autostart_path
-)
+Model::Model(Config const& config)
     : m_config{config},
       m_running{true},
       m_outputs{{}, true},
@@ -62,15 +58,6 @@ Model::Model(
       m_cursor_bindings(Bindings::cursor_bindings)
 {
     TRACE();
-
-    parse_and_set_env_vars(env_path);
-
-#ifdef NDEBUG
-    if (autostart_path) {
-        spdlog::info("Executing autostart file at {}", *autostart_path);
-        exec_external(*autostart_path);
-    }
-#endif
 
     static const std::vector<std::string> context_names{
         "a", "b", "c", "d", "e", "f", "g", "h", "i", "j"
@@ -107,6 +94,24 @@ Model::Model(
 
 Model::~Model()
 {}
+
+void
+Model::initialize(
+    std::string const& env_path,
+    [[maybe_unused]] std::optional<std::string> autostart_path
+)
+{
+    TRACE();
+
+    parse_and_set_env_vars(env_path);
+
+#ifdef NDEBUG
+    if (autostart_path) {
+        spdlog::info("Executing autostart file at {}", *autostart_path);
+        exec_external(*autostart_path);
+    }
+#endif
+}
 
 void
 Model::register_server(Server_ptr server)

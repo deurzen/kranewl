@@ -34,8 +34,10 @@ class Config;
 class Model final
 {
 public:
-    Model(Config const&, std::string const&, std::optional<std::string>);
+    Model(Config const&);
     ~Model();
+
+    void initialize(std::string const&, std::optional<std::string>);
 
     void register_server(Server_ptr);
     void exit();

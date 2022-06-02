@@ -35,13 +35,14 @@ main(int argc, char** argv)
     const ConfigParser config_parser{options.config_path};
     const Config config = config_parser.generate_config();
 
-    Model model{
-        config,
+    Model model{config};
+    Server server{&model};
+
+    model.initialize(
         options.env_path,
         options.autostart_path
-    };
+    );
 
-    Server{&model}.run();
-
+    server.run();
     return EXIT_SUCCESS;
 }
