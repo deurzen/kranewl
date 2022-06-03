@@ -88,6 +88,7 @@ void
 Seat::unregister_keyboard(Keyboard_ptr keyboard)
 {
     Util::erase_remove(m_keyboards, keyboard);
+    delete keyboard;
 }
 
 void

@@ -23,597 +23,1116 @@ namespace Bindings {
 
 static const KeyBindings key_bindings = {
 { { XKB_KEY_Q, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(exit())
+  {
+    .action = CALL(exit()),
+    .repeatable = false
+  }
 },
 
 // view state modifiers
 { { XKB_KEY_c, MODKEY },
-    CALL(kill_focus())
+  {
+    .action = CALL(kill_focus()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_space, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_floating_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_floating_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_f, MODKEY },
-    CALL(set_fullscreen_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_fullscreen_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_x, MODKEY },
-    CALL(set_sticky_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_sticky_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_f, MODKEY | SECKEY | WLR_MODIFIER_CTRL },
-    CALL(set_contained_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_contained_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_i, MODKEY | SECKEY | WLR_MODIFIER_CTRL },
-    CALL(set_invincible_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_invincible_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_y, MODKEY },
-    CALL(set_iconify_focus(Toggle::Reverse))
+  {
+    .action = CALL(set_iconify_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_u, MODKEY },
-    CALL(pop_deiconify())
+  {
+    .action = CALL(pop_deiconify()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_u, MODKEY | SECKEY },
-    CALL(deiconify_all())
+  {
+    .action = CALL(deiconify_all()),
+    .repeatable = false
+  }
 },
 
 // view arrangers
 { { XKB_KEY_space, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(center_focus())
+  {
+    .action = CALL(center_focus()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_h, MODKEY | WLR_MODIFIER_CTRL },
-    [](Model& model) {
+  {
+    .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
         if (focus && model.is_free(focus))
-            model.nudge_focus(Edge::Left, 15);
+            model.nudge_focus(Edge::Left, 50);
         else
             model.shuffle_main(Direction::Backward);
-    }
+    },
+    .repeatable = true
+  }
 },
 { { XKB_KEY_j, MODKEY | WLR_MODIFIER_CTRL },
-    [](Model& model) {
+  {
+    .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
         if (focus && model.is_free(focus))
-            model.nudge_focus(Edge::Bottom, 15);
+            model.nudge_focus(Edge::Bottom, 50);
         else
             model.shuffle_stack(Direction::Forward);
-    }
+    },
+    .repeatable = true
+  }
 },
 { { XKB_KEY_k, MODKEY | WLR_MODIFIER_CTRL },
-    [](Model& model) {
+  {
+    .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
         if (focus && model.is_free(focus))
-            model.nudge_focus(Edge::Top, 15);
+            model.nudge_focus(Edge::Top, 50);
         else
             model.shuffle_stack(Direction::Backward);
-    }
+    },
+    .repeatable = true
+  }
 },
 { { XKB_KEY_l, MODKEY | WLR_MODIFIER_CTRL },
-    [](Model& model) {
+  {
+    .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
         if (focus && model.is_free(focus))
-            model.nudge_focus(Edge::Right, 15);
+            model.nudge_focus(Edge::Right, 50);
         else
             model.shuffle_main(Direction::Forward);
-    }
+    },
+    .repeatable = true
+  }
 },
 { { XKB_KEY_H, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Left, 15))
+  {
+    .action = CALL(stretch_focus(Edge::Left, 50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_J, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Bottom, 15))
+  {
+    .action = CALL(stretch_focus(Edge::Bottom, 50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_K, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Top, 15))
+  {
+    .action = CALL(stretch_focus(Edge::Top, 50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_L, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Right, 15))
+  {
+    .action = CALL(stretch_focus(Edge::Right, 50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Y, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Left, -15))
+  {
+    .action = CALL(stretch_focus(Edge::Left, -50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_U, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Bottom, -15))
+  {
+    .action = CALL(stretch_focus(Edge::Bottom, -50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_I, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Top, -15))
+  {
+    .action = CALL(stretch_focus(Edge::Top, -50)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_O, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(stretch_focus(Edge::Right, -15))
+  {
+    .action = CALL(stretch_focus(Edge::Right, -50)),
+    .repeatable = true
+  }
 },
-{ { XKB_KEY_leftarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(WLR_EDGE_LEFT))
+{ { XKB_KEY_Left, MODKEY | WLR_MODIFIER_CTRL },
+  {
+    .action = CALL(snap_focus(WLR_EDGE_LEFT)),
+    .repeatable = false
+  }
 },
-{ { XKB_KEY_downarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(WLR_EDGE_BOTTOM))
+{ { XKB_KEY_Down, MODKEY | WLR_MODIFIER_CTRL },
+  {
+    .action = CALL(snap_focus(WLR_EDGE_BOTTOM)),
+    .repeatable = false
+  }
 },
-{ { XKB_KEY_uparrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(WLR_EDGE_TOP))
+{ { XKB_KEY_Up, MODKEY | WLR_MODIFIER_CTRL },
+  {
+    .action = CALL(snap_focus(WLR_EDGE_TOP)),
+    .repeatable = false
+  }
 },
-{ { XKB_KEY_rightarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(WLR_EDGE_RIGHT))
+{ { XKB_KEY_Right, MODKEY | WLR_MODIFIER_CTRL },
+  {
+    .action = CALL(snap_focus(WLR_EDGE_RIGHT)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_j, MODKEY },
-    CALL(cycle_focus(Direction::Forward))
+  {
+    .action = CALL(cycle_focus(Direction::Forward)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_k, MODKEY },
-    CALL(cycle_focus(Direction::Backward))
+  {
+    .action = CALL(cycle_focus(Direction::Backward)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_J, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(drag_focus(Direction::Forward))
+  {
+    .action = CALL(drag_focus(Direction::Forward)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_K, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(drag_focus(Direction::Backward))
+  {
+    .action = CALL(drag_focus(Direction::Backward)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_r, MODKEY },
-    CALL(reverse_views())
+  {
+    .action = CALL(reverse_views()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_colon, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(rotate_views(Direction::Forward))
+  {
+    .action = CALL(rotate_views(Direction::Forward)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_less, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(rotate_views(Direction::Backward))
+  {
+    .action = CALL(rotate_views(Direction::Backward)),
+    .repeatable = true
+  }
 },
 
     // workspace behavior modifiers
 { { XKB_KEY_M, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_workspace))
+  {
+    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_workspace)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_M, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_context))
+  {
+    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_context)),
+    .repeatable = false
+  }
 },
 
 // workspace layout modifiers
 { { XKB_KEY_F, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::Float))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::Float)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_L, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::FramelessFloat))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::FramelessFloat)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_z, MODKEY },
-    CALL(set_layout(LayoutHandler::LayoutKind::SingleFloat))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::SingleFloat)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Z, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::FramelessSingleFloat))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::FramelessSingleFloat)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_m, MODKEY },
-    CALL(set_layout(LayoutHandler::LayoutKind::Monocle))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::Monocle)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_d, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(set_layout(LayoutHandler::LayoutKind::MainDeck))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::MainDeck)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_D, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::StackDeck))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::StackDeck)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_D, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::DoubleDeck))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::DoubleDeck)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_g, MODKEY },
-    CALL(set_layout(LayoutHandler::LayoutKind::Center))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::Center)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_t, MODKEY },
-    CALL(set_layout(LayoutHandler::LayoutKind::DoubleStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::DoubleStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_T, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::CompactDoubleStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::CompactDoubleStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_P, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::Paper))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::Paper)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_P, MODKEY | SECKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::CompactPaper))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::CompactPaper)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Y, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::HorizontalStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::HorizontalStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_y, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(set_layout(LayoutHandler::LayoutKind::CompactHorizontalStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::CompactHorizontalStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_V, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(set_layout(LayoutHandler::LayoutKind::VerticalStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::VerticalStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_v, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(set_layout(LayoutHandler::LayoutKind::CompactVerticalStack))
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::CompactVerticalStack)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(set_layout_retain_region(LayoutHandler::LayoutKind::Float))
+  {
+    .action = CALL(set_layout_retain_region(LayoutHandler::LayoutKind::Float)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_space, MODKEY },
-    CALL(toggle_layout())
+  {
+    .action = CALL(toggle_layout()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Return, MODKEY },
-    CALL_EXTERNAL(alacritty)
+  {
+    .action = CALL_EXTERNAL(alacritty),
+    .repeatable = false
+  }
 },
 
 // workspace layout storage and retrieval
 { { XKB_KEY_F1, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(0))
+  {
+    .action = CALL(save_layout(0)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F2, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(1))
+  {
+    .action = CALL(save_layout(1)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F3, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(2))
+  {
+    .action = CALL(save_layout(2)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F4, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(3))
+  {
+    .action = CALL(save_layout(3)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F5, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(4))
+  {
+    .action = CALL(save_layout(4)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F6, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(5))
+  {
+    .action = CALL(save_layout(5)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F7, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(6))
+  {
+    .action = CALL(save_layout(6)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F8, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(7))
+  {
+    .action = CALL(save_layout(7)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F9, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(8))
+  {
+    .action = CALL(save_layout(8)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F10, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(9))
+  {
+    .action = CALL(save_layout(9)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F11, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(10))
+  {
+    .action = CALL(save_layout(10)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F12, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(save_layout(11))
+  {
+    .action = CALL(save_layout(11)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F1, MODKEY },
-    CALL(load_layout(0))
+  {
+    .action = CALL(load_layout(0)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F2, MODKEY },
-    CALL(load_layout(1))
+  {
+    .action = CALL(load_layout(1)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F3, MODKEY },
-    CALL(load_layout(2))
+  {
+    .action = CALL(load_layout(2)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F4, MODKEY },
-    CALL(load_layout(3))
+  {
+    .action = CALL(load_layout(3)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F5, MODKEY },
-    CALL(load_layout(4))
+  {
+    .action = CALL(load_layout(4)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F6, MODKEY },
-    CALL(load_layout(5))
+  {
+    .action = CALL(load_layout(5)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F7, MODKEY },
-    CALL(load_layout(6))
+  {
+    .action = CALL(load_layout(6)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F8, MODKEY },
-    CALL(load_layout(7))
+  {
+    .action = CALL(load_layout(7)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F9, MODKEY },
-    CALL(load_layout(8))
+  {
+    .action = CALL(load_layout(8)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F10, MODKEY },
-    CALL(load_layout(9))
+  {
+    .action = CALL(load_layout(9)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F11, MODKEY },
-    CALL(load_layout(10))
+  {
+    .action = CALL(load_layout(10)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_F12, MODKEY },
-    CALL(load_layout(11))
+  {
+    .action = CALL(load_layout(11)),
+    .repeatable = false
+  }
 },
 
 // workspace layout data modifiers
 { { XKB_KEY_equal, MODKEY },
-    CALL(change_gap_size(2))
+  {
+    .action = CALL(change_gap_size(2)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_minus, MODKEY },
-    CALL(change_gap_size(-2))
+  {
+    .action = CALL(change_gap_size(-2)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_plus, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(reset_gap_size())
+  {
+    .action = CALL(reset_gap_size()),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_i, MODKEY },
-    CALL(change_main_count(1))
+  {
+    .action = CALL(change_main_count(1)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_d, MODKEY },
-    CALL(change_main_count(-1))
+  {
+    .action = CALL(change_main_count(-1)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_l, MODKEY },
-    CALL(change_main_factor(.05f))
+  {
+    .action = CALL(change_main_factor(.05f)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_h, MODKEY },
-    CALL(change_main_factor(-.05f))
+  {
+    .action = CALL(change_main_factor(-.05f)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Page_Up, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(5))
+  {
+    .action = CALL(change_margin(5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Page_Down, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(-5))
+  {
+    .action = CALL(change_margin(-5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Left, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Left, 5))
+  {
+    .action = CALL(change_margin(Edge::Left, 5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Left, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Left, -5))
+  {
+    .action = CALL(change_margin(Edge::Left, -5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Up, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Top, 5))
+  {
+    .action = CALL(change_margin(Edge::Top, 5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Up, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Top, -5))
+  {
+    .action = CALL(change_margin(Edge::Top, -5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Right, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Right, 5))
+  {
+    .action = CALL(change_margin(Edge::Right, 5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Right, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Right, -5))
+  {
+    .action = CALL(change_margin(Edge::Right, -5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Down, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Bottom, 5))
+  {
+    .action = CALL(change_margin(Edge::Bottom, 5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_Down, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(change_margin(Edge::Bottom, -5))
+  {
+    .action = CALL(change_margin(Edge::Bottom, -5)),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_less, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(cycle_layout_data(Direction::Backward))
+  {
+    .action = CALL(cycle_layout_data(Direction::Backward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_greater, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(cycle_layout_data(Direction::Forward))
+  {
+    .action = CALL(cycle_layout_data(Direction::Forward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_question, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(toggle_layout_data())
+  {
+    .action = CALL(toggle_layout_data()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Delete, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(copy_data_from_prev_layout())
+  {
+    .action = CALL(copy_data_from_prev_layout()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_plus, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(reset_margin())
+  {
+    .action = CALL(reset_margin()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_plus, MODKEY | SECKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL(reset_layout_data())
+  {
+    .action = CALL(reset_layout_data()),
+    .repeatable = false
+  }
 },
 
 // workspace activators
 { { XKB_KEY_Escape, MODKEY },
-    CALL(toggle_workspace_current_context())
+  {
+    .action = CALL(toggle_workspace_current_context()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_bracketright, MODKEY },
-    CALL(activate_next_workspace_current_context(Direction::Forward))
+  {
+    .action = CALL(activate_next_workspace_current_context(Direction::Forward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_bracketleft, MODKEY },
-    CALL(activate_next_workspace_current_context(Direction::Backward))
+  {
+    .action = CALL(activate_next_workspace_current_context(Direction::Backward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_1, MODKEY },
-    CALL(activate_workspace_current_context(Index{0}))
+  {
+    .action = CALL(activate_workspace_current_context(Index{0})),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_2, MODKEY },
-    CALL(activate_workspace_current_context(1))
+  {
+    .action = CALL(activate_workspace_current_context(1)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_3, MODKEY },
-    CALL(activate_workspace_current_context(2))
+  {
+    .action = CALL(activate_workspace_current_context(2)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_4, MODKEY },
-    CALL(activate_workspace_current_context(3))
+  {
+    .action = CALL(activate_workspace_current_context(3)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_5, MODKEY },
-    CALL(activate_workspace_current_context(4))
+  {
+    .action = CALL(activate_workspace_current_context(4)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_6, MODKEY },
-    CALL(activate_workspace_current_context(5))
+  {
+    .action = CALL(activate_workspace_current_context(5)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_7, MODKEY },
-    CALL(activate_workspace_current_context(6))
+  {
+    .action = CALL(activate_workspace_current_context(6)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_8, MODKEY },
-    CALL(activate_workspace_current_context(7))
+  {
+    .action = CALL(activate_workspace_current_context(7)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_9, MODKEY },
-    CALL(activate_workspace_current_context(8))
+  {
+    .action = CALL(activate_workspace_current_context(8)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_0, MODKEY },
-    CALL(activate_workspace_current_context(9))
+  {
+    .action = CALL(activate_workspace_current_context(9)),
+    .repeatable = false
+  }
 },
 
 // workspace view movers
 { { XKB_KEY_braceright, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_next_workspace(Direction::Forward))
+  {
+    .action = CALL(move_focus_to_next_workspace(Direction::Forward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_braceleft, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_next_workspace(Direction::Backward))
+  {
+    .action = CALL(move_focus_to_next_workspace(Direction::Backward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_exclam, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(0))
+  {
+    .action = CALL(move_focus_to_workspace(0)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_at, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(1))
+  {
+    .action = CALL(move_focus_to_workspace(1)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_numbersign, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(2))
+  {
+    .action = CALL(move_focus_to_workspace(2)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_dollar, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(3))
+  {
+    .action = CALL(move_focus_to_workspace(3)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_percent, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(4))
+  {
+    .action = CALL(move_focus_to_workspace(4)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_asciicircum, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(5))
+  {
+    .action = CALL(move_focus_to_workspace(5)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_ampersand, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(6))
+  {
+    .action = CALL(move_focus_to_workspace(6)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_asterisk, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(7))
+  {
+    .action = CALL(move_focus_to_workspace(7)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_parenleft, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(8))
+  {
+    .action = CALL(move_focus_to_workspace(8)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_parenright, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(move_focus_to_workspace(9))
+  {
+    .action = CALL(move_focus_to_workspace(9)),
+    .repeatable = false
+  }
 },
 
 // context activators
 { { XKB_KEY_Escape, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(toggle_context())
+  {
+    .action = CALL(toggle_context()),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_bracketright, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_next_context(Direction::Forward))
+  {
+    .action = CALL(activate_next_context(Direction::Forward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_bracketleft, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_next_context(Direction::Backward))
+  {
+    .action = CALL(activate_next_context(Direction::Backward)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_1, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(Index{0}))
+  {
+    .action = CALL(activate_context(Index{0})),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_2, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(1))
+  {
+    .action = CALL(activate_context(1)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_3, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(2))
+  {
+    .action = CALL(activate_context(2)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_4, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(3))
+  {
+    .action = CALL(activate_context(3)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_5, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(4))
+  {
+    .action = CALL(activate_context(4)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_6, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(5))
+  {
+    .action = CALL(activate_context(5)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_7, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(6))
+  {
+    .action = CALL(activate_context(6)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_8, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(7))
+  {
+    .action = CALL(activate_context(7)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_9, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(8))
+  {
+    .action = CALL(activate_context(8)),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_0, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(activate_context(9))
+  {
+    .action = CALL(activate_context(9)),
+    .repeatable = false
+  }
 },
 
 // view jump criteria
 { { XKB_KEY_b, MODKEY },
-    CALL(jump_view({
-        SearchSelector::SelectionCriterium::ByAppIdEquals,
-        "qutebrowser"
-    }))
-},
-{ { XKB_KEY_B, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         SearchSelector::SelectionCriterium::ByAppIdEquals,
         "firefox"
-    }))
+    })),
+    .repeatable = false
+  }
+},
+{ { XKB_KEY_B, MODKEY | WLR_MODIFIER_SHIFT },
+  {
+    .action = CALL(jump_view({
+        SearchSelector::SelectionCriterium::ByAppIdEquals,
+        "qutebrowser"
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_b, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         SearchSelector::SelectionCriterium::ByAppIdContains,
         "chromium"
-    }))
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_space, MODKEY | SECKEY },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         SearchSelector::SelectionCriterium::ByAppIdEquals,
         "spotify"
-    }))
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_e, MODKEY },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         SearchSelector::SelectionCriterium::ByTitleContains,
         "[vim]"
-    }))
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_comma, MODKEY },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         model.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtFirst
-    }))
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_period, MODKEY },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         model.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtMain
-    }))
+    })),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_slash, MODKEY },
-    CALL(jump_view({
+  {
+    .action = CALL(jump_view({
         model.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtLast
-    }))
+    })),
+    .repeatable = false
+  }
 },
 
 // external commands
 { { XKB_KEY_XF86AudioPlay, {} },
-    CALL_EXTERNAL(playerctl play-pause)
+  {
+    .action = CALL_EXTERNAL(playerctl play-pause),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_p, MODKEY | SECKEY },
-    CALL_EXTERNAL(playerctl play-pause)
+  {
+    .action = CALL_EXTERNAL(playerctl play-pause),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioPrev, {} },
-    CALL_EXTERNAL(playerctl previous)
+  {
+    .action = CALL_EXTERNAL(playerctl previous),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_k, MODKEY | SECKEY },
-    CALL_EXTERNAL(playerctl previous)
+  {
+    .action = CALL_EXTERNAL(playerctl previous),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioNext, {} },
-    CALL_EXTERNAL(playerctl next)
+  {
+    .action = CALL_EXTERNAL(playerctl next),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_j, MODKEY | SECKEY },
-    CALL_EXTERNAL(playerctl next)
+  {
+    .action = CALL_EXTERNAL(playerctl next),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioStop, {} },
-    CALL_EXTERNAL(playerctl stop)
+  {
+    .action = CALL_EXTERNAL(playerctl stop),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_BackSpace, MODKEY | SECKEY },
-    CALL_EXTERNAL(playerctl stop)
+  {
+    .action = CALL_EXTERNAL(playerctl stop),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioMute, {} },
-    CALL_EXTERNAL(amixer -D pulse sset Master toggle)
+  {
+    .action = CALL_EXTERNAL(amixer -D pulse sset Master toggle),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioLowerVolume, {} },
-    CALL_EXTERNAL(amixer -D pulse sset Master 5%-)
+  {
+    .action = CALL_EXTERNAL(amixer -D pulse sset Master 5%-),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_XF86AudioRaiseVolume, {} },
-    CALL_EXTERNAL(amixer -D pulse sset Master 5%+)
+  {
+    .action = CALL_EXTERNAL(amixer -D pulse sset Master 5%+),
+    .repeatable = true
+  }
 },
 { { XKB_KEY_XF86AudioMute, WLR_MODIFIER_SHIFT },
-    CALL_EXTERNAL(amixer -D pulse sset Capture toggle)
+  {
+    .action = CALL_EXTERNAL(amixer -D pulse sset Capture toggle),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_XF86AudioMicMute, {} },
-    CALL_EXTERNAL(amixer -D pulse sset Capture toggle)
+  {
+    .action = CALL_EXTERNAL(amixer -D pulse sset Capture toggle),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_space, WLR_MODIFIER_CTRL },
-    CALL_EXTERNAL(dunstctl close)
+  {
+    .action = CALL_EXTERNAL(dunstctl close),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_space, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL_EXTERNAL(dunstctl close-all)
+  {
+    .action = CALL_EXTERNAL(dunstctl close-all),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_less, WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
-    CALL_EXTERNAL(dunstctl history-pop)
+  {
+    .action = CALL_EXTERNAL(dunstctl history-pop),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Return, MODKEY },
-    CALL_EXTERNAL(alacritty)
+  {
+    .action = CALL_EXTERNAL(alacritty),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_semicolon, MODKEY },
-    CALL_EXTERNAL(nemo)
+  {
+    .action = CALL_EXTERNAL(nemo),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_p, MODKEY },
-    CALL_EXTERNAL(rofi -show run)
+  {
+    .action = CALL_EXTERNAL(rofi -show run),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_q, MODKEY },
-    CALL_EXTERNAL(qutebrowser)
+  {
+    .action = CALL_EXTERNAL(qutebrowser),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Q, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL_EXTERNAL(firefox)
+  {
+    .action = CALL_EXTERNAL(firefox),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_q, MODKEY | WLR_MODIFIER_CTRL },
-    CALL_EXTERNAL(chromium)
+  {
+    .action = CALL_EXTERNAL(chromium),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_apostrophe, MODKEY },
-    CALL_EXTERNAL(blueberry)
+  {
+    .action = CALL_EXTERNAL(blueberry),
+    .repeatable = false
+  }
 },
 { { XKB_KEY_Return, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL_EXTERNAL(alacritty --class "kranewl:cf,Alacritty")
+  {
+    .action = CALL_EXTERNAL(alacritty --class "kranewl:cf,Alacritty"),
+    .repeatable = false
+  }
 },
 };
 

@@ -10,6 +10,7 @@ extern "C" {
 }
 
 #include <cstdint>
+#include <functional>
 #include <unordered_set>
 
 struct CursorInput {
@@ -42,6 +43,10 @@ typedef class Model* Model_ptr;
 typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
 typedef struct Node* Node_ptr;
+
+typedef
+    std::function<bool(Model&, View_ptr)>
+    CursorAction;
 
 typedef struct Cursor {
     enum class Mode {
