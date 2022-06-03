@@ -8,7 +8,9 @@
 #include <kranewl/util.hh>
 
 typedef struct View* View_ptr;
+typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
+
 typedef class Workspace final {
 public:
     struct ViewSelector
@@ -102,6 +104,7 @@ public:
     int main_count() const;
 
     Context_ptr context() const;
+    Output_ptr output() const;
 
     Index index() const;
     std::string const& name() const;

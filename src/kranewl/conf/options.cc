@@ -13,8 +13,6 @@ extern "C" {
 
 static const std::string CONFIG_FILE = "kranewlrc.lua";
 static const std::string DEFAULT_CONFIG = "/etc/kranewl/" + CONFIG_FILE;
-static const std::string ENV_FILE = "env";
-static const std::string DEFAULT_ENV = "/etc/kranewl/" + ENV_FILE;
 static const std::string USAGE = "usage: kranewl [...options]\n\n"
     "options: \n"
     "  -a <autostart_file> Path to an executable autostart file.\n"
@@ -59,18 +57,32 @@ resolve_config_path(std::string& path) noexcept
     return DEFAULT_CONFIG;
 }
 
-static std::string const&
+static std::optional<std::string>
 resolve_env_path(std::string& path) noexcept
 {
     if (!path.empty())
         if (assert_permissions(path, R_OK))
             return path;
 
-    path.assign(default_user_path(ENV_FILE));
+    path.assign(default_user_path("env"));
     if (assert_permissions(path, R_OK))
         return path;
 
-    return DEFAULT_ENV;
+    return {};
+}
+
+static std::optional<std::string>
+resolve_rules_path(std::string& path) noexcept
+{
+    if (!path.empty())
+        if (assert_permissions(path, R_OK))
+            return path;
+
+    path.assign(default_user_path("rules"));
+    if (assert_permissions(path, R_OK))
+        return {path};
+
+    return {};
 }
 
 static std::optional<std::string>
@@ -92,10 +104,10 @@ resolve_autostart_path(std::string& path) noexcept
 Options
 parse_options(int argc, char** argv) noexcept
 {
-    std::string autostart_path, config_path, env_path;
+    std::string autostart_path, config_path, env_path, rules_path;
     int opt;
 
-    while ((opt = getopt(argc, argv, "vha:c:e:")) != -1) {
+    while ((opt = getopt(argc, argv, "h?va:c:e:r:")) != -1) {
         switch (opt) {
         case 'a':
             autostart_path = optarg;
@@ -107,6 +119,10 @@ parse_options(int argc, char** argv) noexcept
 
         case 'e':
             env_path = optarg;
+            break;
+
+        case 'r':
+            rules_path = optarg;
             break;
 
         case 'v':
@@ -125,7 +141,8 @@ parse_options(int argc, char** argv) noexcept
 
     return Options(
         std::move(resolve_config_path(config_path)),
-        std::move(resolve_env_path(env_path)),
+        resolve_env_path(env_path),
+        resolve_rules_path(rules_path),
         resolve_autostart_path(autostart_path)
     );
 }

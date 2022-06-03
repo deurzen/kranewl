@@ -124,16 +124,16 @@ static const KeyBindings key_bindings = {
     CALL(stretch_focus(Edge::Right, -15))
 },
 { { XKB_KEY_leftarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(Edge::Left))
+    CALL(snap_focus(WLR_EDGE_LEFT))
 },
 { { XKB_KEY_downarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(Edge::Bottom))
+    CALL(snap_focus(WLR_EDGE_BOTTOM))
 },
 { { XKB_KEY_uparrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(Edge::Top))
+    CALL(snap_focus(WLR_EDGE_TOP))
 },
 { { XKB_KEY_rightarrow, MODKEY | WLR_MODIFIER_CTRL },
-    CALL(snap_focus(Edge::Right))
+    CALL(snap_focus(WLR_EDGE_RIGHT))
 },
 { { XKB_KEY_j, MODKEY },
     CALL(cycle_focus(Direction::Forward))
@@ -594,14 +594,11 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_Return, MODKEY },
     CALL_EXTERNAL(alacritty)
 },
-{ { XKB_KEY_Return, MODKEY | WLR_MODIFIER_SHIFT },
-    CALL(spawn_external("alacritty --class kranewl:cf,Alacritty"))
-},
 { { XKB_KEY_semicolon, MODKEY },
     CALL_EXTERNAL(nemo)
 },
 { { XKB_KEY_p, MODKEY },
-    CALL_EXTERNAL(dmenu_run)
+    CALL_EXTERNAL(rofi -show run)
 },
 { { XKB_KEY_q, MODKEY },
     CALL_EXTERNAL(qutebrowser)
@@ -614,6 +611,9 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_apostrophe, MODKEY },
     CALL_EXTERNAL(blueberry)
+},
+{ { XKB_KEY_Return, MODKEY | WLR_MODIFIER_SHIFT },
+    CALL_EXTERNAL(alacritty --class "kranewl:cf,Alacritty")
 },
 };
 

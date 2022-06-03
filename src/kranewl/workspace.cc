@@ -94,6 +94,12 @@ Workspace::context() const
     return mp_context;
 }
 
+Output_ptr
+Workspace::output() const
+{
+    return mp_context->output();
+}
+
 Index
 Workspace::index() const
 {

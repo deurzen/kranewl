@@ -98,15 +98,30 @@ Model::~Model()
 {}
 
 void
-Model::evaluate_user_env_vars(std::string const& env_path)
+Model::evaluate_user_env_vars(std::optional<std::string> const& env_path)
 {
     TRACE();
-    parse_and_set_env_vars(env_path);
+
+    if (env_path) {
+        spdlog::info("Populating environment with variables defined in {}", *env_path);
+        parse_and_set_env_vars(*env_path);
+    }
+}
+
+void
+Model::retrieve_user_default_rules(std::optional<std::string> const& rules_path)
+{
+    TRACE();
+
+    if (rules_path) {
+        spdlog::info("Compiling default rules from {}", *rules_path);
+        m_default_rules = Rules::compile_default_rules(*rules_path);
+    }
 }
 
 void
 Model::run_user_autostart(
-    [[maybe_unused]] std::optional<std::string> autostart_path
+    [[maybe_unused]] std::optional<std::string> const& autostart_path
 )
 {
     TRACE();
@@ -326,7 +341,7 @@ Model::focus_output(Output_ptr output)
     TRACE();
 
     if (output && output != mp_output)
-        focus_view(output->context()->workspace()->active());
+        focus_view(output->workspace()->active());
 }
 
 void
@@ -728,7 +743,7 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
     workspace_to->add_view(view);
     apply_layout(workspace_to);
 
-    if (output_to && output_to != output_from)
+    if (output_to && output_to->workspace() == workspace_to)
         view->map();
     else
         view->unmap();
@@ -1298,8 +1313,8 @@ Model::apply_layout(Workspace_ptr workspace)
 {
     TRACE();
 
-    Output_ptr output = workspace->context()->output();
-    if (!output || workspace != output->context()->workspace())
+    Output_ptr output = workspace->output();
+    if (!output || workspace != output->workspace())
         return;
 
     for (Placement placement : workspace->arrange(output->placeable_region()))
@@ -1892,16 +1907,16 @@ Model::inflate_view(Util::Change<int> change, View_ptr view)
 }
 
 void
-Model::snap_focus(Edge edge)
+Model::snap_focus(uint32_t edges)
 {
     TRACE();
 
     if (mp_focus)
-        snap_view(edge, mp_focus);
+        snap_view(mp_focus, edges);
 }
 
 void
-Model::snap_view(Edge edge, View_ptr view)
+Model::snap_view(View_ptr view, uint32_t edges)
 {
     TRACE();
 
@@ -1912,38 +1927,21 @@ Model::snap_view(Edge edge, View_ptr view)
     const Region screen_region
         = view->mp_context->output()->placeable_region();
 
-    switch (edge) {
-    case Edge::Left:
-    {
+    if ((edges & WLR_EDGE_LEFT))
         region.pos.x = screen_region.pos.x;
-
-        break;
-    }
-    case Edge::Top:
-    {
-        region.pos.y = screen_region.pos.y;
-
-        break;
-    }
-    case Edge::Right:
-    {
+    else if ((edges & WLR_EDGE_RIGHT))
         region.pos.x = std::max(
             0,
             (screen_region.dim.w + screen_region.pos.x) - region.dim.w
         );
 
-        break;
-    }
-    case Edge::Bottom:
-    {
+    if ((edges & WLR_EDGE_TOP))
+        region.pos.y = screen_region.pos.y;
+    else if ((edges & WLR_EDGE_BOTTOM))
         region.pos.y = std::max(
             0,
             (screen_region.dim.h + screen_region.pos.y) - region.dim.h
         );
-
-        break;
-    }
-    }
 
     Placement placement = Placement {
         Placement::PlacementMethod::Free,
@@ -2013,6 +2011,64 @@ Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
     context->set_focus_follows_cursor(focus_follows_cursor);
 }
 
+void
+Model::initialize_view(View_ptr view, Workspace_ptr workspace)
+{
+    TRACE();
+
+    static std::unordered_map<std::string, Rules>
+        default_rules_memoized{};
+
+    std::optional<Rules> default_rules
+        = Util::const_retrieve(default_rules_memoized, view->handle());
+
+    if (!default_rules)
+        for (auto& [selector,default_rules_] : m_default_rules)
+            if (view_matches_search(view, *selector)) {
+                default_rules_memoized[view->handle()] = default_rules_;
+                default_rules = default_rules_;
+            }
+
+    Rules rules = default_rules
+        ? Rules::merge_rules(*default_rules, Rules::parse_rules(view->handle()))
+        : Rules::parse_rules(view->handle());
+
+    view->format_uid();
+
+    Output_ptr output;
+    if (rules.to_output && *rules.to_output < m_outputs.size()) {
+        view->mp_output = Model::output(*rules.to_output);
+        workspace = view->mp_output->workspace();
+        output = view->mp_output;
+    } else
+        output = workspace->output();
+
+    if (rules.to_context && *rules.to_context < m_contexts.size()) {
+        view->mp_context = context(*rules.to_context);
+        workspace = view->mp_context->workspace();
+    } else
+        workspace = output->workspace();
+
+    Context_ptr context = workspace->context();
+    if (rules.to_workspace && *rules.to_workspace < context->workspaces().size())
+        workspace = (*context)[*rules.to_workspace];
+
+    move_view_to_workspace(view, workspace);
+
+    view->relayer(
+        is_free(view)
+            ? SCENE_LAYER_FREE
+            : SCENE_LAYER_TILE
+    );
+
+    if (rules.do_float)
+        set_floating_view(*rules.do_float ? Toggle::On : Toggle::Off, view);
+    if (rules.snap_edges)
+        snap_view(view, *rules.snap_edges);
+    if (rules.do_fullscreen)
+        set_fullscreen_view(*rules.do_fullscreen ? Toggle::On : Toggle::Off, view);
+}
+
 XDGView_ptr
 Model::create_xdg_shell_view(
     struct wlr_xdg_surface* wlr_xdg_surface,
@@ -2029,7 +2085,6 @@ Model::create_xdg_shell_view(
     );
 
     m_view_map[view->uid()] = view;
-
     return view;
 }
 
@@ -2052,7 +2107,6 @@ Model::create_xwayland_view(
     );
 
     m_view_map[view->uid()] = view;
-
     return view;
 }
 
@@ -2096,8 +2150,7 @@ Model::register_view(View_ptr view, Workspace_ptr workspace)
 {
     TRACE();
 
-    view->format_uid();
-    move_view_to_workspace(view, workspace);
+    initialize_view(view, workspace);
     spdlog::info("Registered view {}", view->uid_formatted());
     sync_focus();
 }

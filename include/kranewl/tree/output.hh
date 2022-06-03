@@ -17,6 +17,7 @@ extern "C" {
 typedef class Server* Server_ptr;
 typedef class Model* Model_ptr;
 typedef class Context* Context_ptr;
+typedef class Workspace* Workspace_ptr;
 typedef class Layer* Layer_ptr;
 
 typedef class Output final {
@@ -40,6 +41,7 @@ public:
 
     void set_context(Context_ptr);
     Context_ptr context() const;
+    Workspace_ptr workspace() const;
 
     Region full_region() const;
     Region placeable_region() const;

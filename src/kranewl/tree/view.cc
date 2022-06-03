@@ -321,7 +321,7 @@ View::tile(Toggle toggle)
             return;
 
         set_floating(false);
-        if (!m_fullscreen)
+        if (!mp_model->is_free(this))
             relayer(SCENE_LAYER_TILE);
 
         break;
@@ -332,7 +332,7 @@ View::tile(Toggle toggle)
             return;
 
         set_floating(true);
-        if (!m_fullscreen)
+        if (mp_model->is_free(this))
             relayer(SCENE_LAYER_FREE);
 
         break;

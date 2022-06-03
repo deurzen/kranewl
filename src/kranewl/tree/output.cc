@@ -177,6 +177,12 @@ Output::context() const
     return mp_context;
 }
 
+Workspace_ptr
+Output::workspace() const
+{
+    return mp_context->workspace();
+}
+
 Region
 Output::full_region() const
 {

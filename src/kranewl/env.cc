@@ -48,9 +48,6 @@ evaluate_value(std::string const& value)
 void
 parse_and_set_env_vars(std::string const& env_path)
 {
-    if (!file_exists(env_path))
-        return;
-
     struct Assignment_ctype : std::ctype<char> {
         Assignment_ctype()
             : std::ctype<char>(get_table())
@@ -66,15 +63,27 @@ parse_and_set_env_vars(std::string const& env_path)
         }
     };
 
-    std::ifstream env_if(env_path);
-    env_if.imbue(std::locale(env_if.getloc(), new Assignment_ctype));
+    if (!file_exists(env_path))
+        return;
 
+    std::ifstream env_if(env_path);
+    if (!env_if.is_open())
+        return;
+
+    env_if.imbue(std::locale(env_if.getloc(), new Assignment_ctype));
     const auto isspace = [](char c) {
         return std::isspace(static_cast<unsigned char>(c));
     };
 
+    std::size_t line = 0;
     std::string var, value;
-    while (env_if >> var >> value) {
+    while (++line, env_if >> var >> value) {
+        if (env_if.fail()) {
+            spdlog::error("Erroneous environment variable assignment"
+                " in {} on line {}", env_path, line);
+            continue;
+        }
+
         var.erase(std::remove_if(var.begin(), var.end(), isspace), var.end());
         value.erase(std::remove_if(value.begin(), value.end(), isspace), value.end());
 

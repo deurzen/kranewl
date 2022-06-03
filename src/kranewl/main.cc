@@ -43,6 +43,7 @@ main(int argc, char** argv)
 
     server.initialize();
     model.evaluate_user_env_vars(options.env_path);
+    model.retrieve_user_default_rules(options.rules_path);
     server.start();
     model.run_user_autostart(options.autostart_path);
     server.run();

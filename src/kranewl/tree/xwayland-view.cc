@@ -321,6 +321,12 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
     view->set_title(xwayland_surface->title
         ? xwayland_surface->title : "N/a");
     view->set_title_formatted(view->title()); // TODO: format title
+    view->set_handle(
+        view->title() + " "
+        + view->app_id() + " "
+        + view->class_() + " "
+        + view->instance()
+    );
 
     view->mp_scene = &wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]
@@ -361,7 +367,7 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
     };
 
     Workspace_ptr workspace = model->mp_workspace;
-    Output_ptr output = workspace->context()->output();
+    Output_ptr output = workspace->output();
     if (output)
         output->place_at_center(region);
 

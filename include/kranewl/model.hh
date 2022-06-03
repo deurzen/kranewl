@@ -6,8 +6,9 @@
 #include <kranewl/input/bindings.hh>
 #include <kranewl/layout.hh>
 #include <kranewl/placement.hh>
-#include <kranewl/tree/layer.hh>
+#include <kranewl/rules.hh>
 #include <kranewl/search.hh>
+#include <kranewl/tree/layer.hh>
 #include <kranewl/tree/view.hh>
 
 #include <optional>
@@ -38,8 +39,9 @@ public:
     Model(Config const&);
     ~Model();
 
-    void evaluate_user_env_vars(std::string const&);
-    void run_user_autostart(std::optional<std::string>);
+    void evaluate_user_env_vars(std::optional<std::string> const&);
+    void retrieve_user_default_rules(std::optional<std::string> const&);
+    void run_user_autostart(std::optional<std::string> const&);
 
     void register_server(Server_ptr);
     void exit();
@@ -77,6 +79,7 @@ public:
 
     void destroy_unmanaged(XWaylandUnmanaged_ptr);
 #endif
+    void initialize_view(View_ptr, Workspace_ptr);
     void register_view(View_ptr, Workspace_ptr);
     void unregister_view(View_ptr);
     void destroy_view(View_ptr);
@@ -191,8 +194,8 @@ public:
     void stretch_view(Edge, Util::Change<int>, View_ptr);
     void inflate_focus(Util::Change<int>);
     void inflate_view(Util::Change<int>, View_ptr);
-    void snap_focus(Edge);
-    void snap_view(Edge, View_ptr);
+    void snap_focus(uint32_t);
+    void snap_view(View_ptr, uint32_t);
 
     void pop_deiconify();
     void deiconify_all();
@@ -231,6 +234,8 @@ private:
 
     View_ptr mp_focus;
     View_ptr mp_jumped_from;
+
+    std::vector<std::tuple<SearchSelector_ptr, Rules>> m_default_rules;
 
     const KeyBindings m_key_bindings;
     const CursorBindings m_cursor_bindings;

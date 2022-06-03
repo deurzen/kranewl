@@ -343,6 +343,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     view->set_title(wlr_xdg_toplevel->title
         ? wlr_xdg_toplevel->title : "N/a");
     view->set_title_formatted(view->title()); // TODO: format title
+    view->set_handle(view->title() + " " + view->app_id());
 
     wlr_xdg_toplevel_set_tiled(
         wlr_xdg_surface,
@@ -357,12 +358,6 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         view->mp_wlr_xdg_surface
     );
     view->mp_scene_surface->data = view;
-
-    view->relayer(
-        view->floating()
-            ? SCENE_LAYER_FREE
-            : SCENE_LAYER_TILE
-    );
 
     for (std::size_t i = 0; i < 4; ++i) {
         view->m_protrusions[i] = wlr_scene_rect_create(
@@ -405,7 +400,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         .dim = preferred_dim
     };
 
-    Output_ptr output = workspace->context()->output();
+    Output_ptr output = workspace->output();
     if (output)
         output->place_at_center(region);
 

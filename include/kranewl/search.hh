@@ -8,16 +8,16 @@
 #include <string>
 #include <utility>
 
-typedef class SearchSelector final
-{
+typedef class SearchSelector final {
 public:
-    enum class SelectionCriterium
-    {
+    enum class SelectionCriterium {
         OnWorkspaceBySelector,
         ByTitleEquals,
         ByAppIdEquals,
+        ByHandleEquals,
         ByTitleContains,
         ByAppIdContains,
+        ByHandleContains,
         ForCondition,
     };
 
@@ -30,10 +30,12 @@ public:
         : m_string(str_)
     {
         switch (criterium) {
-        case SelectionCriterium::ByTitleEquals:   m_tag = SearchSelectorTag::ByTitleEquals;   return;
-        case SelectionCriterium::ByAppIdEquals:   m_tag = SearchSelectorTag::ByAppIdEquals;   return;
-        case SelectionCriterium::ByTitleContains: m_tag = SearchSelectorTag::ByTitleContains; return;
-        case SelectionCriterium::ByAppIdContains: m_tag = SearchSelectorTag::ByAppIdContains; return;
+        case SelectionCriterium::ByTitleEquals:    m_tag = SearchSelectorTag::ByTitleEquals;    return;
+        case SelectionCriterium::ByAppIdEquals:    m_tag = SearchSelectorTag::ByAppIdEquals;    return;
+        case SelectionCriterium::ByHandleEquals:   m_tag = SearchSelectorTag::ByHandleEquals;   return;
+        case SelectionCriterium::ByTitleContains:  m_tag = SearchSelectorTag::ByTitleContains;  return;
+        case SelectionCriterium::ByAppIdContains:  m_tag = SearchSelectorTag::ByAppIdContains;  return;
+        case SelectionCriterium::ByHandleContains: m_tag = SearchSelectorTag::ByHandleContains; return;
         default: return;
         }
     }
@@ -55,10 +57,12 @@ public:
 
             return;
         }
-        case SearchSelectorTag::ByTitleEquals:   // fallthrough
-        case SearchSelectorTag::ByAppIdEquals:   // fallthrough
-        case SearchSelectorTag::ByTitleContains: // fallthrough
-        case SearchSelectorTag::ByAppIdContains:
+        case SearchSelectorTag::ByTitleEquals:    // fallthrough
+        case SearchSelectorTag::ByAppIdEquals:    // fallthrough
+        case SearchSelectorTag::ByHandleEquals:   // fallthrough
+        case SearchSelectorTag::ByTitleContains:  // fallthrough
+        case SearchSelectorTag::ByAppIdContains:  // fallthrough
+        case SearchSelectorTag::ByHandleContains:
         {
             (&m_string)->std::string::~string();
 
@@ -83,8 +87,10 @@ public:
         case SearchSelectorTag::OnWorkspaceBySelector: return SelectionCriterium::OnWorkspaceBySelector;
         case SearchSelectorTag::ByTitleEquals:         return SelectionCriterium::ByTitleEquals;
         case SearchSelectorTag::ByAppIdEquals:         return SelectionCriterium::ByAppIdEquals;
+        case SearchSelectorTag::ByHandleEquals:        return SelectionCriterium::ByAppIdEquals;
         case SearchSelectorTag::ByTitleContains:       return SelectionCriterium::ByTitleContains;
         case SearchSelectorTag::ByAppIdContains:       return SelectionCriterium::ByAppIdContains;
+        case SearchSelectorTag::ByHandleContains:      return SelectionCriterium::ByHandleContains;
         case SearchSelectorTag::ForCondition:          return SelectionCriterium::ForCondition;
         default: break;
         }
@@ -111,19 +117,19 @@ public:
     }
 
 private:
-    enum class SearchSelectorTag
-    {
+    enum class SearchSelectorTag {
         OnWorkspaceBySelector,
         ByTitleEquals,
         ByAppIdEquals,
+        ByHandleEquals,
         ByTitleContains,
         ByAppIdContains,
+        ByHandleContains,
         ForCondition,
     };
 
     SearchSelectorTag m_tag;
-    union
-    {
+    union {
         std::pair<Index, Workspace::ViewSelector::SelectionCriterium> m_workspace_selector;
         std::string m_string;
         std::function<bool(const View_ptr)> m_filter;

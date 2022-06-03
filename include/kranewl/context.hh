@@ -57,12 +57,6 @@ public:
         return mp_output;
     }
 
-    bool
-    is_outputed() const
-    {
-        return mp_output != nullptr;
-    }
-
     void
     set_output(Output_ptr output)
     {
