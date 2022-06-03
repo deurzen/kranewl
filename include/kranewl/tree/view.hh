@@ -64,7 +64,7 @@ typedef struct View : public Node {
     void format_uid() override;
 
     virtual Region constraints() = 0;
-    virtual pid_t pid() = 0;
+    virtual pid_t retrieve_pid() = 0;
     virtual bool prefers_floating() = 0;
 
     virtual void focus(Toggle) = 0;
@@ -84,6 +84,19 @@ typedef struct View : public Node {
     void lower() const;
 
     void render_decoration();
+
+    std::string const& title() const { return m_title; }
+    std::string const& title_formatted() const { return m_title_formatted; }
+    std::string const& app_id() const { return m_app_id; }
+    std::string const& handle() const { return m_handle; }
+    void set_title(std::string const& title) { m_title = title; }
+    void set_title_formatted(std::string const& title_formatted) { m_title_formatted = title_formatted; }
+    void set_app_id(std::string const& app_id) { m_app_id = app_id; }
+    void set_handle(std::string const& handle) { m_handle = handle; }
+
+
+    pid_t pid() const { return m_pid; }
+    void set_pid(pid_t pid) { m_pid = pid; }
 
     bool activated() const { return m_activated; }
     bool focused() const { return m_focused; }
@@ -167,14 +180,8 @@ typedef struct View : public Node {
     struct wlr_scene_node* mp_scene_surface;
     struct wlr_scene_rect* m_protrusions[4]; // top, bottom, left, right
 
-    std::string m_title;
-    std::string m_title_formatted;
-    std::string m_app_id;
-
     float m_alpha;
     uint32_t m_resize;
-
-    pid_t m_pid;
 
 protected:
 
@@ -210,6 +217,13 @@ private:
     bool m_iconifyable;
     bool m_iconified;
     bool m_disowned;
+
+    std::string m_title;
+    std::string m_title_formatted;
+    std::string m_app_id;
+    std::string m_handle;
+
+    pid_t m_pid;
 
     SceneLayer m_scene_layer;
 

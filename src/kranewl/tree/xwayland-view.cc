@@ -82,16 +82,16 @@ XWaylandView::format_uid()
 {
     std::stringstream uid_ss;
     uid_ss << "0x" << std::hex << uid() << std::dec;
-    uid_ss << " [" << m_title;
-    uid_ss << "; " << m_class;
-    uid_ss << "; " << m_instance;
-    uid_ss << ", " << m_pid << "]";
+    uid_ss << " [" << title();
+    uid_ss << "; " << class_();
+    uid_ss << "; " << instance();
+    uid_ss << ", " << pid() << "]";
     uid_ss << " (XM)";
     m_uid_formatted = uid_ss.str();
 }
 
 pid_t
-XWaylandView::pid()
+XWaylandView::retrieve_pid()
 {
     TRACE();
     return mp_wlr_xwayland_surface->pid;
@@ -295,7 +295,7 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
     Server_ptr server = view->mp_server;
     Model_ptr model = view->mp_model;
 
-    view->m_pid = view->pid();
+    view->set_pid(view->retrieve_pid());
     view->format_uid();
 
     view->set_floating(view->prefers_floating());
@@ -314,16 +314,13 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
     preferred_dim.h += extents.top + extents.bottom;
     view->set_preferred_dim(preferred_dim);
 
-    view->m_app_id = view->m_class = xwayland_surface->class_
-        ? xwayland_surface->class_
-        : "N/a";
-    view->m_instance = xwayland_surface->instance
-        ? xwayland_surface->instance
-        : "N/a";
-    view->m_title = xwayland_surface->title
-        ? xwayland_surface->title
-        : "N/a";
-    view->m_title_formatted = view->m_title; // TODO: format title
+    view->set_app_id(view->m_class = xwayland_surface->class_
+        ? xwayland_surface->class_ : "N/a");
+    view->set_instance(xwayland_surface->instance
+        ? xwayland_surface->instance : "N/a");
+    view->set_title(xwayland_surface->title
+        ? xwayland_surface->title : "N/a");
+    view->set_title_formatted(view->title()); // TODO: format title
 
     view->mp_scene = &wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]
@@ -548,10 +545,9 @@ XWaylandView::handle_set_title(struct wl_listener* listener, void*)
     TRACE();
 
     XWaylandView_ptr view = wl_container_of(listener, view, ml_set_title);
-    view->m_title = view->mp_wlr_xwayland_surface->title
-        ? view->mp_wlr_xwayland_surface->title
-        : "N/a";
-    view->m_title_formatted = view->m_title; // TODO: format title
+    view->set_title(view->mp_wlr_xwayland_surface->title
+        ? view->mp_wlr_xwayland_surface->title : "N/a");
+    view->set_title_formatted(view->title()); // TODO: format title
     view->format_uid();
 }
 
@@ -561,9 +557,8 @@ XWaylandView::handle_set_class(struct wl_listener* listener, void*)
     TRACE();
 
     XWaylandView_ptr view = wl_container_of(listener, view, ml_set_class);
-    view->m_class = view->mp_wlr_xwayland_surface->class_
-        ? view->mp_wlr_xwayland_surface->class_
-        : "N/a";
+    view->set_class(view->mp_wlr_xwayland_surface->class_
+        ? view->mp_wlr_xwayland_surface->class_ : "N/a");
     view->format_uid();
 }
 
@@ -662,7 +657,7 @@ XWaylandUnmanaged::format_uid()
 }
 
 pid_t
-XWaylandUnmanaged::pid()
+XWaylandUnmanaged::retrieve_pid()
 {
     TRACE();
     return mp_wlr_xwayland_surface->pid;
@@ -677,7 +672,7 @@ XWaylandUnmanaged::handle_map(struct wl_listener* listener, void* data)
     Server_ptr server = unmanaged->mp_server;
     Model_ptr model = unmanaged->mp_model;
 
-    unmanaged->m_pid = unmanaged->pid();
+    unmanaged->set_pid(unmanaged->retrieve_pid());
     unmanaged->format_uid();
 
     struct wlr_xwayland_surface* xwayland_surface
@@ -695,16 +690,14 @@ XWaylandUnmanaged::handle_map(struct wl_listener* listener, void* data)
         }
     };
 
-    unmanaged->m_app_id = unmanaged->m_class = xwayland_surface->class_
-        ? xwayland_surface->class_
-        : "N/a";
-    unmanaged->m_instance = xwayland_surface->instance
-        ? xwayland_surface->instance
-        : "N/a";
-    unmanaged->m_title = xwayland_surface->title
-        ? xwayland_surface->title
-        : "N/a";
-    unmanaged->m_title_formatted = unmanaged->m_title; // TODO: format title
+    unmanaged->set_instance(xwayland_surface->instance
+        ? xwayland_surface->instance : "N/a");
+    unmanaged->set_class(xwayland_surface->class_
+        ? xwayland_surface->class_ : "N/a");
+    unmanaged->set_title(xwayland_surface->title
+        ? xwayland_surface->title : "N/a");
+    unmanaged->set_app_id(unmanaged->class_());
+    unmanaged->set_title_formatted(unmanaged->title()); // TODO: format title
 
     unmanaged->mp_scene = &wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]

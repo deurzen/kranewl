@@ -70,7 +70,7 @@ XDGView::constraints()
 }
 
 pid_t
-XDGView::pid()
+XDGView::retrieve_pid()
 {
     TRACE();
 
@@ -277,10 +277,9 @@ XDGView::handle_set_title(struct wl_listener* listener, void* data)
     TRACE();
 
     XDGView_ptr view = wl_container_of(listener, view, ml_set_title);
-    view->m_title = view->mp_wlr_xdg_toplevel->title
-        ? view->mp_wlr_xdg_toplevel->title
-        : "N/a";
-    view->m_title_formatted = view->m_title;
+    view->set_title(view->mp_wlr_xdg_toplevel->title
+        ? view->mp_wlr_xdg_toplevel->title : "");
+    view->set_title_formatted(view->title());
     view->format_uid();
 }
 
@@ -290,7 +289,7 @@ XDGView::handle_set_app_id(struct wl_listener* listener, void* data)
     TRACE();
 
     XDGView_ptr view = wl_container_of(listener, view, ml_set_app_id);
-    view->m_app_id = view->mp_wlr_xdg_toplevel->app_id;
+    view->set_app_id(view->mp_wlr_xdg_toplevel->app_id);
     view->format_uid();
 }
 
@@ -310,7 +309,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     Server_ptr server = view->mp_server;
     Model_ptr model = view->mp_model;
 
-    view->m_pid = view->pid();
+    view->set_pid(view->retrieve_pid());
     view->format_uid();
 
     view->set_floating(view->prefers_floating());
@@ -339,13 +338,11 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         .h = state->min_height
     });
 
-    view->m_app_id = wlr_xdg_toplevel->app_id
-        ? wlr_xdg_toplevel->app_id
-        : "N/a";
-    view->m_title = wlr_xdg_toplevel->title
-        ? wlr_xdg_toplevel->title
-        : "N/a";
-    view->m_title_formatted = view->m_title; // TODO: format title
+    view->set_app_id(wlr_xdg_toplevel->app_id
+        ? wlr_xdg_toplevel->app_id : "N/a");
+    view->set_title(wlr_xdg_toplevel->title
+        ? wlr_xdg_toplevel->title : "N/a");
+    view->set_title_formatted(view->title()); // TODO: format title
 
     wlr_xdg_toplevel_set_tiled(
         wlr_xdg_surface,

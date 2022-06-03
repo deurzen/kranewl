@@ -517,8 +517,8 @@ View::format_uid()
 {
     std::stringstream uid_ss;
     uid_ss << "0x" << std::hex << uid() << std::dec;
-    uid_ss << " [" << m_title;
-    uid_ss << ", " << m_pid << "]";
+    uid_ss << " [" << title();
+    uid_ss << ", " << pid() << "]";
     uid_ss << " (W)";
     m_uid_formatted = uid_ss.str();
 }

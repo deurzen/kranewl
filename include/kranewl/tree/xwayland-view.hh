@@ -25,8 +25,13 @@ typedef struct XWaylandView final : public View {
 
     void format_uid() override;
 
+    std::string const& class_() const { return m_class; }
+    std::string const& instance() const { return m_instance; }
+    void set_class(std::string const& class_) { m_class = class_; }
+    void set_instance(std::string const& instance) { m_instance = instance; }
+
     Region constraints() override;
-    pid_t pid() override;
+    pid_t retrieve_pid() override;
     bool prefers_floating() override;
 
     void focus(Toggle) override;
@@ -55,9 +60,6 @@ typedef struct XWaylandView final : public View {
 
     XWayland_ptr mp_xwayland;
 
-    std::string m_class;
-    std::string m_instance;
-
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
     struct wl_listener ml_map;
@@ -76,6 +78,10 @@ typedef struct XWaylandView final : public View {
     struct wl_listener ml_set_hints;
     struct wl_listener ml_destroy;
 
+private:
+    std::string m_class;
+    std::string m_instance;
+
 }* XWaylandView_ptr;
 
 typedef struct XWaylandUnmanaged final : public Node {
@@ -91,7 +97,21 @@ typedef struct XWaylandUnmanaged final : public Node {
 
     void format_uid() override;
 
-    pid_t pid();
+    std::string const& title() const { return m_title; }
+    std::string const& title_formatted() const { return m_title_formatted; }
+    std::string const& app_id() const { return m_app_id; }
+    std::string const& class_() const { return m_class; }
+    std::string const& instance() const { return m_instance; }
+    void set_title(std::string const& title) { m_title = title; }
+    void set_title_formatted(std::string const& title_formatted) { m_title_formatted = title_formatted; }
+    void set_app_id(std::string const& app_id) { m_app_id = app_id; }
+    void set_class(std::string const& class_) { m_class = class_; }
+    void set_instance(std::string const& instance) { m_instance = instance; }
+
+    pid_t retrieve_pid();
+
+    pid_t pid() const { return m_pid; }
+    void set_pid(pid_t pid) { m_pid = pid; }
 
     static void handle_map(struct wl_listener*, void*);
     static void handle_unmap(struct wl_listener*, void*);
@@ -113,12 +133,6 @@ typedef struct XWaylandUnmanaged final : public Node {
 
     Region m_region;
 
-    std::string m_title;
-    std::string m_title_formatted;
-    std::string m_app_id;
-    std::string m_class;
-    std::string m_instance;
-
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
     struct wlr_surface* mp_wlr_surface;
@@ -136,6 +150,13 @@ typedef struct XWaylandUnmanaged final : public Node {
     struct wl_listener ml_request_configure;
     struct wl_listener ml_request_fullscreen;
     struct wl_listener ml_destroy;
+
+private:
+    std::string m_title;
+    std::string m_title_formatted;
+    std::string m_app_id;
+    std::string m_class;
+    std::string m_instance;
 
 }* XWaylandUnmanaged_ptr;
 #endif

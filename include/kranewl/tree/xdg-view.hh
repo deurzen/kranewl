@@ -24,7 +24,7 @@ typedef struct XDGView final : public View {
     ~XDGView();
 
     Region constraints() override;
-    pid_t pid() override;
+    pid_t retrieve_pid() override;
     bool prefers_floating() override;
 
     void focus(Toggle) override;

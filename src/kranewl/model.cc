@@ -405,13 +405,13 @@ Model::view_matches_search(View_ptr view, SearchSelector const& selector) const
         return false;
     }
     case SearchSelector::SelectionCriterium::ByTitleEquals:
-        return view->m_title == selector.string_value();
+        return view->title() == selector.string_value();
     case SearchSelector::SelectionCriterium::ByAppIdEquals:
-        return view->m_app_id == selector.string_value();
+        return view->app_id() == selector.string_value();
     case SearchSelector::SelectionCriterium::ByTitleContains:
-        return view->m_title.find(selector.string_value()) != std::string::npos;
+        return view->title().find(selector.string_value()) != std::string::npos;
     case SearchSelector::SelectionCriterium::ByAppIdContains:
-        return view->m_app_id.find(selector.string_value()) != std::string::npos;
+        return view->app_id().find(selector.string_value()) != std::string::npos;
     case SearchSelector::SelectionCriterium::ForCondition:
         return selector.filter()(view);
     default: break;
