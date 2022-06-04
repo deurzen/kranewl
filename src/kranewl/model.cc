@@ -56,7 +56,7 @@ Model::Model(Config const& config)
       m_sticky_views{},
       mp_focus(nullptr),
       mp_jumped_from(nullptr),
-      m_track(SceneLayer::SCENE_LAYER_TILE),
+      m_current_track(SceneLayer::SCENE_LAYER_TILE),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
 {
@@ -310,7 +310,7 @@ Model::focus_view(View_ptr view)
     view->set_urgent(false);
 
     mp_focus = view;
-    m_track = view->scene_layer();
+    m_current_track = view->scene_layer();
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);
@@ -558,7 +558,7 @@ Model::relayer_views(Workspace_ptr workspace)
 
     if (mp_focus) {
         mp_focus->raise();
-        m_track = mp_focus->scene_layer();
+        m_current_track = mp_focus->scene_layer();
     }
 }
 
@@ -587,6 +587,17 @@ Model::cycle_focus(Direction direction)
 }
 
 void
+Model::cycle_track(Direction direction)
+{
+    TRACE();
+
+    mp_workspace->cycle_with_condition(direction, [this](View_ptr view) {
+        return belongs_to_track(view);
+    });
+    sync_focus();
+}
+
+void
 Model::drag_focus(Direction direction)
 {
     TRACE();
@@ -596,7 +607,21 @@ Model::drag_focus(Direction direction)
 
     mp_workspace->drag(direction);
     sync_focus();
+    apply_layout(mp_workspace);
+}
 
+void
+Model::drag_track(Direction direction)
+{
+    TRACE();
+
+    if (mp_workspace->size() <= 1)
+        return;
+
+    mp_workspace->drag_with_condition(direction, [this](View_ptr view) {
+        return belongs_to_track(view);
+    });
+    sync_focus();
     apply_layout(mp_workspace);
 }
 
@@ -610,7 +635,6 @@ Model::reverse_views()
 
     mp_workspace->reverse();
     sync_focus();
-
     apply_layout(mp_workspace);
 }
 
@@ -1366,6 +1390,9 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
     }
 
     apply_layout(view->mp_workspace);
+
+    if (view == mp_focus)
+        m_current_track = view->scene_layer();
 }
 
 void
@@ -1424,6 +1451,9 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
 
     Workspace_ptr workspace = view->mp_workspace;
     apply_layout(workspace);
+
+    if (view == mp_focus)
+        m_current_track = view->scene_layer();
 }
 
 void
@@ -2074,7 +2104,7 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
         set_fullscreen_view(*rules.do_fullscreen ? Toggle::On : Toggle::Off, view);
 
     if (view == mp_focus)
-        m_track = view->scene_layer();
+        m_current_track = view->scene_layer();
 }
 
 XDGView_ptr
@@ -2232,7 +2262,7 @@ Model::is_free(View_ptr view) const
 bool
 Model::belongs_to_track(View_ptr view) const
 {
-    return m_track == view->scene_layer();
+    return m_current_track == view->scene_layer();
 }
 
 void

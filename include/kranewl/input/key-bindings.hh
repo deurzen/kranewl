@@ -218,13 +218,13 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_j, MODKEY },
   {
-    .action = CALL(cycle_focus(Direction::Forward)),
+    .action = CALL(cycle_track(Direction::Forward)),
     .repeatable = true
   }
 },
 { { XKB_KEY_k, MODKEY },
   {
-    .action = CALL(cycle_focus(Direction::Backward)),
+    .action = CALL(cycle_track(Direction::Backward)),
     .repeatable = true
   }
 },

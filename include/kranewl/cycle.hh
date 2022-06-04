@@ -62,6 +62,131 @@ public:
     Index next_index(Direction) const;
     Index next_index_from(Index, Direction) const;
 
+    template<typename UnaryPredicate>
+    std::optional<Index>
+    next_index_with_condition(
+        Direction direction,
+        UnaryPredicate predicate
+    ) const
+    {
+        if (m_index >= m_elements.size())
+            return std::nullopt;
+
+        switch (direction) {
+        case Direction::Forward:
+        {
+            auto after_it = m_index != last_index()
+                ? std::find_if(
+                    m_elements.begin() + m_index + 1,
+                    m_elements.end(),
+                    predicate
+                )
+                :  m_elements.end();
+
+            if (after_it != m_elements.end())
+                return std::distance(m_elements.begin(), after_it);
+
+            auto before_it = std::find_if(
+                m_elements.begin(),
+                m_elements.begin() + m_index,
+                predicate
+            );
+
+            if (before_it != m_elements.begin() + m_index)
+                return std::distance(m_elements.begin(), before_it);
+
+            break;
+        }
+        case Direction::Backward:
+        {
+            auto after_it = m_index != 0
+                ? std::find_if(
+                    m_elements.rbegin() + (m_elements.size() - m_index - 1) + 1,
+                    m_elements.rend(),
+                    predicate
+                )
+                : m_elements.rend();
+
+            if (after_it != m_elements.rend())
+                return std::distance(after_it, m_elements.rend()) - 1;
+
+            auto before_it = std::find_if(
+                m_elements.rbegin(),
+                m_elements.rbegin() + (m_elements.size() - m_index - 1),
+                predicate
+            );
+
+            if (before_it != m_elements.rbegin() + (m_elements.size() - m_index - 1))
+                return std::distance(before_it, m_elements.rend()) - 1;
+
+            break;
+        }
+        }
+
+        return std::nullopt;
+    }
+
+    template<typename UnaryPredicate>
+    std::optional<Index>
+    next_index_with_condition_from(
+        Index index,
+        Direction direction,
+        UnaryPredicate predicate
+    ) const
+    {
+        if (index >= m_elements.size())
+            return std::nullopt;
+
+        switch (direction) {
+        case Direction::Forward:
+        {
+            auto after_it = std::find_if(
+                m_elements.begin() + index,
+                m_elements.end(),
+                predicate
+            );
+
+            if (after_it != m_elements.end())
+                return std::distance(m_elements.begin(), after_it);
+
+            auto before_it = std::find_if(
+                m_elements.begin(),
+                m_elements.begin() + index,
+                predicate
+            );
+
+            if (before_it != m_elements.begin() + index)
+                return std::distance(m_elements.begin(), before_it);
+
+            break;
+        }
+        case Direction::Backward:
+        {
+            auto after_it = std::find_if(
+                m_elements.rbegin() + (m_elements.size() - index - 1),
+                m_elements.rend(),
+                predicate
+            );
+
+            if (after_it != m_elements.rend())
+                return std::distance(m_elements.rbegin(), after_it);
+
+            auto before_it = std::find_if(
+                m_elements.rbegin(),
+                m_elements.rbegin() + (m_elements.size() - index - 1),
+                predicate
+            );
+
+            if (before_it != m_elements.rbegin() + (m_elements.size() - index - 1))
+                return std::distance(m_elements.rbegin(), before_it);
+
+            break;
+        }
+        }
+
+        return std::nullopt;
+    }
+
     std::optional<Index> index_of_element(const T) const;
 
     std::optional<T> next_element(Direction) const;
@@ -72,7 +197,8 @@ public:
     std::optional<T> element_at_back(T) const;
 
     template<typename UnaryPredicate>
-    std::optional<T> first_element_with_condition(UnaryPredicate predicate)
+    std::optional<T>
+    first_element_with_condition(UnaryPredicate predicate)
     {
         auto it = std::find_if(
             m_elements.begin(),
@@ -83,7 +209,7 @@ public:
         if (it != m_elements.end())
             return *it;
 
-        return {};
+        return std::nullopt;
     }
 
     void activate_first();
@@ -92,7 +218,8 @@ public:
     void activate_element(T);
 
     template<typename UnaryPredicate>
-    void activate_for_condition(UnaryPredicate predicate)
+    void
+    activate_for_condition(UnaryPredicate predicate)
     {
         auto it = std::find_if(
             m_elements.begin(),
@@ -110,7 +237,8 @@ public:
     bool remove_element(T);
 
     template<typename UnaryPredicate>
-    bool remove_for_condition(UnaryPredicate predicate)
+    bool
+    remove_for_condition(UnaryPredicate predicate)
     {
         auto it = std::find_if(
             m_elements.begin(),
@@ -135,6 +263,75 @@ public:
     void rotate_range(Direction, Index, Index);
     std::optional<T> cycle_active(Direction);
     std::optional<T> drag_active(Direction);
+
+    template<typename UnaryPredicate>
+    std::optional<T>
+    cycle_active_with_condition(
+        Direction direction,
+        UnaryPredicate predicate,
+        bool wraps
+    )
+    {
+        std::optional<Index> index
+            = next_index_with_condition(direction, predicate);
+
+        if (!index)
+            return std::nullopt;
+
+        switch (direction) {
+        case Direction::Forward:
+        {
+            if (!wraps && *index <= active_index())
+                return std::nullopt;
+            break;
+        }
+        case Direction::Backward:
+        {
+            if (!wraps && *index >= last_index())
+                return std::nullopt;
+            break;
+        }
+        }
+
+        push_active_to_stack();
+        m_index = *index;
+        return active_element();
+    }
+
+    template<typename UnaryPredicate>
+    std::optional<T>
+    drag_active_with_condition(
+        Direction direction,
+        UnaryPredicate predicate,
+        bool wraps
+    )
+    {
+        std::optional<Index> index
+            = next_index_with_condition(direction, predicate);
+
+        if (!index)
+            return std::nullopt;
+
+        switch (direction) {
+        case Direction::Forward:
+        {
+            if (!wraps && *index <= active_index())
+                return std::nullopt;
+            break;
+        }
+        case Direction::Backward:
+        {
+            if (!wraps && *index >= last_index())
+                return std::nullopt;
+            break;
+        }
+        }
+
+        if (m_index != *index && m_index < m_elements.size() && *index < m_elements.size())
+            std::iter_swap(m_elements.begin() + m_index, m_elements.begin() + *index);
+
+        return cycle_active_with_condition(direction, predicate, wraps);
+    }
 
     void insert_at_front(T);
     void insert_at_back(T);
@@ -184,12 +381,14 @@ public:
         return m_elements.cend();
     }
 
-    T operator[](std::size_t index)
+    T
+    operator[](std::size_t index)
     {
         return m_elements[index];
     }
 
-    const T operator[](std::size_t index) const
+    const T
+    operator[](std::size_t index) const
     {
         return m_elements[index];
     }

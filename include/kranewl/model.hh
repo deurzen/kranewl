@@ -101,7 +101,9 @@ public:
     void abort_cursor_interactive();
 
     void cycle_focus(Direction);
+    void cycle_track(Direction);
     void drag_focus(Direction);
+    void drag_track(Direction);
 
     void sync_focus();
     void relayer_views(Workspace_ptr);
@@ -236,7 +238,7 @@ private:
     View_ptr mp_focus;
     View_ptr mp_jumped_from;
 
-    SceneLayer m_track;
+    SceneLayer m_current_track;
 
     std::vector<std::tuple<SearchSelector_ptr, Rules>> m_default_rules;
 

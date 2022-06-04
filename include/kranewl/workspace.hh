@@ -120,6 +120,29 @@ public:
 
     void cycle(Direction);
     void drag(Direction);
+
+    template<typename UnaryPredicate>
+    void
+    cycle_with_condition(
+        Direction direction,
+        UnaryPredicate predicate
+    )
+    {
+        m_views.cycle_active_with_condition(direction, predicate, layout_wraps());
+        mp_active = m_views.active_element().value_or(nullptr);
+    }
+
+    template<typename UnaryPredicate>
+    void
+    drag_with_condition(
+        Direction direction,
+        UnaryPredicate predicate
+    )
+    {
+        m_views.drag_active_with_condition(direction, predicate, layout_wraps());
+        mp_active = m_views.active_element().value_or(nullptr);
+    }
+
     void reverse();
     void rotate(Direction);
     void shuffle_main(Direction);
