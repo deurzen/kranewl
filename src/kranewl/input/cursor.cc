@@ -388,7 +388,7 @@ cursor_motion_to_client(
             cursor->mp_seat->mp_wlr_seat
         );
 
-        if (view && view != prev_view
+        if (view && view != prev_view && cursor->mp_model->belongs_to_track(view)
             && view->mp_workspace->focus_follows_cursor() && view->managed())
         {
             cursor->mp_seat->mp_model->focus_view(view);
@@ -472,8 +472,8 @@ Cursor::handle_cursor_motion_absolute(struct wl_listener* listener, void* data)
     cursor->process_cursor_motion(event->time_msec);
 }
 
-bool
-process_cursorbinding(Cursor_ptr cursor, uint32_t button, uint32_t modifiers)
+static inline bool
+process_cursorbinding(Cursor_ptr cursor, View_ptr view, uint32_t button, uint32_t modifiers)
 {
     TRACE();
 
@@ -488,7 +488,6 @@ process_cursorbinding(Cursor_ptr cursor, uint32_t button, uint32_t modifiers)
         .modifiers = modifiers
     };
 
-    View_ptr view = cursor->view_under_cursor();
     Model_ptr model = cursor->mp_seat->mp_model;
     View_ptr focused_view = model->focused_view();
 
@@ -554,13 +553,14 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
             ? wlr_keyboard_get_modifiers(keyboard)
             : 0;
 
-        if (process_cursorbinding(cursor, button, modifiers))
+        View_ptr view = cursor->view_under_cursor();
+        if (process_cursorbinding(cursor, view, button, modifiers))
             return;
 
-        if (!cursor->mp_model->mp_workspace->focus_follows_cursor()) {
-            View_ptr view = cursor->view_under_cursor();
-
-            if (view && !view->focused() && view->managed())
+        if (view && (!cursor->mp_model->mp_workspace->focus_follows_cursor()
+            || !cursor->mp_model->belongs_to_track(view)))
+        {
+            if (!view->focused() && view->managed())
                 cursor->mp_seat->mp_model->focus_view(view);
         }
 
@@ -626,7 +626,8 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
         default: break;
         }
 
-    if (!process_cursorbinding(cursor, button, modifiers)) {
+    View_ptr view = cursor->view_under_cursor();
+    if (!process_cursorbinding(cursor, view, button, modifiers)) {
         wlr_idle_notify_activity(seat->mp_idle, seat->mp_wlr_seat);
         wlr_seat_pointer_notify_axis(
             seat->mp_wlr_seat,

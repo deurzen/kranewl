@@ -56,6 +56,7 @@ Model::Model(Config const& config)
       m_sticky_views{},
       mp_focus(nullptr),
       mp_jumped_from(nullptr),
+      m_track(SceneLayer::SCENE_LAYER_TILE),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
 {
@@ -307,7 +308,9 @@ Model::focus_view(View_ptr view)
 
     view->focus(Toggle::On);
     view->set_urgent(false);
+
     mp_focus = view;
+    m_track = view->scene_layer();
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);
@@ -553,8 +556,10 @@ Model::relayer_views(Workspace_ptr workspace)
         }
     }
 
-    if (mp_focus)
+    if (mp_focus) {
         mp_focus->raise();
+        m_track = mp_focus->scene_layer();
+    }
 }
 
 void
@@ -2067,6 +2072,9 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
         snap_view(view, *rules.snap_edges);
     if (rules.do_fullscreen)
         set_fullscreen_view(*rules.do_fullscreen ? Toggle::On : Toggle::Off, view);
+
+    if (view == mp_focus)
+        m_track = view->scene_layer();
 }
 
 XDGView_ptr
@@ -2219,6 +2227,12 @@ Model::is_free(View_ptr view) const
                     ? mp_workspace
                     : view->mp_workspace
                )->layout_is_free());
+}
+
+bool
+Model::belongs_to_track(View_ptr view) const
+{
+    return m_track == view->scene_layer();
 }
 
 void

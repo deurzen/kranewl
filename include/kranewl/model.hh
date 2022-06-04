@@ -204,6 +204,7 @@ public:
     void set_focus_follows_cursor(Toggle, Context_ptr);
 
     bool is_free(View_ptr) const;
+    bool belongs_to_track(View_ptr) const;
 
     void spawn_external(std::string&&) const;
 
@@ -234,6 +235,8 @@ private:
 
     View_ptr mp_focus;
     View_ptr mp_jumped_from;
+
+    SceneLayer m_track;
 
     std::vector<std::tuple<SearchSelector_ptr, Rules>> m_default_rules;
 
