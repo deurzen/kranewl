@@ -1,6 +1,6 @@
 all: kranewl
 
-kranewl:
+kranewl: tags
 	cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build
 	make -C build
 
@@ -14,8 +14,11 @@ install:
 test: kranewl
 	ctest --verbose --test-dir build
 
-.PHONY: clean
+.PHONY: clean tags
 clean:
 	@rm -rf ./tags
 	@rm -rf ./build
 	@rm -f ./include/protocols/*
+
+tags:
+	@git ls-files | ctags -R --exclude=.git --c++-kinds=+p --links=no --fields=+iaS --extras=+q -L-
