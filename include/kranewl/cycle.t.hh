@@ -497,16 +497,23 @@ Cycle<T>::rotate_range(Direction direction, Index begin, Index end)
 }
 
 template <typename T>
-std::optional<T>
+std::pair<std::optional<T>, std::optional<T>>
 Cycle<T>::cycle_active(Direction direction)
 {
     push_active_to_stack();
+
+    std::optional<T> prev_active = active_element();
     m_index = next_index(direction);
-    return active_element();
+    std::optional<T> next_active = active_element();
+
+    return std::pair{
+        prev_active,
+        next_active
+    };
 }
 
 template <typename T>
-std::optional<T>
+std::pair<std::optional<T>, std::optional<T>>
 Cycle<T>::drag_active(Direction direction)
 {
     Index index = next_index(direction);

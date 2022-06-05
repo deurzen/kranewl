@@ -56,6 +56,7 @@ View::View(
       m_focused(false),
       m_mapped(false),
       m_managed(true),
+      m_free(false),
       m_urgent(false),
       m_floating(false),
       m_fullscreen(false),
@@ -176,6 +177,12 @@ View::set_managed(bool managed)
 }
 
 void
+View::set_free(bool free)
+{
+    m_free = free;
+}
+
+void
 View::set_urgent(bool urgent)
 {
     m_urgent = urgent;
@@ -265,6 +272,12 @@ View::set_disowned(bool disowned)
     }
 }
 
+bool
+View::belongs_to_active_track() const
+{
+    return m_scene_layer == mp_workspace->track_layer();
+}
+
 std::chrono::time_point<std::chrono::steady_clock>
 View::last_focused() const
 {
@@ -321,7 +334,7 @@ View::tile(Toggle toggle)
             return;
 
         set_floating(false);
-        if (!mp_model->is_free(this))
+        if (!m_free)
             relayer(SCENE_LAYER_TILE);
 
         break;
@@ -332,7 +345,7 @@ View::tile(Toggle toggle)
             return;
 
         set_floating(true);
-        if (mp_model->is_free(this))
+        if (m_free)
             relayer(SCENE_LAYER_FREE);
 
         break;
@@ -357,7 +370,6 @@ View::relayer(SceneLayer layer)
         return;
 
     m_scene_layer = layer;
-
     wlr_scene_node_reparent(
         mp_scene,
         mp_server->m_scene_layers[layer]

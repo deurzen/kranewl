@@ -431,7 +431,7 @@ XWaylandView::handle_request_configure(struct wl_listener* listener, void* data)
         return;
     }
 
-    if (view->mp_model->is_free(view)) {
+    if (view->free()) {
         view->set_preferred_dim(Dim{
             .w = event->width,
             .h = event->height,
@@ -490,7 +490,7 @@ XWaylandView::handle_request_move(struct wl_listener* listener, void*)
     if (!xwayland_surface->mapped)
         return;
 
-    if (!view->mp_model->is_free(view))
+    if (!view->free())
         return;
 
     view->mp_model->cursor_interactive(Cursor::Mode::Move, view);
@@ -504,10 +504,7 @@ XWaylandView::handle_request_resize(struct wl_listener* listener, void* data)
     XWaylandView_ptr view = wl_container_of(listener, view, ml_request_resize);
     struct wlr_xwayland_surface* xwayland_surface = view->mp_wlr_xwayland_surface;
 
-    if (!xwayland_surface->mapped)
-        return;
-
-    if (!view->mp_model->is_free(view))
+    if (!xwayland_surface->mapped || !view->free())
         return;
 
     struct wlr_xwayland_resize_event* event

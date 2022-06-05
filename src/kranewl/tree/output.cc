@@ -105,8 +105,11 @@ Output::handle_present(struct wl_listener* listener, void*)
             View_ptr view_under_cursor
                 = output->mp_seat->mp_cursor->view_under_cursor();
 
-            if (view_under_cursor && view_under_cursor->managed())
+            if (view_under_cursor && view_under_cursor->managed()
+                && view_under_cursor->belongs_to_active_track())
+            {
                 output->mp_model->focus_view(view_under_cursor);
+            }
         }
 
         output->m_cursor_focus_on_present = false;

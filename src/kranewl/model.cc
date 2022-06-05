@@ -56,7 +56,6 @@ Model::Model(Config const& config)
       m_sticky_views{},
       mp_focus(nullptr),
       mp_jumped_from(nullptr),
-      m_current_track(SceneLayer::SCENE_LAYER_TILE),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
 {
@@ -310,10 +309,11 @@ Model::focus_view(View_ptr view)
     view->set_urgent(false);
 
     mp_focus = view;
-    m_current_track = view->scene_layer();
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);
+
+    view->mp_workspace->activate_track(view->scene_layer());
 }
 
 void
@@ -358,13 +358,17 @@ Model::place_view(Placement& placement)
         switch (placement.method) {
         case Placement::PlacementMethod::Free:
         {
+            view->set_free(true);
             view->set_free_decoration(placement.decoration);
+            move_view_to_track(view, SceneLayer::SCENE_LAYER_FREE);
             break;
         }
         case Placement::PlacementMethod::Tile:
         {
+            view->set_free(false);
             view->set_free_decoration(FREE_DECORATION);
             view->set_tile_decoration(placement.decoration);
+            move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
             break;
         }
         }
@@ -376,15 +380,19 @@ Model::place_view(Placement& placement)
     switch (placement.method) {
     case Placement::PlacementMethod::Free:
     {
+        view->set_free(true);
         view->set_free_decoration(placement.decoration);
         view->set_free_region(*placement.region);
+        move_view_to_track(view, SceneLayer::SCENE_LAYER_FREE);
         break;
     }
     case Placement::PlacementMethod::Tile:
     {
+        view->set_free(false);
         view->set_free_decoration(FREE_DECORATION);
         view->set_tile_decoration(placement.decoration);
         view->set_tile_region(*placement.region);
+        move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
         break;
     }
     }
@@ -508,7 +516,7 @@ Model::cursor_interactive(Cursor::Mode mode, View_ptr view)
 {
     TRACE();
 
-    if (is_free(view))
+    if (view->free())
         mp_server->mp_seat->mp_cursor->initiate_cursor_interactive(mode, view);
 }
 
@@ -545,20 +553,20 @@ void
 Model::relayer_views(Workspace_ptr workspace)
 {
     for (View_ptr view : *workspace) {
-        if (is_free(view)) {
+        if (view->free()) {
             if (view->scene_layer() != SceneLayer::SCENE_LAYER_FREE)
-                view->relayer(SceneLayer::SCENE_LAYER_FREE);
+                move_view_to_track(view, SceneLayer::SCENE_LAYER_FREE);
                 view->lower();
         } else {
             if (view->scene_layer() != SceneLayer::SCENE_LAYER_TILE) {
-                view->relayer(SceneLayer::SCENE_LAYER_TILE);
+                move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
             }
         }
     }
 
     if (mp_focus) {
         mp_focus->raise();
-        m_current_track = mp_focus->scene_layer();
+        mp_focus->mp_workspace->activate_track(mp_focus->scene_layer());
     }
 }
 
@@ -575,6 +583,15 @@ Model::relayer_views(Output_ptr output)
 }
 
 void
+Model::move_view_to_track(View_ptr view, SceneLayer layer)
+{
+    TRACE();
+
+    view->mp_workspace->change_view_track(view, layer);
+    view->relayer(layer);
+}
+
+void
 Model::cycle_focus(Direction direction)
 {
     TRACE();
@@ -587,13 +604,14 @@ Model::cycle_focus(Direction direction)
 }
 
 void
-Model::cycle_track(Direction direction)
+Model::cycle_focus_track(Direction direction)
 {
     TRACE();
 
-    mp_workspace->cycle_with_condition(direction, [this](View_ptr view) {
-        return belongs_to_track(view);
-    });
+    if (mp_workspace->track_size() <= 1)
+        return;
+
+    mp_workspace->cycle_focus_track(direction);
     sync_focus();
 }
 
@@ -611,18 +629,48 @@ Model::drag_focus(Direction direction)
 }
 
 void
-Model::drag_track(Direction direction)
+Model::drag_focus_track(Direction direction)
 {
     TRACE();
 
-    if (mp_workspace->size() <= 1)
+    if (mp_workspace->track_size() <= 1)
         return;
 
-    mp_workspace->drag_with_condition(direction, [this](View_ptr view) {
-        return belongs_to_track(view);
-    });
+    auto [prev,next] = mp_workspace->drag_focus_track(direction);
+
+    if (prev && next) {
+        Region region_prev = (*prev)->free_region();
+        Region region_next = (*next)->free_region();
+        (*prev)->set_free_region(region_next);
+        (*next)->set_free_region(region_prev);
+    }
+
     sync_focus();
     apply_layout(mp_workspace);
+}
+
+void
+Model::toggle_track()
+{
+    TRACE();
+    mp_workspace->toggle_track();
+    sync_focus();
+}
+
+void
+Model::activate_track(SceneLayer layer)
+{
+    TRACE();
+    mp_workspace->activate_track(layer);
+    sync_focus();
+}
+
+void
+Model::cycle_track(Direction direction)
+{
+    TRACE();
+    mp_workspace->cycle_track(direction);
+    sync_focus();
 }
 
 void
@@ -1163,8 +1211,8 @@ Model::toggle_layout()
     TRACE();
 
     mp_workspace->toggle_layout();
-    relayer_views(mp_workspace);
     apply_layout(mp_workspace);
+    relayer_views(mp_workspace);
 }
 
 void
@@ -1173,8 +1221,8 @@ Model::set_layout(LayoutHandler::LayoutKind layout)
     TRACE();
 
     mp_workspace->set_layout(layout);
-    relayer_views(mp_workspace);
     apply_layout(mp_workspace);
+    relayer_views(mp_workspace);
 }
 
 void
@@ -1195,7 +1243,7 @@ Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
             views.end(),
             std::back_inserter(regions),
             [=,this](View_ptr view) -> Region {
-                if (is_free(view))
+                if (view->free())
                     return view->free_region();
                 else
                     return view->tile_region();
@@ -1390,9 +1438,10 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
     }
 
     apply_layout(view->mp_workspace);
+    move_view_to_track(view, view->scene_layer());
 
     if (view == mp_focus)
-        m_current_track = view->scene_layer();
+        view->mp_workspace->activate_track(view->scene_layer());
 }
 
 void
@@ -1453,7 +1502,8 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
     apply_layout(workspace);
 
     if (view == mp_focus)
-        m_current_track = view->scene_layer();
+        // TODO: separate layer?
+        move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
 }
 
 void
@@ -1706,7 +1756,7 @@ Model::center_view(View_ptr view)
 {
     TRACE();
 
-    if (!is_free(view) || !view->mp_output)
+    if (!view->free() || !view->mp_output)
         return;
 
     view->center();
@@ -1735,7 +1785,7 @@ Model::nudge_view(Edge edge, Util::Change<std::size_t> change, View_ptr view)
 {
     TRACE();
 
-    if (!is_free(view))
+    if (!view->free())
         return;
 
     Region region = view->free_region();
@@ -1786,7 +1836,7 @@ Model::stretch_view(Edge edge, Util::Change<int> change, View_ptr view)
 {
     TRACE();
 
-    if (!is_free(view))
+    if (!view->free())
         return;
 
     Decoration decoration = view->free_decoration();
@@ -1882,7 +1932,7 @@ Model::inflate_view(Util::Change<int> change, View_ptr view)
 {
     TRACE();
 
-    if (!is_free(view))
+    if (!view->free())
         return;
 
     Decoration decoration = view->free_decoration();
@@ -1955,7 +2005,7 @@ Model::snap_view(View_ptr view, uint32_t edges)
 {
     TRACE();
 
-    if (!is_free(view))
+    if (!view->free())
         return;
 
     Region region = view->free_region();
@@ -2088,23 +2138,23 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
     if (rules.to_workspace && *rules.to_workspace < context->workspaces().size())
         workspace = (*context)[*rules.to_workspace];
 
+    if (rules.do_float) {
+        view->set_floating(*rules.do_float);
+        view->relayer(*rules.do_float
+            ? SceneLayer::SCENE_LAYER_FREE
+            : SceneLayer::SCENE_LAYER_TILE
+        );
+    } else
+        view->relayer(SceneLayer::SCENE_LAYER_TILE);
+
     move_view_to_workspace(view, workspace);
 
-    view->relayer(
-        is_free(view)
-            ? SCENE_LAYER_FREE
-            : SCENE_LAYER_TILE
-    );
-
-    if (rules.do_float)
-        set_floating_view(*rules.do_float ? Toggle::On : Toggle::Off, view);
     if (rules.snap_edges)
         snap_view(view, *rules.snap_edges);
     if (rules.do_fullscreen)
         set_fullscreen_view(*rules.do_fullscreen ? Toggle::On : Toggle::Off, view);
 
-    if (view == mp_focus)
-        m_current_track = view->scene_layer();
+    move_view_to_track(view, view->scene_layer());
 }
 
 XDGView_ptr
@@ -2246,23 +2296,6 @@ Model::register_layer(Layer_ptr layer)
 
     layer->mp_output->add_layer(layer);
     spdlog::info("Registered layer {}", layer->uid_formatted());
-}
-
-bool
-Model::is_free(View_ptr view) const
-{
-    return View::is_free(view)
-        || ((!view->fullscreen() || view->contained())
-            && (view->sticky()
-                    ? mp_workspace
-                    : view->mp_workspace
-               )->layout_is_free());
-}
-
-bool
-Model::belongs_to_track(View_ptr view) const
-{
-    return m_current_track == view->scene_layer();
 }
 
 void

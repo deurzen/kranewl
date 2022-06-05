@@ -5,6 +5,7 @@
 #include <kranewl/geometry.hh>
 #include <kranewl/layout.hh>
 #include <kranewl/placement.hh>
+#include <kranewl/scene-layer.hh>
 #include <kranewl/util.hh>
 
 typedef struct View* View_ptr;
@@ -73,18 +74,8 @@ public:
 
     };
 
-    Workspace(Index index, std::string name, Context_ptr context)
-        : m_index(index),
-          m_name(name),
-          m_layout_handler({}),
-          mp_context(context),
-          mp_active(nullptr),
-          m_views({}, true),
-          m_free_views({}, true),
-          m_iconified_views({}, true),
-          m_disowned_views({}, true),
-          m_focus_follows_cursor(true)
-    {}
+    Workspace(Index, std::string, Context_ptr);
+    ~Workspace();
 
     bool empty() const;
     bool contains(View_ptr) const;
@@ -100,6 +91,7 @@ public:
     bool layout_wraps() const;
 
     Index size() const;
+    Index track_size() const;
     Index length() const;
     int main_count() const;
 
@@ -111,6 +103,15 @@ public:
     std::string identifier() const;
     View_ptr active() const;
 
+    SceneLayer track_layer() const;
+    void activate_track(SceneLayer);
+    void toggle_track();
+    void cycle_track(Direction);
+
+    void add_view_to_track(View_ptr, SceneLayer);
+    void remove_view_from_track(View_ptr, SceneLayer);
+    void change_view_track(View_ptr, SceneLayer);
+
     Cycle<View_ptr> const& views() const;
     std::vector<View_ptr> stack_after_focus() const;
 
@@ -118,8 +119,10 @@ public:
     View_ptr prev_view() const;
     std::optional<View_ptr> find_view(ViewSelector const&) const;
 
-    void cycle(Direction);
-    void drag(Direction);
+    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle(Direction);
+    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle_focus_track(Direction);
+    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> drag(Direction);
+    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> drag_focus_track(Direction);
 
     template<typename UnaryPredicate>
     void
@@ -243,6 +246,12 @@ private:
 
     View_ptr mp_active;
     Cycle<View_ptr> m_views;
+
+    SceneLayer m_track_layer;
+    SceneLayer m_prev_track_layer;
+    const std::array<Cycle_ptr<View_ptr>, 8> m_tracks;
+    Cycle_ptr<View_ptr> mp_track;
+
     Cycle<View_ptr> m_free_views;
     Cycle<View_ptr> m_iconified_views;
     Cycle<View_ptr> m_disowned_views;

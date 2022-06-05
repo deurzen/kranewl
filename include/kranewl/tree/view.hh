@@ -102,6 +102,7 @@ typedef struct View : public Node {
     bool focused() const { return m_focused; }
     bool mapped() const { return m_mapped; }
     bool managed() const { return m_managed; }
+    bool free() const { return m_free; }
     bool urgent() const { return m_urgent; }
     bool floating() const { return m_floating; }
     bool fullscreen() const { return m_fullscreen; }
@@ -116,6 +117,7 @@ typedef struct View : public Node {
     void set_focused(bool);
     void set_mapped(bool);
     void set_managed(bool);
+    void set_free(bool);
     void set_urgent(bool);
     void set_floating(bool);
     void set_fullscreen(bool);
@@ -126,6 +128,8 @@ typedef struct View : public Node {
     void set_iconifyable(bool);
     void set_iconified(bool);
     void set_disowned(bool);
+
+    bool belongs_to_active_track() const;
 
     std::chrono::time_point<std::chrono::steady_clock> last_focused() const;
     std::chrono::time_point<std::chrono::steady_clock> last_touched() const;
@@ -207,6 +211,7 @@ private:
     bool m_focused;
     bool m_mapped;
     bool m_managed;
+    bool m_free;
     bool m_urgent;
     bool m_floating;
     bool m_fullscreen;

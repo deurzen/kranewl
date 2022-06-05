@@ -97,7 +97,7 @@ static const KeyBindings key_bindings = {
     .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
-        if (focus && model.is_free(focus))
+        if (focus && focus->free())
             model.nudge_focus(Edge::Left, 50);
         else
             model.shuffle_main(Direction::Backward);
@@ -110,7 +110,7 @@ static const KeyBindings key_bindings = {
     .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
-        if (focus && model.is_free(focus))
+        if (focus && focus->free())
             model.nudge_focus(Edge::Bottom, 50);
         else
             model.shuffle_stack(Direction::Forward);
@@ -123,7 +123,7 @@ static const KeyBindings key_bindings = {
     .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
-        if (focus && model.is_free(focus))
+        if (focus && focus->free())
             model.nudge_focus(Edge::Top, 50);
         else
             model.shuffle_stack(Direction::Backward);
@@ -136,7 +136,7 @@ static const KeyBindings key_bindings = {
     .action = [](Model& model) {
         View_ptr focus = model.focused_view();
 
-        if (focus && model.is_free(focus))
+        if (focus && focus->free())
             model.nudge_focus(Edge::Right, 50);
         else
             model.shuffle_main(Direction::Forward);
@@ -218,26 +218,32 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_j, MODKEY },
   {
-    .action = CALL(cycle_track(Direction::Forward)),
+    .action = CALL(cycle_focus_track(Direction::Forward)),
     .repeatable = true
   }
 },
 { { XKB_KEY_k, MODKEY },
   {
-    .action = CALL(cycle_track(Direction::Backward)),
+    .action = CALL(cycle_focus_track(Direction::Backward)),
     .repeatable = true
   }
 },
 { { XKB_KEY_J, MODKEY | WLR_MODIFIER_SHIFT },
   {
-    .action = CALL(drag_focus(Direction::Forward)),
+    .action = CALL(drag_focus_track(Direction::Forward)),
     .repeatable = true
   }
 },
 { { XKB_KEY_K, MODKEY | WLR_MODIFIER_SHIFT },
   {
-    .action = CALL(drag_focus(Direction::Backward)),
+    .action = CALL(drag_focus_track(Direction::Backward)),
     .repeatable = true
+  }
+},
+{ { XKB_KEY_a, MODKEY },
+  {
+    .action = CALL(cycle_track(Direction::Forward)),
+    .repeatable = false
   }
 },
 { { XKB_KEY_r, MODKEY },

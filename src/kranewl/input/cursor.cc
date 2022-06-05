@@ -388,7 +388,7 @@ cursor_motion_to_client(
             cursor->mp_seat->mp_wlr_seat
         );
 
-        if (view && view != prev_view && cursor->mp_model->belongs_to_track(view)
+        if (view && view != prev_view && view->belongs_to_active_track()
             && view->mp_workspace->focus_follows_cursor() && view->managed())
         {
             cursor->mp_seat->mp_model->focus_view(view);
@@ -558,7 +558,7 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
             return;
 
         if (view && (!cursor->mp_model->mp_workspace->focus_follows_cursor()
-            || !cursor->mp_model->belongs_to_track(view)))
+            || !view->belongs_to_active_track()))
         {
             if (!view->focused() && view->managed())
                 cursor->mp_seat->mp_model->focus_view(view);

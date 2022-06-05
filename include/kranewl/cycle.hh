@@ -261,8 +261,8 @@ public:
     void reverse();
     void rotate(Direction);
     void rotate_range(Direction, Index, Index);
-    std::optional<T> cycle_active(Direction);
-    std::optional<T> drag_active(Direction);
+    std::pair<std::optional<T>, std::optional<T>> cycle_active(Direction);
+    std::pair<std::optional<T>, std::optional<T>> drag_active(Direction);
 
     template<typename UnaryPredicate>
     std::optional<T>
@@ -406,3 +406,6 @@ private:
     HistoryStack<T> m_stack;
 
 };
+
+template<typename T>
+using Cycle_ptr = Cycle<T>*;
