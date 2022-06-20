@@ -358,6 +358,12 @@ static const KeyBindings key_bindings = {
     .repeatable = false
   }
 },
+{ { XKB_KEY_P, MODKEY | WLR_MODIFIER_SHIFT },
+  {
+    .action = CALL(set_layout(LayoutHandler::LayoutKind::OverlappingPaper)),
+    .repeatable = false
+  }
+},
 { { XKB_KEY_Y, MODKEY | WLR_MODIFIER_SHIFT },
   {
     .action = CALL(set_layout(LayoutHandler::LayoutKind::HorizontalStack)),

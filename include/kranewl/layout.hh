@@ -31,6 +31,7 @@ public:
         // non-overlapping tiled layouts
         Paper,
         CompactPaper,
+        OverlappingPaper,
         DoubleStack,
         CompactDoubleStack,
         HorizontalStack,
@@ -157,6 +158,7 @@ private:
     void arrange_stack_deck(Region, placement_vector, view_iter, view_iter) const;
     void arrange_double_deck(Region, placement_vector, view_iter, view_iter) const;
     void arrange_paper(Region, placement_vector, view_iter, view_iter) const;
+    void arrange_overlapping_paper(Region, placement_vector, view_iter, view_iter) const;
     void arrange_compact_paper(Region, placement_vector, view_iter, view_iter) const;
     void arrange_double_stack(Region, placement_vector, view_iter, view_iter) const;
     void arrange_compact_double_stack(Region, placement_vector, view_iter, view_iter) const;

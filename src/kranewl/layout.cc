@@ -47,6 +47,7 @@ LayoutHandler::LayoutHandler()
           NEW_LAYOUT(LayoutKind::DoubleDeck),
           NEW_LAYOUT(LayoutKind::Paper),
           NEW_LAYOUT(LayoutKind::CompactPaper),
+          NEW_LAYOUT(LayoutKind::OverlappingPaper),
           NEW_LAYOUT(LayoutKind::DoubleStack),
           NEW_LAYOUT(LayoutKind::CompactDoubleStack),
           NEW_LAYOUT(LayoutKind::HorizontalStack),
@@ -140,6 +141,11 @@ LayoutHandler::arrange(
     case LayoutKind::CompactPaper:
     {
         arrange_compact_paper(screen_region, placements, begin, end);
+        break;
+    }
+    case LayoutKind::OverlappingPaper:
+    {
+        arrange_overlapping_paper(screen_region, placements, begin, end);
         break;
     }
     case LayoutKind::DoubleStack:
@@ -1041,6 +1047,108 @@ LayoutHandler::arrange_compact_paper(
 }
 
 void
+LayoutHandler::arrange_overlapping_paper(
+    Region screen_region,
+    placement_vector placements,
+    view_iter begin,
+    view_iter end
+) const
+{
+    TRACE();
+
+    static const float MIN_W_RATIO = 0.5;
+
+    const Layout::LayoutData_ptr data = *mp_layout->data.active_element();
+    int n = static_cast<int>(end - begin);
+
+    if (n == 1) {
+        placements.emplace_back(Placement{
+            mp_layout->config.method,
+            *begin,
+            NO_DECORATION,
+            screen_region
+        });
+
+        return;
+    }
+
+    int cw;
+    if (data->main_factor > MIN_W_RATIO) {
+        cw = static_cast<int>(static_cast<float>(screen_region.dim.w) * data->main_factor);
+    } else {
+        cw = static_cast<int>(static_cast<float>(screen_region.dim.w) * MIN_W_RATIO);
+    }
+
+    int w = static_cast<int>(static_cast<float>(screen_region.dim.w - cw)
+        / static_cast<float>(n - 1));
+
+    bool contains_active = false;
+    const auto last_active = std::max_element(
+        begin,
+        end,
+        [&contains_active](const View_ptr lhs, const View_ptr rhs) {
+            if (lhs->focused()) {
+                contains_active = true;
+                return false;
+            } else if (rhs->focused()) {
+                contains_active = true;
+                return true;
+            }
+
+            return lhs->last_focused() < rhs->last_focused();
+        }
+    );
+
+    bool after_active = false;
+    int i = 0;
+
+    std::transform(
+        begin,
+        end,
+        std::back_inserter(placements),
+        [=,this,&after_active,&i](View_ptr view) -> Placement{
+            int x = screen_region.pos.x + static_cast<int>(i++ * w);
+
+            if ((!contains_active && *last_active == view) || view->focused()) {
+                after_active = true;
+
+                return Placement{
+                    mp_layout->config.method,
+                    view,
+                    mp_layout->config.decoration,
+                    Region{
+                        Pos{
+                            x,
+                            screen_region.pos.y
+                        },
+                        Dim{
+                            cw,
+                            screen_region.dim.h
+                        }
+                    }
+                };
+            } else {
+                return Placement{
+                    mp_layout->config.method,
+                    view,
+                    mp_layout->config.decoration,
+                    Region{
+                        Pos{
+                            x,
+                            screen_region.pos.y
+                        },
+                        Dim{
+                            cw,
+                            screen_region.dim.h
+                        }
+                    }
+                };
+            }
+        }
+    );
+}
+
+void
 LayoutHandler::arrange_double_stack(
     Region screen_region,
     placement_vector placements,
@@ -1432,6 +1540,23 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
             false
         };
     }
+    case LayoutKind::OverlappingPaper:
+    {
+        return LayoutConfig{
+            Placement::PlacementMethod::Tile,
+            Decoration{
+                Frame{
+                    Extents{1, 1, 0, 0}
+                },
+                DEFAULT_COLOR_SCHEME
+            },
+            true,
+            true,
+            true,
+            false,
+            false
+        };
+    }
     case LayoutKind::DoubleStack:
     {
         return LayoutConfig{
@@ -1567,6 +1692,7 @@ LayoutHandler::Layout::kind_to_default_data(LayoutKind kind)
     case LayoutKind::DoubleDeck:             // fallthrough
     case LayoutKind::Paper:                  // fallthrough
     case LayoutKind::CompactPaper:           // fallthrough
+    case LayoutKind::OverlappingPaper:       // fallthrough
     case LayoutKind::DoubleStack:            // fallthrough
     case LayoutKind::CompactDoubleStack:     // fallthrough
     case LayoutKind::HorizontalStack:        // fallthrough
