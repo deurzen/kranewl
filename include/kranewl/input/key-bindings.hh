@@ -228,6 +228,18 @@ static const KeyBindings key_bindings = {
     .repeatable = true
   }
 },
+{ { XKB_KEY_j, MODKEY | SECKEY },
+  {
+    .action = CALL(cycle_focus(Direction::Forward)),
+    .repeatable = true
+  }
+},
+{ { XKB_KEY_k, MODKEY | SECKEY },
+  {
+    .action = CALL(cycle_focus(Direction::Backward)),
+    .repeatable = true
+  }
+},
 { { XKB_KEY_J, MODKEY | WLR_MODIFIER_SHIFT },
   {
     .action = CALL(drag_focus_track(Direction::Forward)),

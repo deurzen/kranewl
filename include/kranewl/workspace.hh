@@ -106,7 +106,7 @@ public:
     SceneLayer track_layer() const;
     void activate_track(SceneLayer);
     void toggle_track();
-    void cycle_track(Direction);
+    bool cycle_track(Direction);
 
     void add_view_to_track(View_ptr, SceneLayer);
     void remove_view_from_track(View_ptr, SceneLayer);
@@ -119,9 +119,8 @@ public:
     View_ptr prev_view() const;
     std::optional<View_ptr> find_view(ViewSelector const&) const;
 
-    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle(Direction);
+    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle_focus(Direction);
     std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle_focus_track(Direction);
-    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> drag(Direction);
     std::pair<std::optional<View_ptr>, std::optional<View_ptr>> drag_focus_track(Direction);
 
     template<typename UnaryPredicate>

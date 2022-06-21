@@ -599,7 +599,7 @@ Model::cycle_focus(Direction direction)
     if (mp_workspace->size() <= 1)
         return;
 
-    mp_workspace->cycle(direction);
+    mp_workspace->cycle_focus(direction);
     sync_focus();
 }
 
@@ -613,19 +613,6 @@ Model::cycle_focus_track(Direction direction)
 
     mp_workspace->cycle_focus_track(direction);
     sync_focus();
-}
-
-void
-Model::drag_focus(Direction direction)
-{
-    TRACE();
-
-    if (mp_workspace->size() <= 1)
-        return;
-
-    mp_workspace->drag(direction);
-    sync_focus();
-    apply_layout(mp_workspace);
 }
 
 void

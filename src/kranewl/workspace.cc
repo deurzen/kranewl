@@ -196,7 +196,7 @@ Workspace::toggle_track()
     activate_track(m_prev_track_layer);
 }
 
-void
+bool
 Workspace::cycle_track(Direction direction)
 {
     TRACE();
@@ -220,11 +220,12 @@ Workspace::cycle_track(Direction direction)
                     : m_track_layer + 1
             );
             break;
-        default: return;
+        default: return false;
         }
     } while (m_tracks[m_track_layer]->empty() && cycles--);
 
     activate_track(m_track_layer);
+    return cycles >= 0;
 }
 
 void
@@ -342,30 +343,51 @@ Workspace::find_view(ViewSelector const& selector) const
 }
 
 std::pair<std::optional<View_ptr>, std::optional<View_ptr>>
-Workspace::cycle(Direction direction)
+Workspace::cycle_focus(Direction direction)
 {
     TRACE();
+
+    View_ptr prev_active = mp_active;
 
     switch (direction) {
     case Direction::Forward:
     {
-        if (!layout_wraps() && m_views.active_index() == m_views.last_index())
-            return std::pair{std::nullopt, std::nullopt};
+        if (mp_track->active_index() == mp_track->last_index()) {
+            if (!cycle_track(direction))
+                return std::pair{std::nullopt, std::nullopt};
+            else
+                mp_track->activate_at_index(0);
+        } else
+            return cycle_focus_track(direction);
+
         break;
     }
     case Direction::Backward:
     {
-        if (!layout_wraps() && m_views.active_index() == 0)
-            return std::pair{std::nullopt, std::nullopt};
+        if (mp_track->active_index() == 0) {
+            if (!cycle_track(direction))
+                return std::pair{std::nullopt, std::nullopt};
+            else
+                mp_track->activate_at_index(mp_track->last_index());
+        } else
+            return cycle_focus_track(direction);
+
         break;
     }
     }
 
-    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> views
-        = m_views.cycle_active(direction);
-    mp_active = views.second.value_or(nullptr);
+    mp_active = mp_track->active_element().value_or(nullptr);
+    if (mp_active)
+        m_views.activate_element(mp_active);
 
-    return views;
+    return std::pair{
+        prev_active
+            ? std::optional{prev_active}
+            : std::nullopt,
+        mp_active
+            ? std::optional{mp_active}
+            : std::nullopt
+    };
 }
 
 std::pair<std::optional<View_ptr>, std::optional<View_ptr>>
@@ -394,33 +416,6 @@ Workspace::cycle_focus_track(Direction direction)
     mp_active = views.second.value_or(nullptr);
     if (mp_active)
         m_views.activate_element(mp_active);
-
-    return views;
-}
-
-std::pair<std::optional<View_ptr>, std::optional<View_ptr>>
-Workspace::drag(Direction direction)
-{
-    TRACE();
-
-    switch (direction) {
-    case Direction::Forward:
-    {
-        if (!layout_wraps() && m_views.active_index() == m_views.last_index())
-            return std::pair{std::nullopt, std::nullopt};
-        break;
-    }
-    case Direction::Backward:
-    {
-        if (!layout_wraps() && m_views.active_index() == 0)
-            return std::pair{std::nullopt, std::nullopt};
-        break;
-    }
-    }
-
-    std::pair<std::optional<View_ptr>, std::optional<View_ptr>> views
-        = m_views.drag_active(direction);
-    mp_active = views.second.value_or(nullptr);
 
     return views;
 }

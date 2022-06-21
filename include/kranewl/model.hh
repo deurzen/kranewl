@@ -103,7 +103,6 @@ public:
 
     void cycle_focus(Direction);
     void cycle_focus_track(Direction);
-    void drag_focus(Direction);
     void drag_focus_track(Direction);
 
     void toggle_track();

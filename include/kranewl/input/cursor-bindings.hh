@@ -84,10 +84,22 @@ static const CursorBindings cursor_bindings = {
 { { GLOBAL, SCROLLDOWN, MODKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.cycle_focus(Direction::Forward);
+        model.cycle_focus_track(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY },
+    CALL_NOFOCUS({
+        static_cast<void>(view);
+        model.cycle_focus_track(Direction::Backward);
+    })
+},
+{ { GLOBAL, SCROLLDOWN, MODKEY | SECKEY },
+    CALL_NOFOCUS({
+        static_cast<void>(view);
+        model.cycle_focus(Direction::Forward);
+    })
+},
+{ { GLOBAL, SCROLLUP, MODKEY | SECKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
         model.cycle_focus(Direction::Backward);
