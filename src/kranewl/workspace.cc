@@ -238,6 +238,9 @@ Workspace::add_view_to_track(View_ptr view, SceneLayer layer)
 
     m_tracks[layer]->insert_at_back(view);
 
+    if (m_tracks[m_track_layer]->empty())
+        m_track_layer = layer;
+
     if (layer == m_track_layer)
         mp_active = view;
 }
