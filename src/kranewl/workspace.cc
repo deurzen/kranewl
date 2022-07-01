@@ -33,7 +33,7 @@ Workspace::Workspace(Index index, std::string name, Context_ptr context)
       m_free_views({}, true),
       m_iconified_views({}, true),
       m_disowned_views({}, true),
-      m_focus_follows_cursor(true)
+      m_focus_follows_cursor(false)
 {}
 
 Workspace::~Workspace()
