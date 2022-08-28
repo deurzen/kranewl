@@ -239,10 +239,14 @@ XWaylandView::activate(Toggle toggle)
 }
 
 void
-XWaylandView::set_fullscreen(Toggle)
+XWaylandView::effectuate_fullscreen(bool fullscreen)
 {
     TRACE();
-    // TODO
+
+    if (View::fullscreen() != fullscreen) {
+        set_fullscreen(fullscreen);
+        wlr_xwayland_surface_set_fullscreen(mp_wlr_xwayland_surface, fullscreen);
+    }
 }
 
 void
@@ -459,10 +463,19 @@ XWaylandView::handle_request_configure(struct wl_listener* listener, void* data)
 }
 
 void
-XWaylandView::handle_request_fullscreen(struct wl_listener*, void*)
+XWaylandView::handle_request_fullscreen(struct wl_listener* listener, void*)
 {
     TRACE();
-    // TODO
+
+    XWaylandView_ptr view = wl_container_of(listener, view, ml_request_fullscreen);
+    struct wlr_xwayland_surface* xwayland_surface = view->mp_wlr_xwayland_surface;
+
+    view->mp_model->set_fullscreen_view(
+        xwayland_surface->fullscreen
+            ? Toggle::On
+            : Toggle::Off,
+        view
+    );
 }
 
 void

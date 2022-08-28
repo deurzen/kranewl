@@ -371,6 +371,14 @@ Model::place_view(Placement& placement)
             move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
             break;
         }
+        case Placement::PlacementMethod::Fullscreen:
+        {
+            view->set_free(false);
+            view->set_free_decoration(FREE_DECORATION);
+            view->set_tile_decoration(placement.decoration);
+            move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
+            break;
+        }
         }
 
         view->unmap();
@@ -393,6 +401,13 @@ Model::place_view(Placement& placement)
         view->set_tile_decoration(placement.decoration);
         view->set_tile_region(*placement.region);
         move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
+        break;
+    }
+    case Placement::PlacementMethod::Fullscreen:
+    {
+        view->set_tile_decoration(placement.decoration);
+        view->set_tile_region(*placement.region);
+        move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
         break;
     }
     }
@@ -554,9 +569,15 @@ Model::relayer_views(Workspace_ptr workspace)
 {
     for (View_ptr view : *workspace) {
         if (view->free()) {
-            if (view->scene_layer() != SceneLayer::SCENE_LAYER_FREE)
+            if (view->scene_layer() != SceneLayer::SCENE_LAYER_FREE) {
                 move_view_to_track(view, SceneLayer::SCENE_LAYER_FREE);
                 view->lower();
+            }
+        } else if (view->fullscreen()) {
+            if (view->scene_layer() != SceneLayer::SCENE_LAYER_OVERLAY) {
+                move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
+                view->lower();
+            }
         } else {
             if (view->scene_layer() != SceneLayer::SCENE_LAYER_TILE) {
                 move_view_to_track(view, SceneLayer::SCENE_LAYER_TILE);
@@ -1451,9 +1472,16 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
         if (view->fullscreen())
             return;
 
-        view->set_fullscreen(true);
-        // TODO: set fullscreen state
+        view->effectuate_fullscreen(true);
         m_fullscreen_map[view] = view->free_region();
+
+        if (!view->contained())
+            move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
+
+        if (view == mp_focus) {
+            activate_track(SceneLayer::SCENE_LAYER_OVERLAY);
+            view->raise();
+        }
 
         break;
     }
@@ -1465,9 +1493,19 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
         if (!view->contained())
             view->set_free_region(m_fullscreen_map.at(view));
 
-        view->set_fullscreen(false);
-        // TODO: unset fullscreen state
+        view->effectuate_fullscreen(false);
         m_fullscreen_map.erase(view);
+
+        const SceneLayer layer = view->free()
+            ? SceneLayer::SCENE_LAYER_FREE
+            : SceneLayer::SCENE_LAYER_TILE;
+
+        move_view_to_track(view, layer);
+
+        if (view == mp_focus) {
+            activate_track(layer);
+            view->raise();
+        }
 
         break;
     }
@@ -1486,11 +1524,9 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
     }
 
     Workspace_ptr workspace = view->mp_workspace;
-    apply_layout(workspace);
+    if (workspace)
+        apply_layout(workspace);
 
-    if (view == mp_focus)
-        // TODO: separate layer?
-        move_view_to_track(view, SceneLayer::SCENE_LAYER_OVERLAY);
 }
 
 void

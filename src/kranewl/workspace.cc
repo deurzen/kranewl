@@ -780,7 +780,7 @@ Workspace::arrange(Region region) const
         std::back_inserter(placements),
         [region](const View_ptr view) -> Placement {
             return Placement {
-                Placement::PlacementMethod::Tile,
+                Placement::PlacementMethod::Fullscreen,
                 view,
                 NO_DECORATION,
                 region

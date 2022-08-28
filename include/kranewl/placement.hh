@@ -28,6 +28,7 @@ struct Placement final {
     {
         Free,
         Tile,
+        Fullscreen,
     };
 
     PlacementMethod method;

@@ -29,7 +29,7 @@ typedef struct XDGView final : public View {
 
     void focus(Toggle) override;
     void activate(Toggle) override;
-    void set_fullscreen(Toggle) override;
+    void effectuate_fullscreen(bool) override;
 
     void configure(Region const&, Extents const&, bool) override;
     void close() override;

@@ -196,10 +196,14 @@ XDGView::activate(Toggle toggle)
 }
 
 void
-XDGView::set_fullscreen(Toggle)
+XDGView::effectuate_fullscreen(bool fullscreen)
 {
     TRACE();
-    // TODO
+
+    if (View::fullscreen() != fullscreen) {
+        set_fullscreen(fullscreen);
+        wlr_xdg_toplevel_set_fullscreen(mp_wlr_xdg_surface, fullscreen);
+    }
 }
 
 void
@@ -251,24 +255,33 @@ XDGView::handle_commit(struct wl_listener* listener, void* data)
 }
 
 void
-XDGView::handle_request_move(struct wl_listener* listener, void* data)
+XDGView::handle_request_move(struct wl_listener*, void*)
 {
     TRACE();
 
 }
 
 void
-XDGView::handle_request_resize(struct wl_listener* listener, void* data)
+XDGView::handle_request_resize(struct wl_listener*, void*)
 {
     TRACE();
 
 }
 
 void
-XDGView::handle_request_fullscreen(struct wl_listener* listener, void* data)
+XDGView::handle_request_fullscreen(struct wl_listener* listener, void*)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_fullscreen);
+    struct wlr_xdg_toplevel* xdg_toplevel = view->mp_wlr_xdg_toplevel;
+
+    view->mp_model->set_fullscreen_view(
+        xdg_toplevel->requested.fullscreen
+            ? Toggle::On
+            : Toggle::Off,
+        view
+    );
 }
 
 void

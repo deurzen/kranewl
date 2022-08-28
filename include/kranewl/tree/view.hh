@@ -69,7 +69,7 @@ typedef struct View : public Node {
 
     virtual void focus(Toggle) = 0;
     virtual void activate(Toggle) = 0;
-    virtual void set_fullscreen(Toggle) = 0;
+    virtual void effectuate_fullscreen(bool) = 0;
 
     virtual void configure(Region const&, Extents const&, bool) = 0;
     virtual void close() = 0;
