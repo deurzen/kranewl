@@ -108,9 +108,9 @@ public:
     void toggle_track();
     bool cycle_track(Direction);
 
-    void add_view_to_track(View_ptr, SceneLayer);
+    void add_view_to_track(View_ptr, SceneLayer, bool = false);
     void remove_view_from_track(View_ptr, SceneLayer);
-    void change_view_track(View_ptr, SceneLayer);
+    void change_view_track(View_ptr, SceneLayer, bool = false);
 
     Cycle<View_ptr> const& views() const;
     std::vector<View_ptr> stack_after_focus() const;

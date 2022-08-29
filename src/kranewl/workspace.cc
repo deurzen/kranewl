@@ -229,7 +229,7 @@ Workspace::cycle_track(Direction direction)
 }
 
 void
-Workspace::add_view_to_track(View_ptr view, SceneLayer layer)
+Workspace::add_view_to_track(View_ptr view, SceneLayer layer, bool shift_focus)
 {
     TRACE();
 
@@ -238,10 +238,10 @@ Workspace::add_view_to_track(View_ptr view, SceneLayer layer)
 
     m_tracks[layer]->insert_at_back(view);
 
-    if (m_tracks[m_track_layer]->empty())
+    if (shift_focus || m_tracks[m_track_layer]->empty())
         m_track_layer = layer;
 
-    if (layer == m_track_layer)
+    if (shift_focus || layer == m_track_layer)
         mp_active = view;
 }
 
@@ -263,15 +263,21 @@ Workspace::remove_view_from_track(View_ptr view, SceneLayer layer)
 }
 
 void
-Workspace::change_view_track(View_ptr view, SceneLayer layer)
+Workspace::change_view_track(View_ptr view, SceneLayer layer, bool shift_focus)
 {
     TRACE();
 
-    if (view->scene_layer() == layer)
+    if (view->scene_layer() == layer) {
+        if (shift_focus) {
+            m_track_layer = layer;
+            mp_active = view;
+        }
+
         return;
+    }
 
     remove_view_from_track(view, view->scene_layer());
-    add_view_to_track(view, layer);
+    add_view_to_track(view, layer, shift_focus);
 }
 
 

@@ -113,7 +113,7 @@ public:
     void relayer_views(Workspace_ptr);
     void relayer_views(Context_ptr);
     void relayer_views(Output_ptr);
-    void move_view_to_track(View_ptr, SceneLayer);
+    void move_view_to_track(View_ptr, SceneLayer, bool = false);
 
     void reverse_views();
     void rotate_views(Direction);

@@ -604,11 +604,11 @@ Model::relayer_views(Output_ptr output)
 }
 
 void
-Model::move_view_to_track(View_ptr view, SceneLayer layer)
+Model::move_view_to_track(View_ptr view, SceneLayer layer, bool shift_focus)
 {
     TRACE();
 
-    view->mp_workspace->change_view_track(view, layer);
+    view->mp_workspace->change_view_track(view, layer, shift_focus);
     view->relayer(layer);
 }
 
@@ -2177,7 +2177,7 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
     if (rules.do_fullscreen)
         set_fullscreen_view(*rules.do_fullscreen ? Toggle::On : Toggle::Off, view);
 
-    move_view_to_track(view, view->scene_layer());
+    move_view_to_track(view, view->scene_layer(), true);
 }
 
 XDGView_ptr
