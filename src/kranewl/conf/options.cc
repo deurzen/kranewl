@@ -126,14 +126,14 @@ parse_options(int argc, char** argv) noexcept
             break;
 
         case 'v':
-            std::cout << VERSION << std::endl << std::flush;
+            std::cout << VERSION << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
 
         case '?':
         case 'h':
         default:
-            std::cout << USAGE << std::endl << std::flush;
+            std::cout << USAGE << std::endl;
             std::exit(EXIT_SUCCESS);
             break;
         }
