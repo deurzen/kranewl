@@ -144,7 +144,7 @@ add_executable(kranec
 )
 
 pkg_check_modules(spdlog REQUIRED IMPORTED_TARGET spdlog)
-pkg_check_modules(lua REQUIRED IMPORTED_TARGET lua54)
+pkg_check_modules(lua REQUIRED IMPORTED_TARGET lua5.4)
 pkg_check_modules(cairo REQUIRED IMPORTED_TARGET cairo)
 pkg_check_modules(pangocairo REQUIRED IMPORTED_TARGET pangocairo)
 pkg_check_modules(wayland_server REQUIRED IMPORTED_TARGET wayland-server)
