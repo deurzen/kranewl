@@ -2,12 +2,13 @@
 
 #include <kranewl/common.hh>
 
+#include <algorithm>
 #include <cstdlib>
 #include <deque>
-#include <vector>
 #include <optional>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 enum class StackAction {
     Insert,

@@ -8,6 +8,8 @@
 #include <kranewl/scene-layer.hh>
 #include <kranewl/util.hh>
 
+#include <array>
+
 typedef struct View* View_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
