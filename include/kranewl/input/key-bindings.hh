@@ -228,13 +228,13 @@ static const KeyBindings key_bindings = {
     .repeatable = true
   }
 },
-{ { XKB_KEY_j, MODKEY | SECKEY },
+{ { XKB_KEY_j, MODKEY | WLR_MODIFIER_SHIFT },
   {
     .action = CALL(cycle_focus(Direction::Forward)),
     .repeatable = true
   }
 },
-{ { XKB_KEY_k, MODKEY | SECKEY },
+{ { XKB_KEY_k, MODKEY | WLR_MODIFIER_SHIFT },
   {
     .action = CALL(cycle_focus(Direction::Backward)),
     .repeatable = true
@@ -1064,31 +1064,31 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_XF86AudioMute, {} },
   {
-    .action = CALL_EXTERNAL(amixer -D pulse sset Master toggle),
+    .action = CALL_EXTERNAL(pactl set-sink-mute @DEFAULT_SINK@ toggle),
     .repeatable = false
   }
 },
 { { XKB_KEY_XF86AudioLowerVolume, {} },
   {
-    .action = CALL_EXTERNAL(amixer -D pulse sset Master 5%-),
+    .action = CALL_EXTERNAL(pactl set-sink-volume @DEFAULT_SINK@ -5%),
     .repeatable = true
   }
 },
 { { XKB_KEY_XF86AudioRaiseVolume, {} },
   {
-    .action = CALL_EXTERNAL(amixer -D pulse sset Master 5%+),
+    .action = CALL_EXTERNAL(pactl set-sink-volume @DEFAULT_SINK@ -5%),
     .repeatable = true
   }
 },
 { { XKB_KEY_XF86AudioMute, WLR_MODIFIER_SHIFT },
   {
-    .action = CALL_EXTERNAL(amixer -D pulse sset Capture toggle),
+    .action = CALL_EXTERNAL(pactl set-source-mute @DEFAULT_SOURCE@ toggle),
     .repeatable = false
   }
 },
 { { XKB_KEY_XF86AudioMicMute, {} },
   {
-    .action = CALL_EXTERNAL(amixer -D pulse sset Capture toggle),
+    .action = CALL_EXTERNAL(pactl set-source-mute @DEFAULT_SOURCE@ toggle),
     .repeatable = false
   }
 },
