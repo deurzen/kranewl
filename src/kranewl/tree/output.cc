@@ -40,7 +40,6 @@ Output::Output(
       mp_seat(seat),
       m_modes({wlr_output->pending.mode}),
       mp_current_mode(wlr_output->pending.mode),
-      m_enabled(true),
       m_dirty(true),
       m_cursor_focus_on_present(false),
       m_layer_map{
@@ -52,17 +51,13 @@ Output::Output(
       mp_wlr_output(wlr_output),
       mp_wlr_scene_output(wlr_scene_output),
       ml_frame({ .notify = Output::handle_frame }),
-      ml_commit({ .notify = Output::handle_commit }),
       ml_present({ .notify = Output::handle_present }),
-      ml_mode({ .notify = Output::handle_mode }),
       ml_destroy({ .notify = Output::handle_destroy })
 {
     TRACE();
 
     wl_signal_add(&mp_wlr_output->events.frame, &ml_frame);
-    wl_signal_add(&mp_wlr_output->events.commit, &ml_commit);
     wl_signal_add(&mp_wlr_output->events.present, &ml_present);
-    wl_signal_add(&mp_wlr_output->events.mode, &ml_mode);
     wl_signal_add(&mp_wlr_output->events.destroy, &ml_destroy);
 
     wl_signal_init(&m_events.disable);
@@ -78,19 +73,15 @@ Output::handle_frame(struct wl_listener* listener, void*)
 
     Output_ptr output = wl_container_of(listener, output, ml_frame);
 
+    // TODO: only rerender if no XDG views have an outstanding resize
+    //       and are visible on this monitor
+
     if (!wlr_scene_output_commit(output->mp_wlr_scene_output))
         return;
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     wlr_scene_output_send_frame_done(output->mp_wlr_scene_output, &now);
-}
-
-void
-Output::handle_commit(struct wl_listener*, void*)
-{
-    TRACE();
-
 }
 
 void
@@ -117,13 +108,6 @@ Output::handle_present(struct wl_listener* listener, void*)
 }
 
 void
-Output::handle_mode(struct wl_listener*, void*)
-{
-    TRACE();
-
-}
-
-void
 Output::handle_destroy(struct wl_listener*, void* data)
 {
     TRACE();
@@ -141,11 +125,11 @@ Output::handle_destroy(struct wl_listener*, void* data)
     wl_list_remove(&output->ml_frame.link);
     wl_list_remove(&output->ml_destroy.link);
     wl_list_remove(&output->ml_present.link);
-    wl_list_remove(&output->ml_mode.link);
-    wl_list_remove(&output->ml_commit.link);
 
-    wlr_scene_output_destroy(output->mp_wlr_scene_output);
+    output->mp_wlr_output->data = nullptr;
+
     wlr_output_layout_remove(output->mp_server->mp_output_layout, output->mp_wlr_output);
+    wlr_scene_output_destroy(output->mp_wlr_scene_output);
 
     for (SceneLayer scene_layer : scene_layers) {
         for (Layer_ptr layer : output->m_layer_map.at(scene_layer)) {
@@ -164,8 +148,10 @@ Output::set_context(Context_ptr context)
 {
     TRACE();
 
-    if (!context)
+    if (!context) {
         spdlog::error("Output must contain a valid context");
+        return;
+    }
 
     if (mp_context)
         mp_context->set_output(nullptr);
@@ -186,6 +172,12 @@ Output::workspace() const
     return mp_context->workspace();
 }
 
+bool
+Output::enabled() const
+{
+    return mp_wlr_output && mp_wlr_output->enabled;
+}
+
 Region
 Output::full_region() const
 {
@@ -196,6 +188,12 @@ Region
 Output::placeable_region() const
 {
     return m_placeable_region;
+}
+
+void
+Output::set_full_region(Region const& region)
+{
+    m_full_region = region;
 }
 
 void
@@ -256,6 +254,41 @@ Output::relayer_layer(Layer_ptr layer, SceneLayer old_layer, SceneLayer new_laye
     Util::erase_remove(m_layer_map.at(old_layer), layer);
     m_layer_map[new_layer].push_back(layer);
     layer->m_scene_layer = new_layer;
+}
+
+void
+Output::migrate_layers_to_output(Output_ptr output)
+{
+    TRACE();
+
+    static const std::vector<SceneLayer> scene_layers = {
+        SCENE_LAYER_BACKGROUND,
+        SCENE_LAYER_BOTTOM,
+        SCENE_LAYER_TOP,
+        SCENE_LAYER_OVERLAY,
+    };
+
+    for (SceneLayer scene_layer : scene_layers) {
+        for (Layer_ptr layer : m_layer_map.at(scene_layer)) {
+            output->add_layer(layer);
+        }
+
+        m_layer_map.at(scene_layer).clear();
+    }
+}
+
+void
+Output::activate() const
+{
+    TRACE();
+    wlr_output_enable(mp_wlr_output, true);
+}
+
+void
+Output::deactivate() const
+{
+    TRACE();
+    wlr_output_enable(mp_wlr_output, false);
 }
 
 static inline void

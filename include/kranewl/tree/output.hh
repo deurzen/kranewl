@@ -34,17 +34,17 @@ public:
     ~Output();
 
     static void handle_frame(struct wl_listener*, void*);
-    static void handle_commit(struct wl_listener*, void*);
     static void handle_present(struct wl_listener*, void*);
-    static void handle_mode(struct wl_listener*, void*);
     static void handle_destroy(struct wl_listener*, void*);
 
     void set_context(Context_ptr);
     Context_ptr context() const;
     Workspace_ptr workspace() const;
 
+    bool enabled() const;
     Region full_region() const;
     Region placeable_region() const;
+    void set_full_region(Region const&);
     void set_placeable_region(Region const&);
 
     void place_at_center(Region&) const;
@@ -57,6 +57,11 @@ public:
     void add_layer(Layer_ptr);
     void remove_layer(Layer_ptr);
     void relayer_layer(Layer_ptr, SceneLayer, SceneLayer);
+
+    void migrate_layers_to_output(Output_ptr);
+
+    void activate() const;
+    void deactivate() const;
 
     void arrange_layers();
 
@@ -77,16 +82,13 @@ public:
     std::vector<struct wlr_output_mode*> m_modes;
     struct wlr_output_mode* mp_current_mode;
 
-    bool m_enabled;
     bool m_dirty;
 
-    struct wlr_output* mp_wlr_output;
-    struct wlr_scene_output* mp_wlr_scene_output;
+    struct wlr_output* mp_wlr_output = nullptr;
+    struct wlr_scene_output* mp_wlr_scene_output = nullptr;
 
     struct wl_listener ml_frame;
-    struct wl_listener ml_commit;
     struct wl_listener ml_present;
-    struct wl_listener ml_mode;
     struct wl_listener ml_destroy;
 
     struct {

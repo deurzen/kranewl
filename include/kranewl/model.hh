@@ -62,6 +62,7 @@ public:
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
     void output_reserve_context(Output_ptr);
+    void update_outputs();
 
     XDGView_ptr create_xdg_shell_view(struct wlr_xdg_surface*, Seat_ptr);
 #ifdef XWAYLAND

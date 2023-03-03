@@ -252,6 +252,10 @@ Model::unregister_output(Output_ptr output)
 {
     TRACE();
 
+    Context_ptr context = output->context();
+    if (context)
+        context->set_output(nullptr);
+
     m_outputs.remove_element(output);
     delete output;
 
@@ -282,6 +286,18 @@ Model::output_reserve_context(Output_ptr output)
             " output {} will not house any workspaces",
             output->mp_wlr_output->name
         );
+}
+
+void
+Model::update_outputs()
+{
+    for (Output_ptr output : m_outputs) {
+        output->arrange_layers();
+
+        Workspace_ptr workspace = output->workspace();
+        if (workspace)
+            apply_layout(workspace);
+    }
 }
 
 void

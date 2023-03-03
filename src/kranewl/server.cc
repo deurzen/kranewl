@@ -355,7 +355,7 @@ update_output_manager_config(Server_ptr server, Model_ptr model)
         struct wlr_box output_box
             = *wlr_output_layout_get_box(server->mp_output_layout, output->mp_wlr_output);
 
-        config_head->state.enabled = output->mp_current_mode && output->m_enabled;
+        config_head->state.enabled = output->mp_current_mode && output->enabled();
         config_head->state.mode = output->mp_current_mode;
 
         if (!wlr_box_empty(&output_box)) {
@@ -397,12 +397,17 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
 
     if (!wl_list_empty(&wlr_output->modes)) {
         wlr_output_set_mode(wlr_output, wlr_output_preferred_mode(wlr_output));
-        wlr_output_enable_adaptive_sync(wlr_output, true);
         wlr_output_enable(wlr_output, true);
 
         if (!wlr_output_commit(wlr_output))
             return;
+
+        wlr_output_enable_adaptive_sync(wlr_output, false);
+        wlr_output_commit(wlr_output);
     }
+
+    struct wlr_scene_output* wlr_scene_output
+        = wlr_scene_output_create(server->mp_scene, wlr_output);
 
     wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
     struct wlr_box output_box
@@ -410,7 +415,7 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
 
     Output_ptr output = server->mp_model->create_output(
         wlr_output,
-        wlr_scene_output_create(server->mp_scene, wlr_output),
+        wlr_scene_output,
         Region{
             .pos = Pos{
                 .x = output_box.x,
@@ -428,24 +433,169 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
 }
 
 void
-Server::handle_output_layout_change(struct wl_listener*, void*)
+Server::propagate_output_layout_change(Server_ptr server)
 {
     TRACE();
 
+	struct wlr_output_configuration_v1* config = wlr_output_configuration_v1_create();
+	struct wlr_output_configuration_head_v1* config_head;
+
+    if (!server || !server->mp_model)
+        return;
+
+    for (Output_ptr output : server->mp_model->outputs()) {
+        if (output->enabled())
+            continue;
+
+        config_head
+            = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
+        config_head->state.enabled = false;
+
+        wlr_output_layout_remove(server->mp_output_layout, output->mp_wlr_output);
+        // TODO: move views of deactivated outputs to active output
+    }
+
+    for (Output_ptr output : server->mp_model->outputs())
+        if (output->enabled()
+            && !wlr_output_layout_get(server->mp_output_layout, output->mp_wlr_output))
+        {
+            wlr_output_layout_add_auto(server->mp_output_layout, output->mp_wlr_output);
+        }
+
+    for (Output_ptr output : server->mp_model->outputs()) {
+        if (!output->enabled())
+            continue;
+
+        config_head
+            = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
+
+        struct wlr_box output_box
+            = *wlr_output_layout_get_box(server->mp_output_layout, output->mp_wlr_output);
+
+        output->set_full_region(Region{
+            .pos = Pos{
+                .x = output_box.x,
+                .y = output_box.y
+            },
+            .dim = Dim{
+                .w = output_box.width,
+                .h = output_box.height
+            }
+        });
+        output->arrange_layers();
+
+        Region const& region = output->full_region();
+        wlr_scene_output_set_position(
+            output->mp_wlr_scene_output,
+            region.pos.x,
+            region.pos.y
+        );
+
+        Workspace_ptr workspace = output->workspace();
+        if (workspace)
+            server->mp_model->apply_layout(workspace);
+
+        config_head->state.enabled = true;
+        config_head->state.mode = output->mp_wlr_output->current_mode;
+        config_head->state.x = region.pos.x;
+        config_head->state.y = region.pos.y;
+    }
+
+	wlr_output_manager_v1_set_configuration(server->mp_output_manager, config);
 }
 
 void
-Server::handle_output_manager_apply(struct wl_listener*, void*)
+Server::handle_output_layout_change(struct wl_listener* listener, void* data)
 {
     TRACE();
-
+    Server_ptr server = wl_container_of(listener, server, ml_output_layout_change);
+    propagate_output_layout_change(server);
 }
 
 void
-Server::handle_output_manager_test(struct wl_listener*, void*)
+Server::handle_output_manager_apply_or_test(
+    Server_ptr server,
+    struct wlr_output_configuration_v1* config,
+    bool test
+)
 {
     TRACE();
 
+    struct wlr_output_configuration_head_v1* config_head;
+    bool configuration_succeeded = true;
+
+    wl_list_for_each(config_head, &config->heads, link) {
+        struct wlr_output* wlr_output = config_head->state.output;
+        Output_ptr output = reinterpret_cast<Output_ptr>(wlr_output->data);
+
+        wlr_output_enable(wlr_output, config_head->state.enabled);
+        if (config_head->state.enabled) {
+            if (config_head->state.mode)
+                wlr_output_set_mode(wlr_output, config_head->state.mode);
+            else
+                wlr_output_set_custom_mode(
+                    wlr_output,
+                    config_head->state.custom_mode.width,
+                    config_head->state.custom_mode.height,
+                    config_head->state.custom_mode.refresh
+                );
+
+            Region const& region = output->full_region();
+            if (region.pos.x != config_head->state.x
+                || region.pos.y != config_head->state.y)
+            {
+                wlr_output_layout_move(
+                    server->mp_output_layout,
+                    wlr_output,
+                    config_head->state.x,
+                    config_head->state.y
+                );
+            }
+
+            wlr_output_set_transform(wlr_output, config_head->state.transform);
+            wlr_output_set_scale(wlr_output, config_head->state.scale);
+            wlr_output_enable_adaptive_sync(wlr_output, true);
+        }
+
+        if (test) {
+            configuration_succeeded &= wlr_output_test(wlr_output);
+            wlr_output_rollback(wlr_output);
+        } else {
+            configuration_succeeded &= wlr_output_commit(wlr_output);
+        }
+    }
+
+    if (configuration_succeeded)
+        wlr_output_configuration_v1_send_succeeded(config);
+    else
+        wlr_output_configuration_v1_send_failed(config);
+
+    wlr_output_configuration_v1_destroy(config);
+    Server::propagate_output_layout_change(server);
+}
+
+void
+Server::handle_output_manager_apply(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
+    Server_ptr server = wl_container_of(listener, server, ml_output_manager_apply);
+    struct wlr_output_configuration_v1* config
+        = reinterpret_cast<struct wlr_output_configuration_v1*>(data);
+
+    Server::handle_output_manager_apply_or_test(server, config, false);
+}
+
+void
+Server::handle_output_manager_test(struct wl_listener* listener, void* data)
+{
+    TRACE();
+
+    Server_ptr server = wl_container_of(listener, server, ml_output_manager_test);
+    struct wlr_output_configuration_v1* config
+        = reinterpret_cast<struct wlr_output_configuration_v1*>(data);
+
+    Server::handle_output_manager_apply_or_test(server, config, true);
 }
 
 static inline XDGView_ptr
