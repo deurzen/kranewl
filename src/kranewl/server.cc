@@ -26,6 +26,7 @@ extern "C" {
 #include <wayland-util.h>
 #include <wlr/backend.h>
 #include <wlr/backend/headless.h>
+#include <wlr/backend/libinput.h>
 #include <wlr/backend/multi.h>
 #include <wlr/backend/session.h>
 #include <wlr/render/allocator.h>
@@ -730,6 +731,20 @@ create_keyboard(Server_ptr server, struct wlr_input_device* device)
 }
 
 void
+Server::configure_libinput(struct wlr_input_device* device)
+{
+    if (wlr_input_device_is_libinput(device)) {
+        struct libinput_device* libinput_device
+            = wlr_libinput_get_device_handle(device);
+
+        libinput_device_config_tap_set_enabled(
+            libinput_device,
+            LIBINPUT_CONFIG_TAP_ENABLED
+        );
+    }
+}
+
+void
 Server::handle_new_input(struct wl_listener* listener, void* data)
 {
     TRACE();
@@ -761,6 +776,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
         caps |= WL_SEAT_CAPABILITY_KEYBOARD;
 
     wlr_seat_set_capabilities(server->mp_seat->mp_wlr_seat, caps);
+    configure_libinput(device);
 }
 
 void

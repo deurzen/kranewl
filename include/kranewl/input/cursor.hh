@@ -77,20 +77,21 @@ typedef struct Cursor {
 
     void process_cursor_motion(uint32_t time);
 
-    void hide();
-    void unhide();
-
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
     static void handle_cursor_button(struct wl_listener*, void*);
     static void handle_cursor_axis(struct wl_listener*, void*);
     static void handle_cursor_frame(struct wl_listener*, void*);
+    static void handle_cursor_pinch_begin(struct wl_listener*, void*);
+    static void handle_cursor_pinch_update(struct wl_listener*, void*);
+    static void handle_cursor_pinch_end(struct wl_listener*, void*);
+    static void handle_cursor_swipe_begin(struct wl_listener*, void*);
+    static void handle_cursor_swipe_update(struct wl_listener*, void*);
+    static void handle_cursor_swipe_end(struct wl_listener*, void*);
     static void handle_request_start_drag(struct wl_listener*, void*);
     static void handle_start_drag(struct wl_listener*, void*);
     static void handle_destroy_drag(struct wl_listener*, void*);
     static void handle_request_set_cursor(struct wl_listener*, void*);
-
-    static int handle_cursor_hide(void*);
 
     Server_ptr mp_server;
     Model_ptr mp_model;
@@ -98,6 +99,8 @@ typedef struct Cursor {
 
     struct wlr_cursor* mp_wlr_cursor;
     struct wlr_xcursor_manager* mp_cursor_manager;
+
+    struct wlr_pointer_gestures_v1* mp_pointer_gestures;
 
     Mode m_cursor_mode;
     struct {
@@ -107,14 +110,17 @@ typedef struct Cursor {
         uint32_t edges;
     } m_grab_state;
 
-    bool mp_hidden;
-    struct wl_event_source* mp_cursor_hide_timer;
-
     struct wl_listener ml_cursor_motion;
     struct wl_listener ml_cursor_motion_absolute;
     struct wl_listener ml_cursor_button;
     struct wl_listener ml_cursor_axis;
     struct wl_listener ml_cursor_frame;
+    struct wl_listener ml_cursor_pinch_begin;
+    struct wl_listener ml_cursor_pinch_update;
+    struct wl_listener ml_cursor_pinch_end;
+    struct wl_listener ml_cursor_swipe_begin;
+    struct wl_listener ml_cursor_swipe_update;
+    struct wl_listener ml_cursor_swipe_end;
     struct wl_listener ml_request_start_drag;
     struct wl_listener ml_start_drag;
     struct wl_listener ml_destroy_drag;

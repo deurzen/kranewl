@@ -48,6 +48,7 @@ private:
     static void handle_drm_lease_request(struct wl_listener*, void*);
 
     static void propagate_output_layout_change(Server_ptr);
+    static void configure_libinput(struct wlr_input_device*);
 
     Model_ptr mp_model = nullptr;
 
