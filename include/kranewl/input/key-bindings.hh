@@ -1076,7 +1076,19 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_XF86AudioRaiseVolume, {} },
   {
+    .action = CALL_EXTERNAL(pactl set-sink-volume @DEFAULT_SINK@ +5%),
+    .repeatable = true
+  }
+},
+{ {  XKB_KEY_less, MODKEY | SECKEY },
+  {
     .action = CALL_EXTERNAL(pactl set-sink-volume @DEFAULT_SINK@ -5%),
+    .repeatable = true
+  }
+},
+{ {  XKB_KEY_greater, MODKEY | SECKEY },
+  {
+    .action = CALL_EXTERNAL(pactl set-sink-volume @DEFAULT_SINK@ +5%),
     .repeatable = true
   }
 },
@@ -1090,6 +1102,18 @@ static const KeyBindings key_bindings = {
   {
     .action = CALL_EXTERNAL(pactl set-source-mute @DEFAULT_SOURCE@ toggle),
     .repeatable = false
+  }
+},
+{ { XKB_KEY_XF86MonBrightnessDown, {} },
+  {
+    .action = CALL_EXTERNAL(brightnessctl set 5%-),
+    .repeatable = true
+  }
+},
+{ { XKB_KEY_XF86MonBrightnessUp, {} },
+  {
+    .action = CALL_EXTERNAL(brightnessctl set +5%),
+    .repeatable = true
   }
 },
 { { XKB_KEY_space, WLR_MODIFIER_CTRL },
