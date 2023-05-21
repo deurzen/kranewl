@@ -538,6 +538,8 @@ Workspace::remove_view(View_ptr view)
 {
     TRACE();
 
+    m_iconified_views.remove_element(view);
+    m_disowned_views.remove_element(view);
     m_views.remove_element(view);
     remove_view_from_track(view, view->scene_layer());
 }
@@ -563,10 +565,11 @@ Workspace::view_to_icon(View_ptr view)
 {
     TRACE();
 
-    if (m_views.remove_element(view))
-        m_iconified_views.insert_at_back(view);
+    if (m_iconified_views.contains(view))
+        return;
 
-    mp_active = m_views.active_element().value_or(nullptr);
+    remove_view(view);
+    m_iconified_views.insert_at_back(view);
 }
 
 void
@@ -574,10 +577,11 @@ Workspace::icon_to_view(View_ptr view)
 {
     TRACE();
 
-    if (m_iconified_views.remove_element(view))
-        m_views.insert_at_back(view);
+    if (!m_iconified_views.contains(view))
+        return;
 
-    mp_active = m_views.active_element().value_or(nullptr);
+    m_iconified_views.remove_element(view);
+    add_view(view);
 }
 
 void

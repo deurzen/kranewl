@@ -66,24 +66,24 @@ static const KeyBindings key_bindings = {
     .repeatable = false
   }
 },
-/* { { XKB_KEY_y, MODKEY }, */
-/*   { */
-/*     .action = CALL(set_iconify_focus(Toggle::Reverse)), */
-/*     .repeatable = false */
-/*   } */
-/* }, */
-/* { { XKB_KEY_u, MODKEY }, */
-/*   { */
-/*     .action = CALL(pop_deiconify()), */
-/*     .repeatable = false */
-/*   } */
-/* }, */
-/* { { XKB_KEY_u, MODKEY | SECKEY }, */
-/*   { */
-/*     .action = CALL(deiconify_all()), */
-/*     .repeatable = false */
-/*   } */
-/* }, */
+{ { XKB_KEY_y, MODKEY },
+  {
+    .action = CALL(set_iconify_focus(Toggle::Reverse)),
+    .repeatable = false
+  }
+},
+{ { XKB_KEY_u, MODKEY },
+  {
+    .action = CALL(pop_deiconify()),
+    .repeatable = false
+  }
+},
+{ { XKB_KEY_u, MODKEY | SECKEY },
+  {
+    .action = CALL(deiconify_all()),
+    .repeatable = false
+  }
+},
 
 // view arrangers
 { { XKB_KEY_space, MODKEY | WLR_MODIFIER_CTRL },
