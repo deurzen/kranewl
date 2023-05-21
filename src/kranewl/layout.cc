@@ -356,9 +356,9 @@ LayoutHandler::change_main_factor(Util::Change<float> change)
 void
 LayoutHandler::change_margin(Util::Change<int> change)
 {
-    change_margin(Edge::Left, change);
+    change_margin(Edge::Left, 1.5f * change);
     change_margin(Edge::Top, change);
-    change_margin(Edge::Right, change);
+    change_margin(Edge::Right, 1.5f * change);
     change_margin(Edge::Bottom, change);
 }
 
