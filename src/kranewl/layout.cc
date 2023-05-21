@@ -1512,7 +1512,7 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
             Placement::PlacementMethod::Tile,
             Decoration{
                 Frame{
-                    Extents{1, 1, 0, 0}
+                    Extents{3, 3, 0, 0}
                 },
                 DEFAULT_COLOR_SCHEME
             },
@@ -1529,7 +1529,7 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
             Placement::PlacementMethod::Tile,
             Decoration{
                 Frame{
-                    Extents{1, 1, 0, 0}
+                    Extents{3, 3, 0, 0}
                 },
                 DEFAULT_COLOR_SCHEME
             },
@@ -1546,7 +1546,7 @@ LayoutHandler::Layout::kind_to_config(LayoutKind kind)
             Placement::PlacementMethod::Tile,
             Decoration{
                 Frame{
-                    Extents{1, 1, 0, 0}
+                    Extents{3, 3, 0, 0}
                 },
                 DEFAULT_COLOR_SCHEME
             },
