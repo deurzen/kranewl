@@ -77,6 +77,9 @@ typedef struct Cursor {
 
     void process_cursor_motion(uint32_t time);
 
+    void hide();
+    void unhide();
+
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
     static void handle_cursor_button(struct wl_listener*, void*);
@@ -86,6 +89,8 @@ typedef struct Cursor {
     static void handle_start_drag(struct wl_listener*, void*);
     static void handle_destroy_drag(struct wl_listener*, void*);
     static void handle_request_set_cursor(struct wl_listener*, void*);
+
+    static int handle_cursor_hide(void*);
 
     Server_ptr mp_server;
     Model_ptr mp_model;
@@ -101,6 +106,9 @@ typedef struct Cursor {
         Region region;
         uint32_t edges;
     } m_grab_state;
+
+    bool mp_hidden;
+    struct wl_event_source* mp_cursor_hide_timer;
 
     struct wl_listener ml_cursor_motion;
     struct wl_listener ml_cursor_motion_absolute;

@@ -40,6 +40,12 @@ Cursor::Cursor(
       mp_seat(seat),
       mp_wlr_cursor(cursor),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
+      mp_hidden(false),
+      mp_cursor_hide_timer(wl_event_loop_add_timer(
+          server->mp_event_loop,
+          handle_cursor_hide,
+          this
+      )),
       ml_cursor_motion({ .notify = Cursor::handle_cursor_motion }),
       ml_cursor_motion_absolute({ .notify = Cursor::handle_cursor_motion_absolute }),
       ml_cursor_button({ .notify = Cursor::handle_cursor_button }),
@@ -62,10 +68,17 @@ Cursor::Cursor(
     wl_signal_add(&mp_seat->mp_wlr_seat->events.request_start_drag, &ml_request_start_drag);
     wl_signal_add(&mp_seat->mp_wlr_seat->events.start_drag, &ml_start_drag);
     wl_signal_add(&mp_seat->mp_wlr_seat->events.request_set_cursor, &ml_request_set_cursor);
+
+    if (wl_event_source_timer_update(mp_cursor_hide_timer, 5000) < 0)
+        spdlog::error("Could not update cursor hide timer");
 }
 
 Cursor::~Cursor()
-{}
+{
+    wlr_xcursor_manager_destroy(mp_cursor_manager);
+    wl_event_source_remove(mp_cursor_hide_timer);
+    wlr_cursor_destroy(mp_wlr_cursor);
+}
 
 static inline Node_ptr
 node_at(
@@ -422,6 +435,8 @@ Cursor::process_cursor_motion(uint32_t time)
             mp_wlr_cursor->y + icon->surface->sy
         );
 
+    unhide();
+
     switch (m_cursor_mode) {
     case Cursor::Mode::Move:   process_cursor_move(this, time);   return;
     case Cursor::Mode::Resize: process_cursor_resize(this, time); return;
@@ -529,6 +544,41 @@ process_cursorbinding(Cursor_ptr cursor, View_ptr view, uint32_t button, uint32_
 }
 
 void
+Cursor::hide()
+{
+    mp_hidden = true;
+
+    wlr_cursor_set_image(
+        mp_wlr_cursor,
+        nullptr,
+        0, 0, 0, 0, 0, 0
+    );
+
+    wlr_seat_pointer_notify_clear_focus(mp_seat->mp_wlr_seat);
+
+    if (wl_event_source_timer_update(mp_cursor_hide_timer, 0) < 0)
+        spdlog::error("Could not update cursor hide timer");
+}
+
+void
+Cursor::unhide()
+{
+    if (wl_event_source_timer_update(mp_cursor_hide_timer, 5000) < 0)
+        spdlog::error("Could not update cursor hide timer");
+
+    if (!mp_hidden)
+        return;
+
+    mp_hidden = false;
+
+    wlr_xcursor_manager_set_cursor_image(
+        mp_cursor_manager,
+        "left_ptr",
+        mp_wlr_cursor
+    );
+}
+
+void
 Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
 {
     TRACE();
@@ -537,6 +587,7 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
     struct wlr_event_pointer_button* event
         = reinterpret_cast<struct wlr_event_pointer_button*>(data);
 
+    cursor->unhide();
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
         cursor->mp_seat->mp_wlr_seat
@@ -600,6 +651,8 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
     Seat_ptr seat = cursor->mp_seat;
     struct wlr_event_pointer_axis* event
         = reinterpret_cast<struct wlr_event_pointer_axis*>(data);
+
+    cursor->unhide();
 
     struct wlr_keyboard* keyboard
         = wlr_seat_get_keyboard(seat->mp_wlr_seat);
@@ -728,4 +781,12 @@ Cursor::handle_request_set_cursor(struct wl_listener* listener, void* data)
             event->hotspot_x,
             event->hotspot_y
         );
+}
+
+int
+Cursor::handle_cursor_hide(void* data)
+{
+    Cursor_ptr cursor = reinterpret_cast<Cursor_ptr>(data);
+    cursor->hide();
+    return 0;
 }
