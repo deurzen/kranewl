@@ -457,6 +457,12 @@ View::render_decoration()
             );
 }
 
+void
+View::render_cycle_indicator()
+{
+
+}
+
 static uint32_t
 extents_to_wlr_edges(Extents const& extents)
 {
@@ -522,6 +528,34 @@ View::set_tile_decoration(Decoration const& decoration)
 {
     m_tile_decoration = decoration;
     m_active_decoration = decoration;
+}
+
+void
+View::indicate_as_next()
+{
+    wlr_scene_node_set_enabled(&m_next_indicator[0]->node, true);
+    wlr_scene_node_set_enabled(&m_next_indicator[1]->node, true);
+}
+
+void
+View::unindicate_as_next()
+{
+    wlr_scene_node_set_enabled(&m_next_indicator[0]->node, false);
+    wlr_scene_node_set_enabled(&m_next_indicator[1]->node, false);
+}
+
+void
+View::indicate_as_prev()
+{
+    wlr_scene_node_set_enabled(&m_prev_indicator[0]->node, true);
+    wlr_scene_node_set_enabled(&m_prev_indicator[1]->node, true);
+}
+
+void
+View::unindicate_as_prev()
+{
+    wlr_scene_node_set_enabled(&m_prev_indicator[0]->node, false);
+    wlr_scene_node_set_enabled(&m_prev_indicator[1]->node, false);
 }
 
 void

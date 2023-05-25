@@ -56,6 +56,8 @@ Model::Model(Config const& config)
       m_sticky_views{},
       mp_focus(nullptr),
       mp_jumped_from(nullptr),
+      mp_next_view(nullptr),
+      mp_prev_view(nullptr),
       m_key_bindings(Bindings::key_bindings),
       m_cursor_bindings(Bindings::cursor_bindings)
 {
@@ -577,6 +579,31 @@ Model::sync_focus()
     } else if (mp_workspace->empty()) {
         mp_server->relinquish_focus();
         mp_focus = nullptr;
+    }
+
+    sync_indicators();
+}
+
+void
+Model::sync_indicators()
+{
+    TRACE();
+
+    View_ptr active = mp_workspace->active();
+
+    if (mp_next_view)
+        mp_next_view->unindicate_as_next();
+    if (mp_prev_view)
+        mp_prev_view->unindicate_as_prev();
+
+    mp_next_view = mp_workspace->next_view_in_track();
+    mp_prev_view = mp_workspace->prev_view_in_track();
+
+    if (mp_next_view != mp_prev_view) {
+        if (mp_next_view)
+            mp_next_view->indicate_as_next();
+        if (mp_prev_view)
+            mp_prev_view->indicate_as_prev();
     }
 }
 
@@ -1466,6 +1493,8 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
 
     if (view == mp_focus)
         view->mp_workspace->activate_track(view->scene_layer());
+
+    sync_indicators();
 }
 
 void
@@ -1543,6 +1572,7 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
     if (workspace)
         apply_layout(workspace);
 
+    sync_indicators();
 }
 
 void
@@ -1624,6 +1654,8 @@ Model::set_sticky_view(Toggle toggle, View_ptr view)
     }
     default: return;
     }
+
+    sync_indicators();
 }
 
 void
@@ -1667,6 +1699,7 @@ Model::set_contained_view(Toggle toggle, View_ptr view)
 
     Workspace_ptr workspace = view->mp_workspace;
     apply_layout(workspace);
+    sync_indicators();
 }
 
 void

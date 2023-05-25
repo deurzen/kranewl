@@ -119,6 +119,8 @@ public:
 
     View_ptr next_view() const;
     View_ptr prev_view() const;
+    View_ptr next_view_in_track() const;
+    View_ptr prev_view_in_track() const;
     std::optional<View_ptr> find_view(ViewSelector const&) const;
 
     std::pair<std::optional<View_ptr>, std::optional<View_ptr>> cycle_focus(Direction);

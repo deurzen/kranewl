@@ -38,16 +38,32 @@ struct ColorScheme final {
     RGBA udisowned;
     RGBA usticky;
     RGBA urgent;
+    RGBA nextfocus;
+    RGBA prevfocus;
 };
 
 const static ColorScheme DEFAULT_COLOR_SCHEME = ColorScheme{
-    .focused   = RGBA{0x8181A6FF},
-    .fdisowned = RGBA{0xc1c1c1FF},
-    .fsticky   = RGBA{0x5F8787FF},
-    .unfocused = RGBA{0x333333FF},
-    .udisowned = RGBA{0x999999FF},
-    .usticky   = RGBA{0x444444FF},
-    .urgent    = RGBA{0x87875FFF},
+    .focused   = RGBA{0xB294BBFF},
+    .fdisowned = RGBA{0xB294BBFF},
+    .fsticky   = RGBA{0xB294BBFF},
+    .unfocused = RGBA{0x1D1F21FF},
+    .udisowned = RGBA{0x1D1F21FF},
+    .usticky   = RGBA{0x1D1F21FF},
+    .urgent    = RGBA{0xCC6666FF},
+    .nextfocus = RGBA{0xCC6666FF},
+    .prevfocus = RGBA{0xCC6666FF},
+};
+
+const static ColorScheme DEFAULT_FREE_COLOR_SCHEME = ColorScheme{
+    .focused   = RGBA{0xB294BBFF},
+    .fdisowned = RGBA{0xB294BBFF},
+    .fsticky   = RGBA{0xB294BBFF},
+    .unfocused = RGBA{0x373B41FF},
+    .udisowned = RGBA{0x373B41FF},
+    .usticky   = RGBA{0x373B41FF},
+    .urgent    = RGBA{0xCC6666FF},
+    .nextfocus = RGBA{0xCC6666FF},
+    .prevfocus = RGBA{0xCC6666FF},
 };
 
 struct Frame final {
@@ -75,7 +91,9 @@ const Decoration NO_DECORATION = Decoration{
 
 const Decoration FREE_DECORATION = Decoration{
     Frame{
-        Extents{3, 1, 1, 1}
+        Extents{4, 3, 2, 2}
     },
-    DEFAULT_COLOR_SCHEME
+    DEFAULT_FREE_COLOR_SCHEME
 };
+
+const int CYCLE_INDICATOR_SIZE = 15;

@@ -264,6 +264,14 @@ XWaylandView::configure(Region const& region, Extents const& extents, bool inter
     wlr_scene_node_set_position(&m_protrusions[1]->node, 0, region.dim.h - extents.bottom);
     wlr_scene_node_set_position(&m_protrusions[2]->node, 0, extents.top);
     wlr_scene_node_set_position(&m_protrusions[3]->node, region.dim.w - extents.right, extents.top);
+    wlr_scene_rect_set_size(m_next_indicator[0], CYCLE_INDICATOR_SIZE, extents.top);
+    wlr_scene_rect_set_size(m_next_indicator[1], extents.left, CYCLE_INDICATOR_SIZE);
+    wlr_scene_rect_set_size(m_prev_indicator[0], CYCLE_INDICATOR_SIZE, extents.top);
+    wlr_scene_rect_set_size(m_prev_indicator[1], extents.right, CYCLE_INDICATOR_SIZE);
+    wlr_scene_node_set_position(&m_next_indicator[0]->node, 0, 0);
+    wlr_scene_node_set_position(&m_next_indicator[1]->node, 0, 0);
+    wlr_scene_node_set_position(&m_prev_indicator[0]->node, region.dim.w - CYCLE_INDICATOR_SIZE, 0);
+    wlr_scene_node_set_position(&m_prev_indicator[1]->node, region.dim.w - extents.right, 0);
 
     wlr_xwayland_surface_configure(
         mp_wlr_xwayland_surface,
@@ -347,6 +355,37 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
             ? SCENE_LAYER_FREE
             : SCENE_LAYER_TILE
     );
+
+    for (std::size_t i = 0; i < 2; ++i) {
+        view->m_next_indicator[i] = wlr_scene_rect_create(
+            view->mp_scene,
+            0, 0,
+            view->active_decoration().colorscheme.urgent.values
+        );
+        view->m_next_indicator[i]->node.data = view;
+        wlr_scene_rect_set_color(
+            view->m_next_indicator[i],
+            view->active_decoration().colorscheme.urgent.values
+        );
+        wlr_scene_node_lower_to_bottom(&view->m_next_indicator[i]->node);
+    }
+
+    for (std::size_t i = 0; i < 2; ++i) {
+        view->m_prev_indicator[i] = wlr_scene_rect_create(
+            view->mp_scene,
+            0, 0,
+            view->active_decoration().colorscheme.urgent.values
+        );
+        view->m_prev_indicator[i]->node.data = view;
+        wlr_scene_rect_set_color(
+            view->m_prev_indicator[i],
+            view->active_decoration().colorscheme.urgent.values
+        );
+        wlr_scene_node_lower_to_bottom(&view->m_prev_indicator[i]->node);
+    }
+
+    view->unindicate_as_next();
+    view->unindicate_as_prev();
 
     for (std::size_t i = 0; i < 4; ++i) {
         view->m_protrusions[i] = wlr_scene_rect_create(

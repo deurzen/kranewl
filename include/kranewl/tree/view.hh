@@ -84,6 +84,7 @@ typedef struct View : public Node {
     void lower() const;
 
     void render_decoration();
+    void render_cycle_indicator();
 
     std::string const& title() const { return m_title; }
     std::string const& title_formatted() const { return m_title_formatted; }
@@ -159,6 +160,11 @@ typedef struct View : public Node {
     void set_free_decoration(Decoration const&);
     void set_tile_decoration(Decoration const&);
 
+    void indicate_as_next();
+    void unindicate_as_next();
+    void indicate_as_prev();
+    void unindicate_as_prev();
+
     void touch() { m_last_touched = std::chrono::steady_clock::now(); }
 
     static bool
@@ -183,6 +189,8 @@ typedef struct View : public Node {
     struct wlr_scene_node* mp_scene;
     struct wlr_scene_node* mp_scene_surface;
     struct wlr_scene_rect* m_protrusions[4]; // top, bottom, left, right
+    struct wlr_scene_rect* m_next_indicator[2]; // horizontal portion, vertical portion
+    struct wlr_scene_rect* m_prev_indicator[2]; // horizontal portion, vertical portion
 
     float m_alpha;
     uint32_t m_resize;
