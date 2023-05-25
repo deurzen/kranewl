@@ -111,6 +111,8 @@ public:
     void cycle_track(Direction);
 
     void sync_focus();
+    void sync_indicators();
+
     void relayer_views(Workspace_ptr);
     void relayer_views(Context_ptr);
     void relayer_views(Output_ptr);
@@ -240,6 +242,8 @@ private:
 
     View_ptr mp_focus;
     View_ptr mp_jumped_from;
+    View_ptr mp_next_view;
+    View_ptr mp_prev_view;
 
     std::vector<std::tuple<SearchSelector_ptr, Rules>> m_default_rules;
 

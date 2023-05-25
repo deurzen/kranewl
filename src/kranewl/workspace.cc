@@ -311,6 +311,30 @@ Workspace::prev_view() const
     return nullptr;
 }
 
+View_ptr
+Workspace::next_view_in_track() const
+{
+    std::optional<View_ptr> view
+        = mp_track->next_element(Direction::Forward);
+
+    if (view && *view != mp_active)
+        return *view;
+
+    return nullptr;
+}
+
+View_ptr
+Workspace::prev_view_in_track() const
+{
+    std::optional<View_ptr> view
+        = mp_track->next_element(Direction::Backward);
+
+    if (view && *view != mp_active)
+        return *view;
+
+    return nullptr;
+}
+
 std::optional<View_ptr>
 Workspace::find_view(ViewSelector const& selector) const
 {
