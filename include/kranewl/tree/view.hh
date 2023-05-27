@@ -186,8 +186,8 @@ typedef struct View : public Node {
     Workspace_ptr mp_workspace;
 
     struct wlr_surface* mp_wlr_surface;
-    struct wlr_scene_node* mp_scene;
-    struct wlr_scene_node* mp_scene_surface;
+    struct wlr_scene_tree* mp_scene;
+    struct wlr_scene_tree* mp_scene_surface;
     struct wlr_scene_rect* m_protrusions[4]; // top, bottom, left, right
     struct wlr_scene_rect* m_next_indicator[2]; // horizontal portion, vertical portion
     struct wlr_scene_rect* m_prev_indicator[2]; // horizontal portion, vertical portion

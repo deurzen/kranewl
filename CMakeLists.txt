@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10.0)
 
 project(kranewl
     VERSION 0.0.1
-    DESCRIPTION "A wlroots-based dynamic Wayland compositor, written in C++, configured with Lua"
+    DESCRIPTION "A wlroots-based dynamic Wayland compositor, written in C++"
     HOMEPAGE_URL "%%https://github.com/deurzen/kranewl%%"
     LANGUAGES CXX
 )
@@ -144,7 +144,6 @@ add_executable(kranec
 )
 
 pkg_check_modules(spdlog REQUIRED IMPORTED_TARGET spdlog)
-pkg_check_modules(lua REQUIRED IMPORTED_TARGET lua5.4)
 pkg_check_modules(cairo REQUIRED IMPORTED_TARGET cairo)
 pkg_check_modules(pangocairo REQUIRED IMPORTED_TARGET pangocairo)
 pkg_check_modules(wayland_server REQUIRED IMPORTED_TARGET wayland-server)
@@ -164,7 +163,6 @@ target_compile_definitions(kranewl PRIVATE
 target_link_libraries(kranewl
     PRIVATE
     PkgConfig::spdlog
-    PkgConfig::lua
     PkgConfig::cairo
     PkgConfig::pangocairo
     PkgConfig::wayland_server

@@ -102,14 +102,21 @@ node_at(
 
     struct wlr_scene_node* node;
     for (auto const& layer : focus_order) {
-        if ((node = wlr_scene_node_at(server->m_scene_layers[layer], lx, ly, sx, sy))) {
-            if (node->type != WLR_SCENE_NODE_SURFACE)
+        if ((node = wlr_scene_node_at(&server->m_scene_layers[layer]->node, lx, ly, sx, sy))) {
+            if (node->type != WLR_SCENE_NODE_BUFFER)
                 return nullptr;
 
-            *surface = wlr_scene_surface_from_node(node)->surface;
+            struct wlr_scene_buffer* scene_buffer =
+                wlr_scene_buffer_from_node(node);
+            struct wlr_scene_surface* scene_surface =
+                wlr_scene_surface_from_buffer(scene_buffer);
+
+            if (scene_surface)
+               *surface = scene_surface->surface;
+            else return nullptr;
 
             while (node && !node->data)
-                node = node->parent;
+                node = &node->parent->node;
 
             if (node && node->data)
                 return reinterpret_cast<Node_ptr>(node->data);
@@ -413,19 +420,17 @@ cursor_motion_to_client(
         }
     }
 
-    if (!surface) {
-        wlr_seat_pointer_notify_clear_focus(cursor->mp_seat->mp_wlr_seat);
-        return;
-    }
-
     if (!time) {
         struct timespec now;
         clock_gettime(CLOCK_MONOTONIC, &now);
-        time = now.tv_sec * 1000 + now.tv_nsec / 1000000;
+        time = now.tv_sec*  1000 + now.tv_nsec / 1000000;
     }
 
-    wlr_seat_pointer_notify_enter(cursor->mp_seat->mp_wlr_seat, surface, sx, sy);
-    wlr_seat_pointer_notify_motion(cursor->mp_seat->mp_wlr_seat, time, sx, sy);
+    if (surface) {
+        wlr_seat_pointer_notify_enter(cursor->mp_seat->mp_wlr_seat, surface, sx, sy);
+        wlr_seat_pointer_notify_motion(cursor->mp_seat->mp_wlr_seat, time, sx, sy);
+    } else
+        wlr_seat_pointer_clear_focus(cursor->mp_seat->mp_wlr_seat);
 }
 
 void
@@ -471,10 +476,10 @@ void
 Cursor::handle_cursor_motion(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_motion);
-    struct wlr_event_pointer_motion* event
-        = reinterpret_cast<struct wlr_event_pointer_motion*>(data);
+    struct wlr_pointer_motion_event* event
+        = reinterpret_cast<struct wlr_pointer_motion_event*>(data);
 
-    wlr_cursor_move(cursor->mp_wlr_cursor, event->device, event->delta_x, event->delta_y);
+    wlr_cursor_move(cursor->mp_wlr_cursor, &event->pointer->base, event->delta_x, event->delta_y);
     cursor->process_cursor_motion(event->time_msec);
 }
 
@@ -482,10 +487,10 @@ void
 Cursor::handle_cursor_motion_absolute(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_motion_absolute);
-    struct wlr_event_pointer_motion_absolute* event
-        = reinterpret_cast<struct wlr_event_pointer_motion_absolute*>(data);
+    struct wlr_pointer_motion_absolute_event* event
+        = reinterpret_cast<struct wlr_pointer_motion_absolute_event*>(data);
 
-    wlr_cursor_warp_absolute(cursor->mp_wlr_cursor, event->device, event->x, event->y);
+    wlr_cursor_warp_absolute(cursor->mp_wlr_cursor, &event->pointer->base, event->x, event->y);
     cursor->process_cursor_motion(event->time_msec);
 }
 
@@ -551,8 +556,8 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
     TRACE();
 
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_button);
-    struct wlr_event_pointer_button* event
-        = reinterpret_cast<struct wlr_event_pointer_button*>(data);
+    struct wlr_pointer_button_event* event
+        = reinterpret_cast<struct wlr_pointer_button_event*>(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -615,8 +620,8 @@ Cursor::handle_cursor_axis(struct wl_listener* listener, void* data)
 
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_axis);
     Seat_ptr seat = cursor->mp_seat;
-    struct wlr_event_pointer_axis* event
-        = reinterpret_cast<struct wlr_event_pointer_axis*>(data);
+    struct wlr_pointer_axis_event* event
+        = reinterpret_cast<struct wlr_pointer_axis_event*>(data);
 
     struct wlr_keyboard* keyboard
         = wlr_seat_get_keyboard(seat->mp_wlr_seat);
@@ -668,8 +673,8 @@ void
 Cursor::handle_cursor_pinch_begin(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_pinch_begin);
-	struct wlr_event_pointer_pinch_begin *event
-        = reinterpret_cast<struct wlr_event_pointer_pinch_begin *>(data);
+	struct wlr_pointer_pinch_begin_event* event
+        = reinterpret_cast<struct wlr_pointer_pinch_begin_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -688,8 +693,8 @@ void
 Cursor::handle_cursor_pinch_update(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_pinch_update);
-	struct wlr_event_pointer_pinch_update *event
-        = reinterpret_cast<struct wlr_event_pointer_pinch_update *>(data);
+	struct wlr_pointer_pinch_update_event* event
+        = reinterpret_cast<struct wlr_pointer_pinch_update_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -710,8 +715,8 @@ void
 Cursor::handle_cursor_pinch_end(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_pinch_end);
-	struct wlr_event_pointer_pinch_end *event
-        = reinterpret_cast<struct wlr_event_pointer_pinch_end *>(data);
+	struct wlr_pointer_pinch_end_event* event
+        = reinterpret_cast<struct wlr_pointer_pinch_end_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -730,8 +735,8 @@ void
 Cursor::handle_cursor_swipe_begin(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_swipe_begin);
-	struct wlr_event_pointer_swipe_begin *event
-        = reinterpret_cast<struct wlr_event_pointer_swipe_begin *>(data);
+	struct wlr_pointer_swipe_begin_event* event
+        = reinterpret_cast<struct wlr_pointer_swipe_begin_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -750,8 +755,8 @@ void
 Cursor::handle_cursor_swipe_update(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_swipe_update);
-	struct wlr_event_pointer_swipe_update *event
-        = reinterpret_cast<struct wlr_event_pointer_swipe_update *>(data);
+	struct wlr_pointer_swipe_update_event* event
+        = reinterpret_cast<struct wlr_pointer_swipe_update_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,
@@ -770,8 +775,8 @@ void
 Cursor::handle_cursor_swipe_end(struct wl_listener* listener, void* data)
 {
     Cursor_ptr cursor = wl_container_of(listener, cursor, ml_cursor_swipe_end);
-	struct wlr_event_pointer_swipe_end *event
-        = reinterpret_cast<struct wlr_event_pointer_swipe_end *>(data);
+	struct wlr_pointer_swipe_end_event* event
+        = reinterpret_cast<struct wlr_pointer_swipe_end_event* >(data);
 
     wlr_idle_notify_activity(
         cursor->mp_seat->mp_idle,

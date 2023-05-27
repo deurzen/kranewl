@@ -22,6 +22,9 @@ typedef struct View* View_ptr;
 typedef struct XDGDecoration* XDGDecoration_ptr;
 
 typedef class Server final {
+    static constexpr int XDG_SHELL_VERSION = 2;
+    static constexpr int LAYER_SHELL_VERSION = 3;
+
 public:
     Server(Model_ptr);
     ~Server();
@@ -68,7 +71,7 @@ public:
     struct wlr_data_device_manager* mp_data_device_manager;
     struct wlr_output_layout* mp_output_layout;
     struct wlr_scene* mp_scene;
-    std::array<struct wlr_scene_node*, 8> m_scene_layers;
+    std::array<struct wlr_scene_tree*, 8> m_scene_layers;
     Seat_ptr mp_seat;
     struct wlr_output* mp_fallback_output;
     struct wlr_output_manager_v1* mp_output_manager;

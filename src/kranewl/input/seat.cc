@@ -71,9 +71,11 @@ Seat::~Seat()
 }
 
 Keyboard_ptr
-Seat::create_keyboard(struct wlr_input_device* device)
+Seat::create_keyboard(struct wlr_keyboard* wlr_keyboard)
 {
-    Keyboard_ptr keyboard = new Keyboard(mp_server, this, device);
+    Keyboard_ptr keyboard
+        = new Keyboard(mp_server, this, wlr_keyboard);
+
     register_keyboard(keyboard);
     return keyboard;
 }

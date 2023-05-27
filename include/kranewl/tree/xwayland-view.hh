@@ -136,8 +136,8 @@ typedef struct XWaylandUnmanaged final : public Node {
     struct wlr_xwayland_surface* mp_wlr_xwayland_surface;
 
     struct wlr_surface* mp_wlr_surface;
-    struct wlr_scene_node* mp_scene;
-    struct wlr_scene_node* mp_scene_surface;
+    struct wlr_scene_tree* mp_scene;
+    struct wlr_scene_tree* mp_scene_surface;
 
     pid_t m_pid;
 

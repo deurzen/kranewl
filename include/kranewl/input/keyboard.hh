@@ -25,18 +25,18 @@ typedef class Server* Server_ptr;
 typedef class Seat* Seat_ptr;
 
 typedef struct Keyboard {
-    Keyboard(Server_ptr, Seat_ptr, struct wlr_input_device*);
+    Keyboard(Server_ptr, Seat_ptr, struct wlr_keyboard*);
     ~Keyboard();
 
     static void handle_modifiers(struct wl_listener*, void*);
     static void handle_key(struct wl_listener*, void*);
     static int handle_key_repeat(void*);
-    static void handle_destroy(struct wl_listener*, void*);
+    /* static void handle_destroy(struct wl_listener*, void*); */
 
     Server_ptr mp_server;
     Seat_ptr mp_seat;
 
-    struct wlr_input_device* mp_device;
+    struct wlr_keyboard* mp_wlr_keyboard;
 
     uint32_t m_repeat_rate;
     uint32_t m_repeat_delay;
@@ -46,7 +46,7 @@ typedef struct Keyboard {
 
     struct wl_listener ml_modifiers;
     struct wl_listener ml_key;
-    struct wl_listener ml_destroy;
+    /* struct wl_listener ml_destroy; */
 
 }* Keyboard_ptr;
 

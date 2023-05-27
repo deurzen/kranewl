@@ -58,7 +58,7 @@ public:
     KeyBindings const& key_bindings() const;
     CursorBindings const& cursor_bindings() const;
 
-    Output_ptr create_output(struct wlr_output*, struct wlr_scene_output*, Region const&&);
+    Output_ptr create_output(struct wlr_output*, Region const&&);
     void register_output(Output_ptr);
     void unregister_output(Output_ptr);
     void output_reserve_context(Output_ptr);

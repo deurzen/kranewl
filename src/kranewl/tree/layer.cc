@@ -162,7 +162,7 @@ Layer::handle_surface_commit(struct wl_listener* listener, void*)
     }
 
     wlr_scene_node_reparent(
-        layer->mp_scene,
+        &layer->mp_scene->node,
         layer->mp_server->m_scene_layers[layer->m_scene_layer]
     );
 
@@ -216,7 +216,6 @@ create_layer_popup(
     };
 
     wlr_xdg_popup_unconstrain_from_box(wlr_popup, &mappable_region);
-    popup->set_region(Region::from_box(wlr_popup->geometry));
 
     return popup;
 }
@@ -354,32 +353,32 @@ LayerPopup::handle_map(struct wl_listener* listener, void*)
         : root->m_scene_layer;
 
     popup->m_scene_layer = SceneLayer::SCENE_LAYER_POPUP;
-    popup->mp_scene = &wlr_scene_tree_create(
+    popup->mp_scene = wlr_scene_tree_create(
         server->m_scene_layers[popup->m_scene_layer]
-    )->node;
+    );
     wlr_popup->base->surface->data = popup->mp_scene
         = wlr_scene_xdg_surface_create(
             server->m_scene_layers[popup->m_scene_layer],
             wlr_popup->base
         );
-    popup->mp_scene->data = popup;
+    popup->mp_scene->node.data = popup;
 
     wlr_scene_node_reparent(
-        popup->mp_scene,
+        &popup->mp_scene->node,
         server->m_scene_layers[popup->m_scene_layer]
     );
 
     Region const& region = popup->region();
     wlr_scene_node_set_position(
-        popup->mp_scene,
+        &popup->mp_scene->node,
         region.pos.x,
         region.pos.y
     );
 
     if (popup->m_scene_layer == reference_scene_layer)
         wlr_scene_node_place_above(
-            popup->mp_scene,
-            parent ? parent->mp_scene : root->mp_scene
+            &popup->mp_scene->node,
+            &(parent ? parent->mp_scene : root->mp_scene)->node
         );
 }
 

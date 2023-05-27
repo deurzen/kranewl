@@ -146,15 +146,16 @@ View::set_focused(bool focused)
     m_last_focused = now;
     m_focused = focused;
 
-    switch (focused) {
-    case true:
+    if (focused) {
+        m_urgent = false;
+
         switch (m_outside_state) {
         case OutsideState::Unfocused:         m_outside_state = OutsideState::Focused;         return;
         case OutsideState::UnfocusedDisowned: m_outside_state = OutsideState::FocusedDisowned; return;
         case OutsideState::UnfocusedSticky:   m_outside_state = OutsideState::FocusedSticky;   return;
         default: return;
         }
-    case false:
+    } else {
         switch (m_outside_state) {
         case OutsideState::Focused:         m_outside_state = OutsideState::Unfocused;         return;
         case OutsideState::FocusedDisowned: m_outside_state = OutsideState::UnfocusedDisowned; return;
@@ -300,7 +301,7 @@ void
 View::map()
 {
     if (!m_mapped) {
-        wlr_scene_node_set_enabled(mp_scene, true);
+        wlr_scene_node_set_enabled(&mp_scene->node, true);
         m_mapped = true;
     }
 }
@@ -310,7 +311,7 @@ View::unmap()
 {
     if (m_mapped) {
         focus(Toggle::Off);
-        wlr_scene_node_set_enabled(mp_scene, false);
+        wlr_scene_node_set_enabled(&mp_scene->node, false);
         m_mapped = false;
     }
 }
@@ -371,7 +372,7 @@ View::relayer(SceneLayer layer)
 
     m_scene_layer = layer;
     wlr_scene_node_reparent(
-        mp_scene,
+        &mp_scene->node,
         mp_server->m_scene_layers[layer]
     );
 }
@@ -379,13 +380,13 @@ View::relayer(SceneLayer layer)
 void
 View::raise() const
 {
-    wlr_scene_node_raise_to_top(mp_scene);
+    wlr_scene_node_raise_to_top(&mp_scene->node);
 }
 
 void
 View::lower() const
 {
-    wlr_scene_node_lower_to_bottom(mp_scene);
+    wlr_scene_node_lower_to_bottom(&mp_scene->node);
 }
 
 void

@@ -54,6 +54,7 @@ extern "C" {
 #include <wlr/types/wlr_screencopy_v1.h>
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_server_decoration.h>
+#include <wlr/types/wlr_subcompositor.h>
 #include <wlr/types/wlr_viewporter.h>
 #include <wlr/types/wlr_virtual_keyboard_v1.h>
 #include <wlr/types/wlr_xdg_activation_v1.h>
@@ -181,19 +182,20 @@ Server::initialize()
     }
 
     mp_compositor = wlr_compositor_create(mp_display, mp_renderer);
+    wlr_subcompositor_create(mp_display);
     mp_data_device_manager = wlr_data_device_manager_create(mp_display);
 
     mp_scene = wlr_scene_create();
     wlr_scene_attach_output_layout(mp_scene, mp_output_layout);
     m_scene_layers = {
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node,
-        &wlr_scene_tree_create(&mp_scene->node)->node
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree),
+        wlr_scene_tree_create(&mp_scene->tree)
     };
 
     struct wlr_cursor* cursor = wlr_cursor_create();
@@ -216,7 +218,7 @@ Server::initialize()
 
     mp_layer_shell = wlr_layer_shell_v1_create(mp_display);
     mp_xdg_activation = wlr_xdg_activation_v1_create(mp_display);
-    mp_xdg_shell = wlr_xdg_shell_create(mp_display);
+    mp_xdg_shell = wlr_xdg_shell_create(mp_display, XDG_SHELL_VERSION);
     mp_presentation = wlr_presentation_create(mp_display, mp_backend);
     mp_server_decoration_manager = wlr_server_decoration_manager_create(mp_display);
     mp_xdg_decoration_manager = wlr_xdg_decoration_manager_v1_create(mp_display);
@@ -335,7 +337,7 @@ Server::relinquish_focus()
                     && (wlr_xdg_surface = wlr_xdg_surface_from_wlr_surface(focused_surface))
                     && wlr_xdg_surface->role == WLR_XDG_SURFACE_ROLE_TOPLEVEL)
             {
-                wlr_xdg_toplevel_set_activated(wlr_xdg_surface, false);
+                wlr_xdg_toplevel_set_activated(wlr_xdg_surface->toplevel, false);
             }
         }
     }
@@ -353,8 +355,12 @@ update_output_manager_config(Server_ptr server, Model_ptr model)
         struct wlr_output_configuration_head_v1* config_head
             = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
 
-        struct wlr_box output_box
-            = *wlr_output_layout_get_box(server->mp_output_layout, output->mp_wlr_output);
+        struct wlr_box output_box;
+        wlr_output_layout_get_box(
+            server->mp_output_layout,
+            output->mp_wlr_output,
+            &output_box
+        );
 
         config_head->state.enabled = output->mp_current_mode && output->enabled();
         config_head->state.mode = output->mp_current_mode;
@@ -411,12 +417,16 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
         = wlr_scene_output_create(server->mp_scene, wlr_output);
 
     wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
-    struct wlr_box output_box
-        = *wlr_output_layout_get_box(server->mp_output_layout, wlr_output);
+
+    struct wlr_box output_box;
+    wlr_output_layout_get_box(
+        server->mp_output_layout,
+        wlr_output,
+        &output_box
+    );
 
     Output_ptr output = server->mp_model->create_output(
         wlr_output,
-        wlr_scene_output,
         Region{
             .pos = Pos{
                 .x = output_box.x,
@@ -470,8 +480,12 @@ Server::propagate_output_layout_change(Server_ptr server)
         config_head
             = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
 
-        struct wlr_box output_box
-            = *wlr_output_layout_get_box(server->mp_output_layout, output->mp_wlr_output);
+        struct wlr_box output_box;
+        wlr_output_layout_get_box(
+            server->mp_output_layout,
+            output->mp_wlr_output,
+            &output_box
+        );
 
         output->set_full_region(Region{
             .pos = Pos{
@@ -485,9 +499,12 @@ Server::propagate_output_layout_change(Server_ptr server)
         });
         output->arrange_layers();
 
+        struct wlr_scene_output* scene_output
+            = wlr_scene_get_scene_output(server->mp_scene, output->mp_wlr_output);
+
         Region const& region = output->full_region();
         wlr_scene_output_set_position(
-            output->mp_wlr_scene_output,
+            scene_output,
             region.pos.x,
             region.pos.y
         );
@@ -633,7 +650,7 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
     case WLR_XDG_SURFACE_ROLE_POPUP:
     {
         xdg_surface->surface->data = wlr_scene_xdg_surface_create(
-            reinterpret_cast<struct wlr_scene_node*>(xdg_surface->popup->parent->data),
+            reinterpret_cast<struct wlr_scene_tree*>(xdg_surface->popup->parent->data),
             xdg_surface
         );
 
@@ -705,7 +722,7 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
             server->m_scene_layers[scene_layer],
             layer_surface->surface
         );
-    layer->mp_scene->data = layer;
+    layer->mp_scene->node.data = layer;
 
     server->mp_model->register_layer(layer);
     struct wlr_layer_surface_v1_state initial_state = layer->mp_layer_surface->current;
@@ -715,19 +732,19 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
 }
 
 static inline void
-create_keyboard(Server_ptr server, struct wlr_input_device* device)
+create_keyboard(Server_ptr server, struct wlr_keyboard* wlr_keyboard)
 {
-    Keyboard_ptr keyboard = server->mp_seat->create_keyboard(device);
+    Keyboard_ptr keyboard = server->mp_seat->create_keyboard(wlr_keyboard);
 
     struct xkb_context* context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
     struct xkb_keymap* keymap
         = xkb_keymap_new_from_names(context, nullptr, XKB_KEYMAP_COMPILE_NO_FLAGS);
 
-    wlr_keyboard_set_keymap(device->keyboard, keymap);
+    wlr_keyboard_set_keymap(keyboard->mp_wlr_keyboard, keymap);
     xkb_keymap_unref(keymap);
     xkb_context_unref(context);
-    wlr_keyboard_set_repeat_info(device->keyboard, 100, 200);
-    wlr_seat_set_keyboard(server->mp_seat->mp_wlr_seat, device);
+    wlr_keyboard_set_repeat_info(keyboard->mp_wlr_keyboard, 100, 200);
+    wlr_seat_set_keyboard(server->mp_seat->mp_wlr_seat, keyboard->mp_wlr_keyboard);
 }
 
 void
@@ -756,7 +773,7 @@ Server::handle_new_input(struct wl_listener* listener, void* data)
     switch (device->type) {
     case WLR_INPUT_DEVICE_KEYBOARD:
     {
-        create_keyboard(server, device);
+        create_keyboard(server, wlr_keyboard_from_input_device(device));
 
         break;
     }
@@ -815,7 +832,7 @@ Server::handle_xdg_request_activate(struct wl_listener* listener, void* data)
     XDGView_ptr view
         = reinterpret_cast<XDGView_ptr>(wlr_xdg_surface_from_wlr_surface(event->surface)->data);
 
-    if (view != server->mp_model->focused_view())
+    if (!view->focused())
         view->set_urgent(true);
 }
 
@@ -828,8 +845,7 @@ Server::handle_new_virtual_keyboard(struct wl_listener* listener, void* data)
     struct wlr_virtual_keyboard_v1* virtual_keyboard
         = reinterpret_cast<struct wlr_virtual_keyboard_v1*>(data);
 
-    struct wlr_input_device* device = &virtual_keyboard->input_device;
-    create_keyboard(server, device);
+    create_keyboard(server, &virtual_keyboard->keyboard);
 }
 
 void

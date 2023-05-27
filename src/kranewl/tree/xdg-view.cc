@@ -43,16 +43,17 @@ XDGView::XDGView(
       mp_wlr_xdg_surface(wlr_xdg_surface),
       mp_wlr_xdg_toplevel(wlr_xdg_surface->toplevel),
       mp_decoration(nullptr),
-      ml_commit({ .notify = XDGView::handle_commit }),
-      ml_request_move({ .notify = XDGView::handle_request_move }),
-      ml_request_resize({ .notify = XDGView::handle_request_resize }),
-      ml_request_fullscreen({ .notify = XDGView::handle_request_fullscreen }),
-      ml_set_title({ .notify = XDGView::handle_set_title }),
-      ml_set_app_id({ .notify = XDGView::handle_set_app_id }),
-      ml_new_popup({ .notify = XDGView::handle_new_popup }),
       ml_map({ .notify = XDGView::handle_map }),
       ml_unmap({ .notify = XDGView::handle_unmap }),
-      ml_destroy({ .notify = XDGView::handle_destroy })
+      ml_destroy({ .notify = XDGView::handle_destroy }),
+      ml_commit({ .notify = XDGView::handle_commit }),
+      ml_new_popup({ .notify = XDGView::handle_new_popup }),
+      ml_set_title({ .notify = XDGView::handle_set_title }),
+      ml_set_app_id({ .notify = XDGView::handle_set_app_id }),
+      ml_request_move({ .notify = XDGView::handle_request_move }),
+      ml_request_resize({ .notify = XDGView::handle_request_resize }),
+      ml_request_maximize({ .notify = XDGView::handle_request_maximize }),
+      ml_request_fullscreen({ .notify = XDGView::handle_request_fullscreen })
 {
     wl_signal_add(&mp_wlr_xdg_surface->events.map, &ml_map);
     wl_signal_add(&mp_wlr_xdg_surface->events.unmap, &ml_unmap);
@@ -170,7 +171,7 @@ XDGView::activate(Toggle toggle)
                 nullptr
             );
 
-        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, true);
+        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_toplevel, true);
         break;
     }
     case Toggle::Off:
@@ -179,7 +180,7 @@ XDGView::activate(Toggle toggle)
             return;
 
         set_activated(false);
-        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_surface, false);
+        wlr_xdg_toplevel_set_activated(mp_wlr_xdg_toplevel, false);
         break;
     }
     case Toggle::Reverse:
@@ -202,7 +203,7 @@ XDGView::effectuate_fullscreen(bool fullscreen)
 
     if (View::fullscreen() != fullscreen) {
         set_fullscreen(fullscreen);
-        wlr_xdg_toplevel_set_fullscreen(mp_wlr_xdg_surface, fullscreen);
+        wlr_xdg_toplevel_set_fullscreen(mp_wlr_xdg_toplevel, fullscreen);
     }
 }
 
@@ -211,8 +212,8 @@ XDGView::configure(Region const& region, Extents const& extents, bool interactiv
 {
     TRACE();
 
-    wlr_scene_node_set_position(mp_scene, region.pos.x, region.pos.y);
-    wlr_scene_node_set_position(mp_scene_surface, extents.left, extents.top);
+    wlr_scene_node_set_position(&mp_scene->node, region.pos.x, region.pos.y);
+    wlr_scene_node_set_position(&mp_scene_surface->node, extents.left, extents.top);
     wlr_scene_rect_set_size(m_protrusions[0], region.dim.w, extents.top);
     wlr_scene_rect_set_size(m_protrusions[1], region.dim.w, extents.bottom);
     wlr_scene_rect_set_size(m_protrusions[2], extents.left, region.dim.h - extents.top - extents.bottom);
@@ -231,7 +232,7 @@ XDGView::configure(Region const& region, Extents const& extents, bool interactiv
     wlr_scene_node_set_position(&m_prev_indicator[1]->node, region.dim.w - extents.right, 0);
 
 	m_resize = wlr_xdg_toplevel_set_size(
-        mp_wlr_xdg_surface,
+        mp_wlr_xdg_toplevel,
         region.dim.w - extents.left - extents.right,
         region.dim.h - extents.top - extents.bottom
     );
@@ -241,7 +242,7 @@ void
 XDGView::close()
 {
     TRACE();
-    wlr_xdg_toplevel_send_close(mp_wlr_xdg_surface);
+    wlr_xdg_toplevel_send_close(mp_wlr_xdg_toplevel);
 }
 
 void
@@ -263,17 +264,36 @@ XDGView::handle_commit(struct wl_listener* listener, void* data)
 }
 
 void
-XDGView::handle_request_move(struct wl_listener*, void*)
+XDGView::handle_request_move(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_move);
+    struct wlr_xdg_toplevel_move_event* event
+        = reinterpret_cast<struct wlr_xdg_toplevel_move_event*>(data);
+
+    view->mp_seat->mp_cursor->initiate_cursor_interactive(Cursor::Mode::Move, view);
 }
 
 void
-XDGView::handle_request_resize(struct wl_listener*, void*)
+XDGView::handle_request_resize(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_resize);
+    struct wlr_xdg_toplevel_resize_event* event
+        = reinterpret_cast<struct wlr_xdg_toplevel_resize_event*>(data);
+
+    view->mp_seat->mp_cursor->initiate_cursor_interactive(Cursor::Mode::Resize, view, event->edges);
+}
+
+void
+XDGView::handle_request_maximize(struct wl_listener* listener, void*)
+{
+    TRACE();
+
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_maximize);
+    wlr_xdg_surface_schedule_configure(view->mp_wlr_xdg_toplevel->base);
 }
 
 void
@@ -290,6 +310,8 @@ XDGView::handle_request_fullscreen(struct wl_listener* listener, void*)
             : Toggle::Off,
         view
     );
+
+    wlr_xdg_surface_schedule_configure(view->mp_wlr_xdg_toplevel->base);
 }
 
 void
@@ -367,18 +389,18 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
     view->set_handle(view->title() + " " + view->app_id());
 
     wlr_xdg_toplevel_set_tiled(
-        wlr_xdg_surface,
+        wlr_xdg_toplevel,
         view->free_decoration_to_wlr_edges()
     );
 
-    view->mp_scene = &wlr_scene_tree_create(
+    view->mp_scene = wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]
-    )->node;
+    );
     view->mp_wlr_surface->data = view->mp_scene_surface = wlr_scene_xdg_surface_create(
         view->mp_scene,
         view->mp_wlr_xdg_surface
     );
-    view->mp_scene_surface->data = view;
+    view->mp_scene_surface->node.data = view;
 
     for (std::size_t i = 0; i < 2; ++i) {
         view->m_next_indicator[i] = wlr_scene_rect_create(
@@ -427,9 +449,10 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
 
     wl_signal_add(&wlr_xdg_toplevel->base->surface->events.commit, &view->ml_commit);
     wl_signal_add(&wlr_xdg_toplevel->base->events.new_popup, &view->ml_new_popup);
-    wl_signal_add(&wlr_xdg_toplevel->events.request_fullscreen, &view->ml_request_fullscreen);
     wl_signal_add(&wlr_xdg_toplevel->events.request_move, &view->ml_request_move);
     wl_signal_add(&wlr_xdg_toplevel->events.request_resize, &view->ml_request_resize);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_maximize, &view->ml_request_maximize);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_fullscreen, &view->ml_request_fullscreen);
     wl_signal_add(&wlr_xdg_toplevel->events.set_title, &view->ml_set_title);
     wl_signal_add(&wlr_xdg_toplevel->events.set_app_id, &view->ml_set_app_id);
 
@@ -482,7 +505,7 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     view->activate(Toggle::Off);
     view->mp_model->unregister_view(view);
 
-    wlr_scene_node_destroy(view->mp_scene);
+    wlr_scene_node_destroy(&view->mp_scene->node);
 	view->mp_wlr_surface = nullptr;
     view->set_managed(false);
 

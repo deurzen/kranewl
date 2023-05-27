@@ -52,7 +52,7 @@ typedef struct Layer final : public Node {
 
     Output_ptr mp_output;
 
-	struct wlr_scene_node* mp_scene;
+	struct wlr_scene_tree* mp_scene;
     SceneLayer m_scene_layer;
 	struct wlr_layer_surface_v1* mp_layer_surface;
 
@@ -109,7 +109,7 @@ typedef struct LayerPopup final {
 	Layer_ptr mp_root;
 	LayerPopup_ptr mp_parent;
 
-	struct wlr_scene_node* mp_scene;
+	struct wlr_scene_tree* mp_scene;
     SceneLayer m_scene_layer;
     struct wlr_xdg_popup* mp_wlr_popup;
 

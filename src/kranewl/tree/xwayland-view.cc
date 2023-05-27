@@ -126,7 +126,7 @@ XWaylandView::prefers_floating()
         }
     }
 
-    struct wlr_xwayland_surface_size_hints* size_hints = xwayland_surface->size_hints;
+    xcb_size_hints_t* size_hints = xwayland_surface->size_hints;
     if (size_hints && size_hints->min_width > 0 && size_hints->min_height > 0
         && (size_hints->max_width == size_hints->min_width
             || size_hints->max_height == size_hints->min_height))
@@ -254,8 +254,8 @@ XWaylandView::configure(Region const& region, Extents const& extents, bool inter
 {
     TRACE();
 
-    wlr_scene_node_set_position(mp_scene, region.pos.x, region.pos.y);
-    wlr_scene_node_set_position(mp_scene_surface, extents.left, extents.top);
+    wlr_scene_node_set_position(&mp_scene->node, region.pos.x, region.pos.y);
+    wlr_scene_node_set_position(&mp_scene_surface->node, extents.left, extents.top);
     wlr_scene_rect_set_size(m_protrusions[0], region.dim.w, extents.top);
     wlr_scene_rect_set_size(m_protrusions[1], region.dim.w, extents.bottom);
     wlr_scene_rect_set_size(m_protrusions[2], extents.left, region.dim.h - extents.top - extents.bottom);
@@ -340,15 +340,15 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
         + view->instance()
     );
 
-    view->mp_scene = &wlr_scene_tree_create(
+    view->mp_scene = wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]
-    )->node;
+    );
 
     view->mp_wlr_surface->data = view->mp_scene_surface = wlr_scene_subsurface_tree_create(
         view->mp_scene,
         view->mp_wlr_surface
     );
-    view->mp_scene_surface->data = view;
+    view->mp_scene_surface->node.data = view;
 
     view->relayer(
         view->floating()
@@ -432,7 +432,7 @@ XWaylandView::handle_unmap(struct wl_listener* listener, void*)
     view->activate(Toggle::Off);
     view->mp_model->unregister_view(view);
 
-    wlr_scene_node_destroy(view->mp_scene);
+    wlr_scene_node_destroy(&view->mp_scene->node);
     view->mp_wlr_surface = nullptr;
     view->set_managed(false);
 
@@ -628,9 +628,9 @@ XWaylandView::handle_set_hints(struct wl_listener* listener, void*)
     if (!xwayland_surface->mapped)
         return;
 
-    const bool urgent = xwayland_surface->hints_urgency;
+    const bool urgent = xwayland_surface->hints;
 
-    if (urgent) {
+    if (urgent && !view->focused()) {
         view->set_urgent(true);
         view->render_decoration();
     }
@@ -754,23 +754,23 @@ XWaylandUnmanaged::handle_map(struct wl_listener* listener, void* data)
     unmanaged->set_app_id(unmanaged->class_());
     unmanaged->set_title_formatted(unmanaged->title()); // TODO: format title
 
-    unmanaged->mp_scene = &wlr_scene_tree_create(
+    unmanaged->mp_scene = wlr_scene_tree_create(
         server->m_scene_layers[SCENE_LAYER_TILE]
-    )->node;
+    );
 
     unmanaged->mp_wlr_surface->data = unmanaged->mp_scene_surface = wlr_scene_subsurface_tree_create(
         unmanaged->mp_scene,
         unmanaged->mp_wlr_surface
     );
-    unmanaged->mp_scene_surface->data = unmanaged;
+    unmanaged->mp_scene_surface->node.data = unmanaged;
 
     wlr_scene_node_reparent(
-        unmanaged->mp_scene,
+        &unmanaged->mp_scene->node,
         unmanaged->mp_server->m_scene_layers[SCENE_LAYER_FREE]
     );
 
     wlr_scene_node_set_position(
-        unmanaged->mp_scene,
+        &unmanaged->mp_scene->node,
         unmanaged->m_region.pos.x,
         unmanaged->m_region.pos.y
     );
@@ -891,7 +891,7 @@ XWaylandUnmanaged::handle_set_geometry(struct wl_listener* listener, void*)
     {
         unmanaged->m_region.pos = new_pos;
         wlr_scene_node_set_position(
-            unmanaged->mp_scene,
+            &unmanaged->mp_scene->node,
             unmanaged->m_region.pos.x,
             unmanaged->m_region.pos.y
         );

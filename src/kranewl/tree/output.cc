@@ -29,7 +29,6 @@ Output::Output(
     Model_ptr model,
     Seat_ptr seat,
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output,
     Region const&& output_region
 )
     : mp_context(nullptr),
@@ -49,7 +48,6 @@ Output::Output(
           { SCENE_LAYER_OVERLAY, {} }
       },
       mp_wlr_output(wlr_output),
-      mp_wlr_scene_output(wlr_scene_output),
       ml_frame({ .notify = Output::handle_frame }),
       ml_present({ .notify = Output::handle_present }),
       ml_destroy({ .notify = Output::handle_destroy })
@@ -76,12 +74,15 @@ Output::handle_frame(struct wl_listener* listener, void*)
     // TODO: only rerender if no XDG views have an outstanding resize
     //       and are visible on this monitor
 
-    if (!wlr_scene_output_commit(output->mp_wlr_scene_output))
+    struct wlr_scene_output* scene_output
+        = wlr_scene_get_scene_output(output->mp_server->mp_scene, output->mp_wlr_output);
+
+    if (!wlr_scene_output_commit(scene_output))
         return;
 
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
-    wlr_scene_output_send_frame_done(output->mp_wlr_scene_output, &now);
+    wlr_scene_output_send_frame_done(scene_output, &now);
 }
 
 void
@@ -128,8 +129,11 @@ Output::handle_destroy(struct wl_listener*, void* data)
 
     output->mp_wlr_output->data = nullptr;
 
+    struct wlr_scene_output* scene_output
+        = wlr_scene_get_scene_output(output->mp_server->mp_scene, output->mp_wlr_output);
+
     wlr_output_layout_remove(output->mp_server->mp_output_layout, output->mp_wlr_output);
-    wlr_scene_output_destroy(output->mp_wlr_scene_output);
+    wlr_scene_output_destroy(scene_output);
 
     for (SceneLayer scene_layer : scene_layers) {
         for (Layer_ptr layer : output->m_layer_map.at(scene_layer)) {
@@ -462,7 +466,7 @@ arrange_layer(
                 state->margin.left
             );
 
-        wlr_scene_node_set_position(layer->mp_scene, region.pos.x, region.pos.y);
+        wlr_scene_node_set_position(&layer->mp_scene->node, region.pos.x, region.pos.y);
         wlr_layer_surface_v1_configure(layer_surface, region.dim.w, region.dim.h);
     }
 }

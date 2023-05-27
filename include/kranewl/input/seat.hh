@@ -29,7 +29,7 @@ public:
     );
     ~Seat();
 
-    Keyboard_ptr create_keyboard(struct wlr_input_device*);
+    Keyboard_ptr create_keyboard(struct wlr_keyboard*);
     void register_keyboard(Keyboard_ptr);
     void unregister_keyboard(Keyboard_ptr);
 
