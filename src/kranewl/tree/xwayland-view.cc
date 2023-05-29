@@ -630,7 +630,7 @@ XWaylandView::handle_set_hints(struct wl_listener* listener, void*)
 
     const bool urgent = xwayland_surface->hints_urgency;
 
-    if (urgent) {
+    if (urgent && !view->focused()) {
         view->set_urgent(true);
         view->render_decoration();
     }

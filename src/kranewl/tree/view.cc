@@ -146,15 +146,16 @@ View::set_focused(bool focused)
     m_last_focused = now;
     m_focused = focused;
 
-    switch (focused) {
-    case true:
+    if (focused) {
+        m_urgent = false;
+
         switch (m_outside_state) {
         case OutsideState::Unfocused:         m_outside_state = OutsideState::Focused;         return;
         case OutsideState::UnfocusedDisowned: m_outside_state = OutsideState::FocusedDisowned; return;
         case OutsideState::UnfocusedSticky:   m_outside_state = OutsideState::FocusedSticky;   return;
         default: return;
         }
-    case false:
+    } else {
         switch (m_outside_state) {
         case OutsideState::Focused:         m_outside_state = OutsideState::Unfocused;         return;
         case OutsideState::FocusedDisowned: m_outside_state = OutsideState::UnfocusedDisowned; return;

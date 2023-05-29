@@ -414,7 +414,7 @@ cursor_motion_to_client(
     }
 
     if (!surface) {
-        wlr_seat_pointer_notify_clear_focus(cursor->mp_seat->mp_wlr_seat);
+        wlr_seat_pointer_clear_focus(cursor->mp_seat->mp_wlr_seat);
         return;
     }
 

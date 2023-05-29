@@ -407,16 +407,12 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
         wlr_output_commit(wlr_output);
     }
 
-    struct wlr_scene_output* wlr_scene_output
-        = wlr_scene_output_create(server->mp_scene, wlr_output);
-
     wlr_output_layout_add_auto(server->mp_output_layout, wlr_output);
     struct wlr_box output_box
         = *wlr_output_layout_get_box(server->mp_output_layout, wlr_output);
 
     Output_ptr output = server->mp_model->create_output(
         wlr_output,
-        wlr_scene_output,
         Region{
             .pos = Pos{
                 .x = output_box.x,
@@ -485,9 +481,12 @@ Server::propagate_output_layout_change(Server_ptr server)
         });
         output->arrange_layers();
 
+        struct wlr_scene_output* scene_output
+            = wlr_scene_get_scene_output(server->mp_scene, output->mp_wlr_output);
+
         Region const& region = output->full_region();
         wlr_scene_output_set_position(
-            output->mp_wlr_scene_output,
+            scene_output,
             region.pos.x,
             region.pos.y
         );
@@ -815,7 +814,7 @@ Server::handle_xdg_request_activate(struct wl_listener* listener, void* data)
     XDGView_ptr view
         = reinterpret_cast<XDGView_ptr>(wlr_xdg_surface_from_wlr_surface(event->surface)->data);
 
-    if (view != server->mp_model->focused_view())
+    if (!view->focused())
         view->set_urgent(true);
 }
 
@@ -828,8 +827,7 @@ Server::handle_new_virtual_keyboard(struct wl_listener* listener, void* data)
     struct wlr_virtual_keyboard_v1* virtual_keyboard
         = reinterpret_cast<struct wlr_virtual_keyboard_v1*>(data);
 
-    struct wlr_input_device* device = &virtual_keyboard->input_device;
-    create_keyboard(server, device);
+    create_keyboard(server, &virtual_keyboard->input_device);
 }
 
 void

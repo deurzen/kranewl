@@ -38,14 +38,15 @@ extern "C" {
 #undef class
 
 Model::Model(Config const& config)
-    : m_config{config},
+    : mp_output{nullptr},
+      mp_context{nullptr},
+      mp_workspace{nullptr},
+      mp_server{nullptr},
+      m_config{config},
       m_running{true},
       m_outputs{{}, true},
       m_contexts{{}, true},
       m_workspaces{{}, true},
-      mp_output{nullptr},
-      mp_context{nullptr},
-      mp_workspace{nullptr},
       mp_prev_output{nullptr},
       mp_prev_context{nullptr},
       mp_prev_workspace{nullptr},
@@ -217,7 +218,6 @@ Model::cursor_bindings() const
 Output_ptr
 Model::create_output(
     struct wlr_output* wlr_output,
-    struct wlr_scene_output* wlr_scene_output,
     Region const&& output_region
 )
 {
@@ -228,7 +228,6 @@ Model::create_output(
         this,
         mp_server->mp_seat,
         wlr_output,
-        wlr_scene_output,
         std::forward<Region const&&>(output_region)
     );
 
@@ -324,8 +323,6 @@ Model::focus_view(View_ptr view)
         mp_focus->focus(Toggle::Off);
 
     view->focus(Toggle::On);
-    view->set_urgent(false);
-
     mp_focus = view;
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
@@ -350,7 +347,6 @@ Model::refocus()
 
     mp_focus->focus(Toggle::Off);
     mp_focus->focus(Toggle::On);
-    mp_focus->set_urgent(false);
 
     if (mp_workspace->layout_is_persistent() || mp_workspace->layout_is_single())
         apply_layout(mp_workspace);

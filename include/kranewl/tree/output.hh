@@ -27,7 +27,6 @@ public:
         Model_ptr,
         Seat_ptr,
         struct wlr_output*,
-        struct wlr_scene_output*,
         Region const&&
     );
 
@@ -85,7 +84,6 @@ public:
     bool m_dirty;
 
     struct wlr_output* mp_wlr_output = nullptr;
-    struct wlr_scene_output* mp_wlr_scene_output = nullptr;
 
     struct wl_listener ml_frame;
     struct wl_listener ml_present;

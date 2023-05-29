@@ -43,16 +43,17 @@ XDGView::XDGView(
       mp_wlr_xdg_surface(wlr_xdg_surface),
       mp_wlr_xdg_toplevel(wlr_xdg_surface->toplevel),
       mp_decoration(nullptr),
-      ml_commit({ .notify = XDGView::handle_commit }),
-      ml_request_move({ .notify = XDGView::handle_request_move }),
-      ml_request_resize({ .notify = XDGView::handle_request_resize }),
-      ml_request_fullscreen({ .notify = XDGView::handle_request_fullscreen }),
-      ml_set_title({ .notify = XDGView::handle_set_title }),
-      ml_set_app_id({ .notify = XDGView::handle_set_app_id }),
-      ml_new_popup({ .notify = XDGView::handle_new_popup }),
       ml_map({ .notify = XDGView::handle_map }),
       ml_unmap({ .notify = XDGView::handle_unmap }),
-      ml_destroy({ .notify = XDGView::handle_destroy })
+      ml_destroy({ .notify = XDGView::handle_destroy }),
+      ml_commit({ .notify = XDGView::handle_commit }),
+      ml_new_popup({ .notify = XDGView::handle_new_popup }),
+      ml_set_title({ .notify = XDGView::handle_set_title }),
+      ml_set_app_id({ .notify = XDGView::handle_set_app_id }),
+      ml_request_move({ .notify = XDGView::handle_request_move }),
+      ml_request_resize({ .notify = XDGView::handle_request_resize }),
+      ml_request_maximize({ .notify = XDGView::handle_request_maximize }),
+      ml_request_fullscreen({ .notify = XDGView::handle_request_fullscreen })
 {
     wl_signal_add(&mp_wlr_xdg_surface->events.map, &ml_map);
     wl_signal_add(&mp_wlr_xdg_surface->events.unmap, &ml_unmap);
@@ -263,17 +264,27 @@ XDGView::handle_commit(struct wl_listener* listener, void* data)
 }
 
 void
-XDGView::handle_request_move(struct wl_listener*, void*)
+XDGView::handle_request_move(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_move);
+    struct wlr_event_xdg_toplevel_move* event
+        = reinterpret_cast<struct wlr_event_xdg_toplevel_move*>(data);
+
+    view->mp_seat->mp_cursor->initiate_cursor_interactive(Cursor::Mode::Move, view);
 }
 
 void
-XDGView::handle_request_resize(struct wl_listener*, void*)
+XDGView::handle_request_resize(struct wl_listener* listener, void* data)
 {
     TRACE();
 
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_resize);
+    struct wlr_xdg_toplevel_resize_event* event
+        = reinterpret_cast<struct wlr_xdg_toplevel_resize_event*>(data);
+
+    view->mp_seat->mp_cursor->initiate_cursor_interactive(Cursor::Mode::Resize, view, event->edges);
 }
 
 void
@@ -290,6 +301,17 @@ XDGView::handle_request_fullscreen(struct wl_listener* listener, void*)
             : Toggle::Off,
         view
     );
+
+    wlr_xdg_surface_schedule_configure(view->mp_wlr_xdg_surface);
+}
+
+void
+XDGView::handle_request_maximize(struct wl_listener* listener, void*)
+{
+    TRACE();
+
+    XDGView_ptr view = wl_container_of(listener, view, ml_request_maximize);
+    wlr_xdg_surface_schedule_configure(view->mp_wlr_xdg_surface);
 }
 
 void
@@ -427,9 +449,10 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
 
     wl_signal_add(&wlr_xdg_toplevel->base->surface->events.commit, &view->ml_commit);
     wl_signal_add(&wlr_xdg_toplevel->base->events.new_popup, &view->ml_new_popup);
-    wl_signal_add(&wlr_xdg_toplevel->events.request_fullscreen, &view->ml_request_fullscreen);
     wl_signal_add(&wlr_xdg_toplevel->events.request_move, &view->ml_request_move);
     wl_signal_add(&wlr_xdg_toplevel->events.request_resize, &view->ml_request_resize);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_maximize, &view->ml_request_maximize);
+    wl_signal_add(&wlr_xdg_toplevel->events.request_fullscreen, &view->ml_request_fullscreen);
     wl_signal_add(&wlr_xdg_toplevel->events.set_title, &view->ml_set_title);
     wl_signal_add(&wlr_xdg_toplevel->events.set_app_id, &view->ml_set_app_id);
 
@@ -474,6 +497,7 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_commit.link);
     wl_list_remove(&view->ml_new_popup.link);
     wl_list_remove(&view->ml_request_fullscreen.link);
+    wl_list_remove(&view->ml_request_maximize.link);
     wl_list_remove(&view->ml_request_move.link);
     wl_list_remove(&view->ml_request_resize.link);
     wl_list_remove(&view->ml_set_title.link);

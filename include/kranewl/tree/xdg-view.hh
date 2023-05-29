@@ -39,6 +39,7 @@ typedef struct XDGView final : public View {
     static void handle_request_move(struct wl_listener*, void*);
     static void handle_request_resize(struct wl_listener*, void*);
     static void handle_request_fullscreen(struct wl_listener*, void*);
+    static void handle_request_maximize(struct wl_listener*, void*);
     static void handle_set_title(struct wl_listener*, void*);
     static void handle_set_app_id(struct wl_listener*, void*);
     static void handle_new_popup(struct wl_listener*, void*);
@@ -55,6 +56,7 @@ typedef struct XDGView final : public View {
     struct wl_listener ml_request_move;
     struct wl_listener ml_request_resize;
     struct wl_listener ml_request_fullscreen;
+    struct wl_listener ml_request_maximize;
     struct wl_listener ml_set_title;
     struct wl_listener ml_set_app_id;
     struct wl_listener ml_new_popup;
