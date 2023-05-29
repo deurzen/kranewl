@@ -1,0 +1,11 @@
+[Unit]
+Description=Background setter for Wayland
+Documentation=man:swaybg(1)
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swaybg --color '#1D1F21'
+
+[Install]
+WantedBy=kranewl-session.target
