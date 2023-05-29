@@ -12,6 +12,7 @@ project(
     'optimization=2',
     'warning_level=2',
     'werror=true',
+    'b_ndebug=if-release',
   ],
 )
 
