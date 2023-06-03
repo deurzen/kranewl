@@ -2,11 +2,11 @@ all: kranewl
 
 kranewl: tags
 	cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build
-	make -C build
+	make -C build -j$(nproc)
 
 release:
 	cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
-	make -C build
+	make -C build -j$(nproc)
 
 install:
 	make -C build install
