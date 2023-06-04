@@ -1,24 +1,21 @@
 all: kranewl
 
 kranewl: tags
-	cmake -DCMAKE_BUILD_TYPE=Debug -S . -B build
-	make -C build
+	meson setup build/ --buildtype debugoptimized
+	ninja -C build
 
 release:
-	cmake -DCMAKE_BUILD_TYPE=Release -S . -B build
-	make -C build
+	meson setup build/ --buildtype release
+	ninja -C build
 
 install:
-	make -C build install
-
-test: kranewl
-	ctest --verbose --test-dir build
+	ninja -C build install
 
 .PHONY: clean tags
 clean:
-	@rm -rf ./tags
 	@rm -rf ./build
 	@rm -f ./include/protocols/*
+	@rm -f ./tags
 
 tags:
 	@git ls-files | ctags -R --exclude=.git --c++-kinds=+p --links=no --fields=+iaS --extras=+q -L-

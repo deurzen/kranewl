@@ -73,8 +73,12 @@ endif
 subdir('protocols')
 
 kranewl_inc = include_directories('include')
-src_files = run_command('globber.sh', check: true)
-kranewl_src = src_files.stdout().strip().split('\n')
+kranewl_src_files = run_command('globber.sh', 'kranewl', check: true)
+kranewl_src = kranewl_src_files.stdout().strip().split('\n')
+
+kranec_inc = include_directories('include')
+kranec_src_files = run_command('globber.sh', 'kranec', check: true)
+kranec_src = kranec_src_files.stdout().strip().split('\n')
 
 kranewl_deps = [
   wlroots.get_variable('wlroots').as_link_whole(),
@@ -94,6 +98,14 @@ executable(
   'kranewl',
   kranewl_src + protocol_src,
   include_directories: [kranewl_inc, wlroots.get_variable('wlr_inc')],
+  dependencies: kranewl_deps,
+  install: true
+)
+
+executable(
+  'kranec',
+  kranec_src + protocol_src,
+  include_directories: [kranec_inc],
   dependencies: kranewl_deps,
   install: true
 )

@@ -1,5 +1,4 @@
 #!/bin/sh
 
-for i in src/kranewl/*.cc src/kranewl/*/*.cc; do
-  echo $i
-done
+exec 2>/dev/null
+find "./src/$1" -type f -iname "*.cc"
