@@ -1,0 +1,5 @@
+[wrap-git]
+directory=mesa
+url=https://gitlab.freedesktop.org/mesa/mesa.git
+revision=mesa-23.0.4
+depth=1
