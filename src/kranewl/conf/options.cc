@@ -11,7 +11,7 @@ extern "C" {
 #include <unistd.h>
 }
 
-static const std::string CONFIG_FILE = "kranewlrc.lua";
+static const std::string CONFIG_FILE = "kranewlrc";
 static const std::string DEFAULT_CONFIG = "/etc/kranewl/" + CONFIG_FILE;
 static const std::string USAGE = "usage: kranewl [...options]\n\n"
     "options: \n"
