@@ -14,7 +14,6 @@ install:
 .PHONY: clean tags
 clean:
 	@rm -rf ./build
-	@rm -f ./include/protocols/*
 	@rm -f ./tags
 
 tags:
