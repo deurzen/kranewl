@@ -497,6 +497,7 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_commit.link);
     wl_list_remove(&view->ml_new_popup.link);
     wl_list_remove(&view->ml_request_fullscreen.link);
+    wl_list_remove(&view->ml_request_maximize.link);
     wl_list_remove(&view->ml_request_move.link);
     wl_list_remove(&view->ml_request_resize.link);
     wl_list_remove(&view->ml_set_title.link);
