@@ -7,35 +7,13 @@
 
 typedef struct Node {
     enum class Type {
-        XDGShell,
-        LayerShell,
-#ifdef XWAYLAND
-        XWaylandManaged,
-        XWaylandUnmanaged,
-#endif
+        Node = 0,
+        View,
+        XdgPopup,
+        LayerSurface,
+        LayerPopup,
+        Tree,
     };
-
-    virtual bool
-    is_focusable() const
-    {
-#ifdef XWAYLAND
-        return m_type == Type::XDGShell
-            || m_type == Type::XWaylandManaged;
-#else
-        return m_type == Type::XDGShell;
-#endif
-    }
-
-    virtual bool
-    is_view() const
-    {
-#ifdef XWAYLAND
-        return m_type != Type::LayerShell
-            && m_type != Type::XWaylandUnmanaged;
-#else
-        return m_type != Type::LayerShell;
-#endif
-    }
 
     virtual Uid uid() const { return m_uid; }
     virtual std::string const& uid_formatted() const { return m_uid_formatted; }

@@ -2,7 +2,8 @@
 
 #include <kranewl/manager.hh>
 #include <kranewl/server.hh>
-#include <kranewl/tree/layer.hh>
+#include <kranewl/tree/layer-surface.hh>
+#include <kranewl/tree/layer-popup.hh>
 #include <kranewl/tree/output.hh>
 
 // https://github.com/swaywm/wlroots/issues/682
@@ -28,7 +29,7 @@ Layer::Layer(
     Output_ptr output,
     SceneLayer scene_layer
 )
-    : Node(Type::LayerShell, reinterpret_cast<std::uintptr_t>(layer_surface)),
+    : Node(Type::LayerSurface, reinterpret_cast<std::uintptr_t>(layer_surface)),
       mp_server(server),
       mp_manager(manager),
       mp_seat(seat),

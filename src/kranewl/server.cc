@@ -11,6 +11,7 @@
 #include <kranewl/xdg-decoration.hh>
 #ifdef XWAYLAND
 #include <kranewl/tree/xwayland-view.hh>
+#include <kranewl/tree/xwayland-unmanaged.hh>
 #include <kranewl/xwayland.hh>
 #endif
 

@@ -31,7 +31,7 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : Node(Type::XDGShell, uid),
+    : Node(Type::View, uid),
       mp_server(server),
       mp_manager(manager),
       mp_seat(seat),
@@ -85,7 +85,7 @@ View::View(
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
-    : Node(Type::XWaylandManaged, uid),
+    : Node(Type::View, uid),
       mp_server(server),
       mp_manager(manager),
       mp_seat(seat),

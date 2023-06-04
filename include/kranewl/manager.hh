@@ -8,7 +8,7 @@
 #include <kranewl/placement.hh>
 #include <kranewl/rules.hh>
 #include <kranewl/search.hh>
-#include <kranewl/tree/layer.hh>
+#include <kranewl/tree/layer-surface.hh>
 #include <kranewl/tree/view.hh>
 
 #include <optional>

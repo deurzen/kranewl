@@ -11,6 +11,7 @@ extern "C" {
 #include <wlr/types/wlr_output.h>
 }
 
+#include <array>
 #include <unordered_map>
 #include <vector>
 
@@ -70,8 +71,16 @@ private:
     Region m_placeable_region;
 
     bool m_cursor_focus_on_present;
+    bool m_leased;
 
     std::unordered_map<SceneLayer, std::vector<Layer_ptr>> m_layer_map;
+    std::array<struct wlr_scene_tree*, 4> m_layer_tree;
+
+	struct wlr_scene_tree* mp_layer_popup_tree;
+	struct wlr_scene_tree* mp_osd_tree;
+	struct wlr_scene_tree* mp_session_lock_tree;
+
+	struct wlr_scene_buffer* mp_workspace_osd;
 
 public:
     Server_ptr mp_server;

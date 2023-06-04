@@ -41,11 +41,18 @@ Output::Output(
       mp_current_mode(wlr_output->pending.mode),
       m_dirty(true),
       m_cursor_focus_on_present(false),
+      m_leased(false),
       m_layer_map{
           { SCENE_LAYER_BACKGROUND, {} },
           { SCENE_LAYER_BOTTOM, {} },
           { SCENE_LAYER_TOP, {} },
           { SCENE_LAYER_OVERLAY, {} }
+      },
+      m_layer_tree{
+          wlr_scene_tree_create(&server->mp_scene->tree),
+          wlr_scene_tree_create(&server->mp_scene->tree),
+          wlr_scene_tree_create(&server->mp_scene->tree),
+          wlr_scene_tree_create(&server->mp_scene->tree)
       },
       mp_wlr_output(wlr_output),
       ml_frame({ .notify = Output::handle_frame }),

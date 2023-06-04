@@ -138,8 +138,9 @@ view_at(
 {
     Node_ptr node = node_at(server, lx, ly, surface, sx, sy);
 
-    if (node && node->is_view())
-        return reinterpret_cast<View_ptr>(node);
+    // TODO
+    /* if (node && node->is_view()) */
+    /*     return reinterpret_cast<View_ptr>(node); */
 
     return nullptr;
 }
