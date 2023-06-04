@@ -22,7 +22,7 @@ typedef struct View* View_ptr;
 typedef struct XDGDecoration* XDGDecoration_ptr;
 
 typedef class Server final {
-    static constexpr int XDG_SHELL_VERSION = 2;
+    static constexpr int XDG_SHELL_VERSION = 3;
     static constexpr int LAYER_SHELL_VERSION = 3;
 
 public:
