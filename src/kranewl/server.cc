@@ -273,13 +273,15 @@ Server::start()
     spdlog::info("Linking signal handlers");
     wl_signal_add(&mp_backend->events.new_output, &ml_new_output);
     wl_signal_add(&mp_output_layout->events.change, &ml_output_layout_change);
-    wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
-    wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
-    wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_new_xdg_toplevel_decoration);
-    wl_signal_add(&mp_xdg_activation->events.request_activate, &ml_xdg_request_activate);
-    wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
     wl_signal_add(&mp_output_manager->events.apply, &ml_output_manager_apply);
     wl_signal_add(&mp_output_manager->events.test, &ml_output_manager_test);
+
+    wl_signal_add(&mp_xdg_shell->events.new_surface, &ml_new_xdg_surface);
+    wl_signal_add(&mp_layer_shell->events.new_surface, &ml_new_layer_shell_surface);
+    wl_signal_add(&mp_backend->events.new_input, &ml_new_input);
+    wl_signal_add(&mp_xdg_decoration_manager->events.new_toplevel_decoration, &ml_new_xdg_toplevel_decoration);
+    wl_signal_add(&mp_xdg_activation->events.request_activate, &ml_xdg_request_activate);
+
     wl_signal_add(&mp_virtual_keyboard_manager->events.new_virtual_keyboard, &ml_new_virtual_keyboard);
 
     if (mp_drm_lease_manager)
@@ -607,8 +609,8 @@ apply_or_test_output_config(
     return configuration_succeeded;
 }
 
-void
-Server::handle_output_manager_apply_or_test(
+static inline void
+handle_output_manager_apply_or_test(
     Server_ptr server,
     struct wlr_output_configuration_v1* config,
     bool test
@@ -638,7 +640,7 @@ Server::handle_output_manager_apply(struct wl_listener* listener, void* data)
     struct wlr_output_configuration_v1* config
         = reinterpret_cast<struct wlr_output_configuration_v1*>(data);
 
-    Server::handle_output_manager_apply_or_test(server, config, false);
+    handle_output_manager_apply_or_test(server, config, false);
 }
 
 void
@@ -650,7 +652,7 @@ Server::handle_output_manager_test(struct wl_listener* listener, void* data)
     struct wlr_output_configuration_v1* config
         = reinterpret_cast<struct wlr_output_configuration_v1*>(data);
 
-    Server::handle_output_manager_apply_or_test(server, config, true);
+    handle_output_manager_apply_or_test(server, config, true);
 }
 
 static inline XDGView_ptr

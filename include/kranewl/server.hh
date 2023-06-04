@@ -39,18 +39,18 @@ public:
 private:
     static void handle_new_output(struct wl_listener*, void*);
     static void handle_output_layout_change(struct wl_listener*, void*);
-    static void handle_output_manager_apply_or_test(Server_ptr, struct wlr_output_configuration_v1*, bool);
     static void handle_output_manager_apply(struct wl_listener*, void*);
     static void handle_output_manager_test(struct wl_listener*, void*);
+
     static void handle_new_xdg_surface(struct wl_listener*, void*);
     static void handle_new_layer_shell_surface(struct wl_listener*, void*);
     static void handle_new_input(struct wl_listener*, void*);
     static void handle_new_xdg_toplevel_decoration(struct wl_listener*, void*);
     static void handle_xdg_request_activate(struct wl_listener*, void*);
+
     static void handle_new_virtual_keyboard(struct wl_listener*, void*);
     static void handle_drm_lease_request(struct wl_listener*, void*);
 
-    static void propagate_output_layout_change(Server_ptr);
     static void configure_libinput(struct wlr_input_device*);
 
 public:
@@ -94,11 +94,13 @@ private:
     struct wl_listener ml_output_layout_change;
     struct wl_listener ml_output_manager_apply;
     struct wl_listener ml_output_manager_test;
+
     struct wl_listener ml_new_xdg_surface;
     struct wl_listener ml_new_layer_shell_surface;
     struct wl_listener ml_new_input;
     struct wl_listener ml_new_xdg_toplevel_decoration;
     struct wl_listener ml_xdg_request_activate;
+
     struct wl_listener ml_new_virtual_keyboard;
     struct wl_listener ml_drm_lease_request;
 
