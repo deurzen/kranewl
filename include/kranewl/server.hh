@@ -53,9 +53,9 @@ private:
     static void propagate_output_layout_change(Server_ptr);
     static void configure_libinput(struct wlr_input_device*);
 
+public:
     Model_ptr mp_model = nullptr;
 
-public:
     struct wl_display* mp_display;
     struct wl_event_loop* mp_event_loop;
 
@@ -76,6 +76,7 @@ public:
     struct wlr_output* mp_fallback_output;
     struct wlr_output_manager_v1* mp_output_manager;
     struct wlr_drm_lease_v1_manager* mp_drm_lease_manager;
+    int m_pending_output_layout_changes;
 
     std::unordered_map<Uid, XDGDecoration_ptr> m_decorations;
 

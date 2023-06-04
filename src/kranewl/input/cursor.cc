@@ -154,9 +154,15 @@ Cursor::cursor_pos() const
 }
 
 void
-Cursor::set_cursor_pos(Pos const& pos)
+Cursor::warp_cursor(Pos pos)
 {
     wlr_cursor_warp(mp_wlr_cursor, nullptr, pos.x, pos.y);
+}
+
+void
+Cursor::move_cursor(Pos pos)
+{
+    wlr_cursor_move(mp_wlr_cursor, nullptr, pos.x, pos.y);
 }
 
 Node_ptr
@@ -470,6 +476,21 @@ Cursor::process_cursor_motion(uint32_t time)
         );
 
     cursor_motion_to_client(this, view, surface, sx, sy, time);
+}
+
+void
+Cursor::load_output_cursor(float scale)
+{
+    wlr_xcursor_manager_load(
+        mp_cursor_manager,
+        scale
+    );
+
+    wlr_xcursor_manager_set_cursor_image(
+        mp_cursor_manager,
+        "left_ptr",
+        mp_wlr_cursor
+    );
 }
 
 void

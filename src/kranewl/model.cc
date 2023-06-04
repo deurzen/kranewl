@@ -1146,7 +1146,7 @@ Model::activate_workspace(Workspace_ptr next_workspace)
             = mp_focus ? mp_focus->last_cursor_pos() : std::nullopt;
 
         if (last_cursor_pos) {
-            mp_server->mp_seat->mp_cursor->set_cursor_pos(*last_cursor_pos);
+            mp_server->mp_seat->mp_cursor->warp_cursor(*last_cursor_pos);
             mp_focus->set_last_cursor_pos(std::nullopt);
         } else
             mp_output->focus_at_cursor();

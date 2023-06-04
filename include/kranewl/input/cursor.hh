@@ -65,7 +65,8 @@ typedef struct Cursor {
     ~Cursor();
 
     Pos cursor_pos() const;
-    void set_cursor_pos(Pos const&);
+    void warp_cursor(Pos);
+    void move_cursor(Pos);
 
     Node_ptr node_under_cursor() const;
     View_ptr view_under_cursor() const;
@@ -76,6 +77,8 @@ typedef struct Cursor {
     void abort_cursor_interactive();
 
     void process_cursor_motion(uint32_t time);
+
+    void load_output_cursor(float);
 
     static void handle_cursor_motion(struct wl_listener*, void*);
     static void handle_cursor_motion_absolute(struct wl_listener*, void*);
