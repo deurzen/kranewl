@@ -3,7 +3,7 @@
 #include <kranewl/input/bindings.hh>
 #include <kranewl/input/cursor.hh>
 #include <kranewl/layout.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 
 extern "C" {
 #include <linux/input-event-codes.h>
@@ -32,8 +32,8 @@ extern "C" {
 #define FORWARD CursorInput::Button::Forward
 #define BACKWARD CursorInput::Button::Backward
 
-#define CALL_FOCUS(args) [](Model& model, View_ptr view) {{args} return true;}
-#define CALL_NOFOCUS(args) [](Model& model, View_ptr view) {{args} return false;}
+#define CALL_FOCUS(args) [](Manager& manager, View_ptr view) {{args} return true;}
+#define CALL_NOFOCUS(args) [](Manager& manager, View_ptr view) {{args} return false;}
 #define CALL_EXTERNAL(command) CALL(spawn_external(#command))
 
 namespace Bindings {
@@ -42,115 +42,115 @@ static const CursorBindings cursor_bindings = {
 { { VIEW, RIGHT, MODKEY | WLR_MODIFIER_CTRL },
     CALL_FOCUS({
         if (view)
-            model.set_floating_view(Toggle::Reverse, view);
+            manager.set_floating_view(Toggle::Reverse, view);
     })
 },
 { { VIEW, MIDDLE, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
-            model.set_fullscreen_view(Toggle::Reverse, view);
+            manager.set_fullscreen_view(Toggle::Reverse, view);
     })
 },
 { { VIEW, MIDDLE, MODKEY },
     CALL_FOCUS({
         if (view)
-            model.center_view(view);
+            manager.center_view(view);
     })
 },
 { { VIEW, SCROLLDOWN, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
-            model.inflate_view(-16, view);
+            manager.inflate_view(-16, view);
     })
 },
 { { VIEW, SCROLLUP, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_FOCUS({
         if (view)
-            model.inflate_view(16, view);
+            manager.inflate_view(16, view);
     })
 },
 { { VIEW, LEFT, MODKEY },
     CALL_FOCUS({
         if (view)
-            model.cursor_interactive(Cursor::Mode::Move, view);
+            manager.cursor_interactive(Cursor::Mode::Move, view);
     })
 },
 { { VIEW, RIGHT, MODKEY },
     CALL_FOCUS({
         if (view)
-            model.cursor_interactive(Cursor::Mode::Resize, view);
+            manager.cursor_interactive(Cursor::Mode::Resize, view);
     })
 },
 { { GLOBAL, SCROLLDOWN, MODKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.cycle_focus_track(Direction::Forward);
+        manager.cycle_focus_track(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.cycle_focus_track(Direction::Backward);
+        manager.cycle_focus_track(Direction::Backward);
     })
 },
 { { GLOBAL, SCROLLDOWN, MODKEY | SECKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.cycle_focus(Direction::Forward);
+        manager.cycle_focus(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY | SECKEY },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.cycle_focus(Direction::Backward);
+        manager.cycle_focus(Direction::Backward);
     })
 },
 { { GLOBAL, SCROLLDOWN, MODKEY | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.activate_next_workspace(Direction::Forward);
+        manager.activate_next_workspace(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.activate_next_workspace(Direction::Backward);
+        manager.activate_next_workspace(Direction::Backward);
     })
 },
 { { GLOBAL, SCROLLDOWN, MODKEY | WLR_MODIFIER_CTRL },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.activate_next_context(Direction::Forward);
+        manager.activate_next_context(Direction::Forward);
     })
 },
 { { GLOBAL, SCROLLUP, MODKEY | WLR_MODIFIER_CTRL },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.activate_next_context(Direction::Backward);
+        manager.activate_next_context(Direction::Backward);
     })
 },
 { { VIEW, FORWARD, MODKEY },
     CALL_NOFOCUS({
         if (view)
-            model.move_view_to_next_workspace(view, Direction::Forward);
+            manager.move_view_to_next_workspace(view, Direction::Forward);
     })
 },
 { { VIEW, BACKWARD, MODKEY },
     CALL_NOFOCUS({
         if (view)
-            model.move_view_to_next_workspace(view, Direction::Backward);
+            manager.move_view_to_next_workspace(view, Direction::Backward);
     })
 },
 { { VIEW, RIGHT, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
     CALL_NOFOCUS({
         if (view)
-            model.kill_view(view);
+            manager.kill_view(view);
     })
 },
 { { GLOBAL, LEFT, MODKEY | SECKEY | WLR_MODIFIER_CTRL },
     CALL_NOFOCUS({
         static_cast<void>(view);
-        model.spawn_external("alacritty --class kranewl:cf,Alacritty");
+        manager.spawn_external("alacritty --class kranewl:cf,Alacritty");
     })
 },
 };

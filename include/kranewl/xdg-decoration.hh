@@ -10,14 +10,14 @@ extern "C" {
 #include <vector>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef struct XDGView* XDGView_ptr;
 
 typedef struct XDGDecoration final {
 public:
     XDGDecoration(
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         XDGView_ptr,
         struct wlr_xdg_toplevel_decoration_v1*
     );
@@ -31,7 +31,7 @@ public:
     Uid m_uid;
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     XDGView_ptr mp_view;
 
     struct wlr_xdg_toplevel_decoration_v1* mp_wlr_xdg_decoration;

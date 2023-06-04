@@ -39,13 +39,13 @@ struct CursorInput {
 };
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Seat* Seat_ptr;
 typedef struct View* View_ptr;
 typedef struct Node* Node_ptr;
 
 typedef
-    std::function<bool(Model&, View_ptr)>
+    std::function<bool(Manager&, View_ptr)>
     CursorAction;
 
 typedef struct Cursor {
@@ -57,7 +57,7 @@ typedef struct Cursor {
 
     Cursor(
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr,
         struct wlr_cursor*
     );
@@ -97,7 +97,7 @@ typedef struct Cursor {
     static void handle_request_set_cursor(struct wl_listener*, void*);
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
     struct wlr_cursor* mp_wlr_cursor;

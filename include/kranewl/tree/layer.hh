@@ -13,7 +13,7 @@ extern "C" {
 #include <vector>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 typedef struct LayerPopup* LayerPopup_ptr;
@@ -22,7 +22,7 @@ typedef struct Layer final : public Node {
     Layer(
         struct wlr_layer_surface_v1*,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr,
         Output_ptr,
         SceneLayer
@@ -47,7 +47,7 @@ typedef struct Layer final : public Node {
     void set_region(Region const&);
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
     Output_ptr mp_output;
@@ -78,7 +78,7 @@ typedef struct LayerPopup final {
         struct wlr_xdg_popup*,
         Layer_ptr,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr
     );
 
@@ -87,7 +87,7 @@ typedef struct LayerPopup final {
         LayerPopup_ptr,
         Layer_ptr,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr
     );
 
@@ -103,7 +103,7 @@ typedef struct LayerPopup final {
     static void handle_destroy(struct wl_listener*, void*);
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
 	Layer_ptr mp_root;

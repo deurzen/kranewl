@@ -19,7 +19,7 @@ extern "C" {
 
 Seat::Seat(
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     struct wlr_seat* seat,
     struct wlr_idle* idle,
     struct wlr_cursor* cursor,
@@ -28,7 +28,7 @@ Seat::Seat(
     struct wlr_virtual_keyboard_manager_v1* virtual_keyboard_manager
 )
     : mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_wlr_seat(seat),
       mp_idle(idle),
       mp_input_inhibit_manager(input_inhibit_manager),
@@ -36,7 +36,7 @@ Seat::Seat(
       mp_virtual_keyboard_manager(virtual_keyboard_manager),
       mp_cursor(new Cursor(
           server,
-          model,
+          manager,
           this,
           cursor
       )),

@@ -11,7 +11,7 @@ extern "C" {
 #include <array>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Seat* Seat_ptr;
 
 typedef struct XWayland final {
@@ -33,7 +33,7 @@ typedef struct XWayland final {
     XWayland(
         struct wlr_xwayland*,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr
     );
 
@@ -48,7 +48,7 @@ typedef struct XWayland final {
     std::array<xcb_atom_t, XATOM_LAST> m_atoms;
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
     struct wl_listener ml_ready;

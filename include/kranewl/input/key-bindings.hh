@@ -2,7 +2,7 @@
 
 #include <kranewl/input/bindings.hh>
 #include <kranewl/layout.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 
 extern "C" {
 #include <wlr/types/wlr_keyboard.h>
@@ -16,7 +16,7 @@ extern "C" {
 #define SECKEY WLR_MODIFIER_LOGO
 #endif
 
-#define CALL(args) [](Model& model) {model.args;}
+#define CALL(args) [](Manager& manager) {manager.args;}
 #define CALL_EXTERNAL(command) CALL(spawn_external(#command))
 
 namespace Bindings {
@@ -94,52 +94,52 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_h, MODKEY | WLR_MODIFIER_CTRL },
   {
-    .action = [](Model& model) {
-        View_ptr focus = model.focused_view();
+    .action = [](Manager& manager) {
+        View_ptr focus = manager.focused_view();
 
         if (focus && focus->free())
-            model.nudge_focus(Edge::Left, 50);
+            manager.nudge_focus(Edge::Left, 50);
         else
-            model.shuffle_main(Direction::Backward);
+            manager.shuffle_main(Direction::Backward);
     },
     .repeatable = true
   }
 },
 { { XKB_KEY_j, MODKEY | WLR_MODIFIER_CTRL },
   {
-    .action = [](Model& model) {
-        View_ptr focus = model.focused_view();
+    .action = [](Manager& manager) {
+        View_ptr focus = manager.focused_view();
 
         if (focus && focus->free())
-            model.nudge_focus(Edge::Bottom, 50);
+            manager.nudge_focus(Edge::Bottom, 50);
         else
-            model.shuffle_stack(Direction::Forward);
+            manager.shuffle_stack(Direction::Forward);
     },
     .repeatable = true
   }
 },
 { { XKB_KEY_k, MODKEY | WLR_MODIFIER_CTRL },
   {
-    .action = [](Model& model) {
-        View_ptr focus = model.focused_view();
+    .action = [](Manager& manager) {
+        View_ptr focus = manager.focused_view();
 
         if (focus && focus->free())
-            model.nudge_focus(Edge::Top, 50);
+            manager.nudge_focus(Edge::Top, 50);
         else
-            model.shuffle_stack(Direction::Backward);
+            manager.shuffle_stack(Direction::Backward);
     },
     .repeatable = true
   }
 },
 { { XKB_KEY_l, MODKEY | WLR_MODIFIER_CTRL },
   {
-    .action = [](Model& model) {
-        View_ptr focus = model.focused_view();
+    .action = [](Manager& manager) {
+        View_ptr focus = manager.focused_view();
 
         if (focus && focus->free())
-            model.nudge_focus(Edge::Right, 50);
+            manager.nudge_focus(Edge::Right, 50);
         else
-            model.shuffle_main(Direction::Forward);
+            manager.shuffle_main(Direction::Forward);
     },
     .repeatable = true
   }
@@ -280,13 +280,13 @@ static const KeyBindings key_bindings = {
     // workspace behavior modifiers
 { { XKB_KEY_M, MODKEY | WLR_MODIFIER_SHIFT },
   {
-    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_workspace)),
+    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, manager.mp_workspace)),
     .repeatable = false
   }
 },
 { { XKB_KEY_M, MODKEY | WLR_MODIFIER_CTRL | WLR_MODIFIER_SHIFT },
   {
-    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, model.mp_context)),
+    .action = CALL(set_focus_follows_cursor(Toggle::Reverse, manager.mp_context)),
     .repeatable = false
   }
 },
@@ -414,7 +414,7 @@ static const KeyBindings key_bindings = {
 },
 { { XKB_KEY_Return, MODKEY },
   {
-    .action = CALL_EXTERNAL(alacritty),
+    .action = CALL_EXTERNAL(alacritty_with_ideal_font_size),
     .repeatable = false
   }
 },
@@ -953,7 +953,7 @@ static const KeyBindings key_bindings = {
   {
     .action = CALL(jump_view({
         SearchSelector::SelectionCriterium::ByAppIdEquals,
-        "qutebrowser"
+        "librewolf"
     })),
     .repeatable = false
   }
@@ -988,7 +988,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_comma, MODKEY },
   {
     .action = CALL(jump_view({
-        model.mp_workspace->index(),
+        manager.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtFirst
     })),
     .repeatable = false
@@ -997,7 +997,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_period, MODKEY },
   {
     .action = CALL(jump_view({
-        model.mp_workspace->index(),
+        manager.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtMain
     })),
     .repeatable = false
@@ -1006,7 +1006,7 @@ static const KeyBindings key_bindings = {
 { { XKB_KEY_slash, MODKEY },
   {
     .action = CALL(jump_view({
-        model.mp_workspace->index(),
+        manager.mp_workspace->index(),
         Workspace::ViewSelector::SelectionCriterium::AtLast
     })),
     .repeatable = false

@@ -3,7 +3,7 @@
 
 #include <kranewl/conf/config.hh>
 #include <kranewl/conf/options.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/server.hh>
 #include <kranewl/decoration.hh>
 
@@ -36,16 +36,16 @@ main(int argc, char** argv)
     const ConfigParser config_parser{options.config_path};
     const Config config = config_parser.generate_config();
 
-    Model model{config};
-    Server server{&model};
+    Manager manager{config};
+    Server server{&manager};
 
     signal(SIGPIPE, SIG_IGN);
 
     server.initialize();
-    model.evaluate_user_env_vars(options.env_path);
-    model.retrieve_user_default_rules(options.rules_path);
+    manager.evaluate_user_env_vars(options.env_path);
+    manager.retrieve_user_default_rules(options.rules_path);
     server.start();
-    model.run_user_autostart(options.autostart_path);
+    manager.run_user_autostart(options.autostart_path);
     server.run();
 
     return EXIT_SUCCESS;

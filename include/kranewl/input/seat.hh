@@ -11,7 +11,7 @@ extern "C" {
 #include <vector>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef struct Keyboard* Keyboard_ptr;
 typedef struct Cursor* Cursor_ptr;
 
@@ -19,7 +19,7 @@ typedef class Seat final {
 public:
     Seat(
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         struct wlr_seat*,
         struct wlr_idle*,
         struct wlr_cursor*,
@@ -43,7 +43,7 @@ public:
 
 public:
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
 
     struct wlr_seat* mp_wlr_seat;
     struct wlr_idle* mp_idle;

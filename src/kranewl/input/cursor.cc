@@ -3,7 +3,7 @@
 #include <kranewl/input/cursor.hh>
 
 #include <kranewl/input/seat.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/view.hh>
@@ -32,12 +32,12 @@ extern "C" {
 
 Cursor::Cursor(
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     struct wlr_cursor* cursor
 )
     : mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_wlr_cursor(cursor),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
@@ -421,7 +421,7 @@ cursor_motion_to_client(
         if (view && view != prev_view && view->belongs_to_active_track()
             && view->mp_workspace->focus_follows_cursor() && view->managed())
         {
-            cursor->mp_seat->mp_model->focus_view(view);
+            cursor->mp_seat->mp_manager->focus_view(view);
             prev_view = view;
         }
     }
@@ -531,17 +531,17 @@ process_cursorbinding(Cursor_ptr cursor, View_ptr view, uint32_t button, uint32_
         .modifiers = modifiers
     };
 
-    Model_ptr model = cursor->mp_seat->mp_model;
-    View_ptr focused_view = model->focused_view();
+    Manager_ptr manager = cursor->mp_seat->mp_manager;
+    View_ptr focused_view = manager->focused_view();
 
 #define CALL_AND_HANDLE_FOCUS(binding) \
     do { \
-        if (((*binding)(*model, view) && view && view != focused_view && view->managed())) \
-            model->focus_view(view); \
+        if (((*binding)(*manager, view) && view && view != focused_view && view->managed())) \
+            manager->focus_view(view); \
     } while (false)
 
     { // global binding
-        auto binding = Util::const_retrieve(model->cursor_bindings(), input);
+        auto binding = Util::const_retrieve(manager->cursor_bindings(), input);
 
         if (binding) {
             CALL_AND_HANDLE_FOCUS(binding);
@@ -551,7 +551,7 @@ process_cursorbinding(Cursor_ptr cursor, View_ptr view, uint32_t button, uint32_
 
     if (!view) { // root binding
         input.target = CursorInput::Target::Root;
-        auto binding = Util::const_retrieve(model->cursor_bindings(), input);
+        auto binding = Util::const_retrieve(manager->cursor_bindings(), input);
 
         if (binding) {
             CALL_AND_HANDLE_FOCUS(binding);
@@ -559,7 +559,7 @@ process_cursorbinding(Cursor_ptr cursor, View_ptr view, uint32_t button, uint32_
         }
     } else { // view binding
         input.target = CursorInput::Target::View;
-        auto binding = Util::const_retrieve(model->cursor_bindings(), input);
+        auto binding = Util::const_retrieve(manager->cursor_bindings(), input);
 
         if (binding) {
             CALL_AND_HANDLE_FOCUS(binding);
@@ -600,11 +600,11 @@ Cursor::handle_cursor_button(struct wl_listener* listener, void* data)
         if (process_cursorbinding(cursor, view, button, modifiers))
             return;
 
-        if (view && (!cursor->mp_model->mp_workspace->focus_follows_cursor()
+        if (view && (!cursor->mp_manager->mp_workspace->focus_follows_cursor()
             || !view->belongs_to_active_track()))
         {
             if (!view->focused() && view->managed())
-                cursor->mp_seat->mp_model->focus_view(view);
+                cursor->mp_seat->mp_manager->focus_view(view);
         }
 
         break;
@@ -851,7 +851,7 @@ Cursor::handle_start_drag(struct wl_listener* listener, void* data)
 
     View_ptr view = cursor->view_under_cursor();
     if (view && cursor->m_cursor_mode == Mode::Passthrough)
-        view->mp_model->cursor_interactive(Cursor::Mode::Move, view);
+        view->mp_manager->cursor_interactive(Cursor::Mode::Move, view);
 
 	wl_signal_add(&drag->events.destroy, &cursor->ml_destroy_drag);
 }
@@ -867,7 +867,7 @@ Cursor::handle_destroy_drag(struct wl_listener* listener, void* data)
     if (drag->icon)
         wlr_scene_node_destroy(reinterpret_cast<wlr_scene_node*>(drag->icon->data));
 
-    cursor->mp_model->refocus();
+    cursor->mp_manager->refocus();
     cursor->mp_seat->mp_cursor->process_cursor_motion(0);
 }
 

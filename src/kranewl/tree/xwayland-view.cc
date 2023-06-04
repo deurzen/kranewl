@@ -2,7 +2,7 @@
 #include <trace.hh>
 
 #include <kranewl/context.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
@@ -29,7 +29,7 @@ extern "C" {
 XWaylandView::XWaylandView(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     XWayland_ptr xwayland
 )
@@ -37,7 +37,7 @@ XWaylandView::XWaylandView(
           this,
           reinterpret_cast<std::uintptr_t>(wlr_xwayland_surface),
           server,
-          model,
+          manager,
           seat,
           wlr_xwayland_surface->surface
       ),
@@ -305,7 +305,7 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
 
     XWaylandView_ptr view = wl_container_of(listener, view, ml_map);
     Server_ptr server = view->mp_server;
-    Model_ptr model = view->mp_model;
+    Manager_ptr manager = view->mp_manager;
 
     view->set_pid(view->retrieve_pid());
     view->format_uid();
@@ -409,7 +409,7 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
         .dim = preferred_dim
     };
 
-    Workspace_ptr workspace = model->mp_workspace;
+    Workspace_ptr workspace = manager->mp_workspace;
     Output_ptr output = workspace->output();
     if (output)
         output->place_at_center(region);
@@ -419,7 +419,7 @@ XWaylandView::handle_map(struct wl_listener* listener, void* data)
 
     view->set_mapped(true);
     view->render_decoration();
-    model->register_view(view, workspace);
+    manager->register_view(view, workspace);
 }
 
 void
@@ -430,14 +430,14 @@ XWaylandView::handle_unmap(struct wl_listener* listener, void*)
     XWaylandView_ptr view = wl_container_of(listener, view, ml_unmap);
 
     view->activate(Toggle::Off);
-    view->mp_model->unregister_view(view);
+    view->mp_manager->unregister_view(view);
 
     wlr_scene_node_destroy(&view->mp_scene->node);
     view->mp_wlr_surface = nullptr;
     view->set_managed(false);
 
-    if (view->mp_model->mp_workspace)
-        view->mp_model->apply_layout(view->mp_workspace);
+    if (view->mp_manager->mp_workspace)
+        view->mp_manager->apply_layout(view->mp_workspace);
 }
 
 void
@@ -451,7 +451,7 @@ XWaylandView::handle_request_activate(struct wl_listener* listener, void*)
     if (!xwayland_surface->mapped)
         return;
 
-    view->mp_model->focus_view(view);
+    view->mp_manager->focus_view(view);
 }
 
 void
@@ -509,7 +509,7 @@ XWaylandView::handle_request_fullscreen(struct wl_listener* listener, void*)
     XWaylandView_ptr view = wl_container_of(listener, view, ml_request_fullscreen);
     struct wlr_xwayland_surface* xwayland_surface = view->mp_wlr_xwayland_surface;
 
-    view->mp_model->set_fullscreen_view(
+    view->mp_manager->set_fullscreen_view(
         xwayland_surface->fullscreen
             ? Toggle::On
             : Toggle::Off,
@@ -545,7 +545,7 @@ XWaylandView::handle_request_move(struct wl_listener* listener, void*)
     if (!view->free())
         return;
 
-    view->mp_model->cursor_interactive(Cursor::Mode::Move, view);
+    view->mp_manager->cursor_interactive(Cursor::Mode::Move, view);
 }
 
 void
@@ -584,7 +584,7 @@ XWaylandView::handle_set_override_redirect(struct wl_listener* listener, void* d
     XWaylandView::handle_destroy(&view->ml_destroy, view);
     xwayland_surface->data = nullptr;
 
-    XWaylandUnmanaged_ptr unmanaged = view->mp_model->create_xwayland_unmanaged(
+    XWaylandUnmanaged_ptr unmanaged = view->mp_manager->create_xwayland_unmanaged(
         xwayland_surface,
         view->mp_seat,
         view->mp_xwayland
@@ -659,21 +659,21 @@ XWaylandView::handle_destroy(struct wl_listener* listener, void*)
     wl_list_remove(&view->ml_destroy.link);
 
     view->mp_wlr_xwayland_surface = nullptr;
-    view->mp_model->destroy_view(view);
+    view->mp_manager->destroy_view(view);
 }
 
 
 XWaylandUnmanaged::XWaylandUnmanaged(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     XWayland_ptr xwayland
 )
     : Node(Type::XWaylandUnmanaged, reinterpret_cast<std::uintptr_t>(wlr_xwayland_surface)),
       mp_wlr_xwayland_surface(wlr_xwayland_surface),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_output(nullptr),
       mp_xwayland(xwayland),
@@ -725,7 +725,7 @@ XWaylandUnmanaged::handle_map(struct wl_listener* listener, void* data)
 
     XWaylandUnmanaged_ptr unmanaged = wl_container_of(listener, unmanaged, ml_map);
     Server_ptr server = unmanaged->mp_server;
-    Model_ptr model = unmanaged->mp_model;
+    Manager_ptr manager = unmanaged->mp_manager;
 
     unmanaged->set_pid(unmanaged->retrieve_pid());
     unmanaged->format_uid();
@@ -844,7 +844,7 @@ XWaylandUnmanaged::handle_unmap(struct wl_listener* listener, void*)
             return;
         }
 
-        unmanaged->mp_model->refocus();
+        unmanaged->mp_manager->refocus();
     }
 }
 
@@ -863,7 +863,7 @@ XWaylandUnmanaged::handle_set_override_redirect(struct wl_listener* listener, vo
     XWaylandUnmanaged::handle_destroy(&unmanaged->ml_destroy, unmanaged);
     xwayland_surface->data = nullptr;
 
-    XWaylandView_ptr view = unmanaged->mp_model->create_xwayland_view(
+    XWaylandView_ptr view = unmanaged->mp_manager->create_xwayland_view(
         xwayland_surface,
         unmanaged->mp_seat,
         unmanaged->mp_xwayland
@@ -978,6 +978,6 @@ XWaylandUnmanaged::handle_destroy(struct wl_listener* listener, void*)
     wl_list_remove(&unmanaged->ml_request_fullscreen.link);
     wl_list_remove(&unmanaged->ml_destroy.link);
 
-    unmanaged->mp_model->destroy_unmanaged(unmanaged);
+    unmanaged->mp_manager->destroy_unmanaged(unmanaged);
 }
 #endif

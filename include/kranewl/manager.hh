@@ -33,11 +33,11 @@ typedef struct XWaylandUnmanaged* XWaylandUnmanaged_ptr;
 #endif
 class Config;
 
-class Model final
+class Manager final
 {
 public:
-    Model(Config const&);
-    ~Model();
+    Manager(Config const&);
+    ~Manager();
 
     void evaluate_user_env_vars(std::optional<std::string> const&);
     void retrieve_user_default_rules(std::optional<std::string> const&);

@@ -1,7 +1,7 @@
 #include <trace.hh>
 
 #include <kranewl/context.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
@@ -29,14 +29,14 @@ extern "C" {
 XDGView::XDGView(
     struct wlr_xdg_surface* wlr_xdg_surface,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat
 )
     : View(
           this,
           reinterpret_cast<std::uintptr_t>(wlr_xdg_surface),
           server,
-          model,
+          manager,
           seat,
           wlr_xdg_surface->toplevel->base->surface
       ),
@@ -304,7 +304,7 @@ XDGView::handle_request_fullscreen(struct wl_listener* listener, void*)
     XDGView_ptr view = wl_container_of(listener, view, ml_request_fullscreen);
     struct wlr_xdg_toplevel* xdg_toplevel = view->mp_wlr_xdg_toplevel;
 
-    view->mp_model->set_fullscreen_view(
+    view->mp_manager->set_fullscreen_view(
         xdg_toplevel->requested.fullscreen
             ? Toggle::On
             : Toggle::Off,
@@ -350,7 +350,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
 
     XDGView_ptr view = wl_container_of(listener, view, ml_map);
     Server_ptr server = view->mp_server;
-    Model_ptr model = view->mp_model;
+    Manager_ptr manager = view->mp_manager;
 
     view->set_pid(view->retrieve_pid());
     view->format_uid();
@@ -468,7 +468,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
         Context_ptr context = output->context();
         workspace = context->workspace();
     } else
-        workspace = model->mp_workspace;
+        workspace = manager->mp_workspace;
 
     Region region = Region{
         .pos = Pos{0, 0},
@@ -484,7 +484,7 @@ XDGView::handle_map(struct wl_listener* listener, void* data)
 
     view->set_mapped(true);
     view->render_decoration();
-    model->register_view(view, workspace);
+    manager->register_view(view, workspace);
 }
 
 void
@@ -504,14 +504,14 @@ XDGView::handle_unmap(struct wl_listener* listener, void* data)
     wl_list_remove(&view->ml_set_app_id.link);
 
     view->activate(Toggle::Off);
-    view->mp_model->unregister_view(view);
+    view->mp_manager->unregister_view(view);
 
     wlr_scene_node_destroy(&view->mp_scene->node);
 	view->mp_wlr_surface = nullptr;
     view->set_managed(false);
 
-    if (view->mp_model->mp_workspace)
-        view->mp_model->apply_layout(view->mp_workspace);
+    if (view->mp_manager->mp_workspace)
+        view->mp_manager->apply_layout(view->mp_workspace);
 }
 
 void
@@ -531,5 +531,5 @@ XDGView::handle_destroy(struct wl_listener* listener, void* data)
 
 	view->mp_wlr_xdg_toplevel = nullptr;
 	view->mp_wlr_xdg_surface = nullptr;
-    view->mp_model->destroy_view(view);
+    view->mp_manager->destroy_view(view);
 }

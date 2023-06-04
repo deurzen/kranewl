@@ -1,6 +1,6 @@
 #include <trace.hh>
 
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/scene-layer.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
@@ -27,13 +27,13 @@ View::View(
     XDGView_ptr,
     Uid uid,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
     : Node(Type::XDGShell, uid),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_output(nullptr),
       mp_context(nullptr),
@@ -81,13 +81,13 @@ View::View(
     XWaylandView_ptr,
     Uid uid,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     struct wlr_surface* wlr_surface
 )
     : Node(Type::XWaylandManaged, uid),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_output(nullptr),
       mp_context(nullptr),

@@ -4,7 +4,7 @@
 
 #include <kranewl/exec.hh>
 #include <kranewl/input/keyboard.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/tree/view.hh>
 #include <kranewl/tree/xdg-view.hh>
@@ -101,10 +101,10 @@ drop_privileges()
     return true;
 }
 
-Server::Server(Model_ptr model)
-    : mp_model([this,model]() {
-        model->register_server(this);
-        return model;
+Server::Server(Manager_ptr manager)
+    : mp_manager([this,manager]() {
+        manager->register_server(this);
+        return manager;
       }()),
       m_pending_output_layout_changes(0),
       ml_new_output({ .notify = Server::handle_new_output }),
@@ -203,7 +203,7 @@ Server::initialize()
     wlr_cursor_attach_output_layout(cursor, mp_output_layout);
     mp_seat = new Seat(
         this,
-        mp_model,
+        mp_manager,
         wlr_seat_create(mp_display, "seat0"),
         wlr_idle_create(mp_display),
         cursor,
@@ -214,7 +214,7 @@ Server::initialize()
 
 #ifdef XWAYLAND
     mp_wlr_xwayland = wlr_xwayland_create(mp_display, mp_compositor, true);
-    mp_xwayland = new XWayland(mp_wlr_xwayland, this, mp_model, mp_seat);
+    mp_xwayland = new XWayland(mp_wlr_xwayland, this, mp_manager, mp_seat);
 #endif
 
     mp_layer_shell = wlr_layer_shell_v1_create(mp_display);
@@ -359,7 +359,7 @@ create_output_config(Server_ptr server)
         return nullptr;
     }
 
-    for (Output_ptr output : server->mp_model->outputs()) {
+    for (Output_ptr output : server->mp_manager->outputs()) {
         struct wlr_output_configuration_head_v1* config_head
             = wlr_output_configuration_head_v1_create(config, output->mp_wlr_output);
 
@@ -489,7 +489,7 @@ Server::handle_new_output(struct wl_listener* listener, void* data)
         &output_box
     );
 
-    Output_ptr output = server->mp_model->create_output(
+    Output_ptr output = server->mp_manager->create_output(
         wlr_output,
         Region{
             .pos = Pos{
@@ -519,9 +519,9 @@ Server::handle_output_layout_change(struct wl_listener* listener, void* data)
 
 
 static inline Output_ptr
-output_from_wlr_output(Model_ptr model, struct wlr_output* wlr_output)
+output_from_wlr_output(Manager_ptr manager, struct wlr_output* wlr_output)
 {
-    for (Output_ptr output : model->outputs()) {
+    for (Output_ptr output : manager->outputs()) {
         if (output->mp_wlr_output == wlr_output)
             return output;
     }
@@ -543,7 +543,7 @@ apply_or_test_output_config(
 
     wl_list_for_each(config_head, &config->heads, link) {
         struct wlr_output* wlr_output = config_head->state.output;
-        Output_ptr output = output_from_wlr_output(server->mp_model, wlr_output);
+        Output_ptr output = output_from_wlr_output(server->mp_manager, wlr_output);
 
         wlr_output_enable(wlr_output, config_head->state.enabled);
 
@@ -625,7 +625,7 @@ handle_output_manager_apply_or_test(
 
     wlr_output_configuration_v1_destroy(config);
 
-    for (Output_ptr output : server->mp_model->outputs())
+    for (Output_ptr output : server->mp_manager->outputs())
         server->mp_seat->mp_cursor->load_output_cursor(
             output->mp_wlr_output->scale
         );
@@ -709,7 +709,7 @@ Server::handle_new_xdg_surface(struct wl_listener* listener, void* data)
     default: break;
     }
 
-    xdg_surface->data = view = server->mp_model->create_xdg_shell_view(
+    xdg_surface->data = view = server->mp_manager->create_xdg_shell_view(
         xdg_surface,
         server->mp_seat
     );
@@ -725,7 +725,7 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
         = reinterpret_cast<struct wlr_layer_surface_v1*>(data);
 
     if (!layer_surface->output)
-        layer_surface->output = server->mp_model->mp_output->mp_wlr_output;
+        layer_surface->output = server->mp_manager->mp_output->mp_wlr_output;
 
     SceneLayer scene_layer;
     switch (layer_surface->pending.layer) {
@@ -749,7 +749,7 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
     }
 
     Output_ptr output = reinterpret_cast<Output_ptr>(layer_surface->output->data);
-    Layer_ptr layer = server->mp_model->create_layer(
+    Layer_ptr layer = server->mp_manager->create_layer(
         layer_surface,
         output,
         scene_layer
@@ -763,7 +763,7 @@ Server::handle_new_layer_shell_surface(struct wl_listener* listener, void* data)
         );
     layer->mp_scene->node.data = layer;
 
-    server->mp_model->register_layer(layer);
+    server->mp_manager->register_layer(layer);
     struct wlr_layer_surface_v1_state initial_state = layer->mp_layer_surface->current;
     layer->mp_layer_surface->current = layer->mp_layer_surface->pending;
     layer->mp_output->arrange_layers();
@@ -846,7 +846,7 @@ Server::handle_new_xdg_toplevel_decoration(struct wl_listener* listener, void* d
     XDGView_ptr view = reinterpret_cast<XDGView_ptr>(xdg_decoration->surface->data);
 
     XDGDecoration_ptr decoration
-        = new XDGDecoration(server, server->mp_model, view, xdg_decoration);
+        = new XDGDecoration(server, server->mp_manager, view, xdg_decoration);
     view->mp_decoration = decoration;
     server->m_decorations[decoration->m_uid] = decoration;
 

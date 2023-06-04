@@ -1,6 +1,6 @@
 #include <trace.hh>
 
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/output.hh>
 #include <kranewl/util.hh>
@@ -26,7 +26,7 @@ extern "C" {
 
 Output::Output(
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     struct wlr_output* wlr_output,
     Region const&& output_region
@@ -35,7 +35,7 @@ Output::Output(
       m_full_region(output_region),
       m_placeable_region(output_region),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       m_modes({wlr_output->pending.mode}),
       mp_current_mode(wlr_output->pending.mode),
@@ -92,7 +92,7 @@ Output::handle_present(struct wl_listener* listener, void*)
 
     Output_ptr output = wl_container_of(listener, output, ml_present);
 
-    if (output->m_cursor_focus_on_present && output == output->mp_model->mp_output) {
+    if (output->m_cursor_focus_on_present && output == output->mp_manager->mp_output) {
         if (output->context()->workspace()->focus_follows_cursor()) {
             View_ptr view_under_cursor
                 = output->mp_seat->mp_cursor->view_under_cursor();
@@ -100,7 +100,7 @@ Output::handle_present(struct wl_listener* listener, void*)
             if (view_under_cursor && view_under_cursor->managed()
                 && view_under_cursor->belongs_to_active_track())
             {
-                output->mp_model->focus_view(view_under_cursor);
+                output->mp_manager->focus_view(view_under_cursor);
             }
         }
 
@@ -144,7 +144,7 @@ Output::handle_destroy(struct wl_listener*, void* data)
         output->m_layer_map.at(scene_layer).clear();
     }
 
-    output->mp_model->unregister_output(output);
+    output->mp_manager->unregister_output(output);
 }
 
 void
@@ -499,7 +499,7 @@ Output::arrange_layers()
     // TODO: re-apply layout if placeable region changed
     if (mp_context && m_placeable_region != placeable_region) {
         set_placeable_region(placeable_region);
-        mp_model->apply_layout(mp_context->workspace());
+        mp_manager->apply_layout(mp_context->workspace());
     }
 
     // non-exclusive surfaces

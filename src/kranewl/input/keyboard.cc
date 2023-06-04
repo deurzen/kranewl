@@ -2,7 +2,7 @@
 
 #include <kranewl/input/keyboard.hh>
 #include <kranewl/input/seat.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/server.hh>
 #include <kranewl/util.hh>
 
@@ -53,20 +53,20 @@ Keyboard::handle_modifiers(struct wl_listener* listener, void*)
 }
 
 static inline void
-perform_action(Model_ptr model, std::function<void(Model&)> action)
+perform_action(Manager_ptr manager, std::function<void(Manager&)> action)
 {
-    action(*model);
+    action(*manager);
 }
 
 static inline std::optional<KeyboardAction>
-process_key_binding(Model_ptr model, KeyboardInput input)
+process_key_binding(Manager_ptr manager, KeyboardInput input)
 {
     TRACE();
 
-    auto binding = Util::const_retrieve(model->key_bindings(), input);
+    auto binding = Util::const_retrieve(manager->key_bindings(), input);
 
     if (binding) {
-        perform_action(model, binding->action);
+        perform_action(manager, binding->action);
         return binding;
     }
 
@@ -133,7 +133,7 @@ Keyboard::handle_key(struct wl_listener* listener, void* data)
         if (!seat->mp_input_inhibit_manager->active_inhibitor)
             for (int i = 0; i < symcount; ++i) {
                 std::optional<KeyboardAction> binding = process_key_binding(
-                    seat->mp_model,
+                    seat->mp_manager,
                     KeyboardInput{
                         keysyms[i],
                         modifiers & ~WLR_MODIFIER_CAPS
@@ -189,7 +189,7 @@ Keyboard::handle_key_repeat(void* data)
             }
 
         perform_action(
-            keyboard->mp_seat->mp_model,
+            keyboard->mp_seat->mp_manager,
             *keyboard->m_repeat_action
         );
     }

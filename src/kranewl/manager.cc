@@ -1,6 +1,6 @@
 #include <trace.hh>
 
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 
 #include <kranewl/common.hh>
 #include <kranewl/conf/config.hh>
@@ -37,7 +37,7 @@ extern "C" {
 #undef namespace
 #undef class
 
-Model::Model(Config const& config)
+Manager::Manager(Config const& config)
     : mp_output{nullptr},
       mp_context{nullptr},
       mp_workspace{nullptr},
@@ -97,11 +97,11 @@ Model::Model(Config const& config)
     mp_workspace = *m_workspaces.active_element();
 }
 
-Model::~Model()
+Manager::~Manager()
 {}
 
 void
-Model::evaluate_user_env_vars(std::optional<std::string> const& env_path)
+Manager::evaluate_user_env_vars(std::optional<std::string> const& env_path)
 {
     TRACE();
 
@@ -112,7 +112,7 @@ Model::evaluate_user_env_vars(std::optional<std::string> const& env_path)
 }
 
 void
-Model::retrieve_user_default_rules(std::optional<std::string> const& rules_path)
+Manager::retrieve_user_default_rules(std::optional<std::string> const& rules_path)
 {
     TRACE();
 
@@ -123,7 +123,7 @@ Model::retrieve_user_default_rules(std::optional<std::string> const& rules_path)
 }
 
 void
-Model::run_user_autostart(
+Manager::run_user_autostart(
     [[maybe_unused]] std::optional<std::string> const& autostart_path
 )
 {
@@ -137,14 +137,14 @@ Model::run_user_autostart(
 }
 
 void
-Model::register_server(Server_ptr server)
+Manager::register_server(Server_ptr server)
 {
     TRACE();
     mp_server = server;
 }
 
 void
-Model::exit()
+Manager::exit()
 {
     TRACE();
 
@@ -153,13 +153,13 @@ Model::exit()
 }
 
 View_ptr
-Model::focused_view() const
+Manager::focused_view() const
 {
     return mp_focus;
 }
 
 Workspace_ptr
-Model::workspace(Index index) const
+Manager::workspace(Index index) const
 {
     if (index < m_workspaces.size())
         return m_workspaces[index];
@@ -168,7 +168,7 @@ Model::workspace(Index index) const
 }
 
 Context_ptr
-Model::context(Index index) const
+Manager::context(Index index) const
 {
     if (index < m_contexts.size())
         return m_contexts[index];
@@ -177,7 +177,7 @@ Model::context(Index index) const
 }
 
 Output_ptr
-Model::output(Index index) const
+Manager::output(Index index) const
 {
     if (index < m_outputs.size())
         return m_outputs[index];
@@ -186,37 +186,37 @@ Model::output(Index index) const
 }
 
 Cycle<Output_ptr> const&
-Model::outputs() const
+Manager::outputs() const
 {
     return m_outputs;
 }
 
 Cycle<Context_ptr> const&
-Model::contexts() const
+Manager::contexts() const
 {
     return m_contexts;
 }
 
 Cycle<Workspace_ptr> const&
-Model::workspaces() const
+Manager::workspaces() const
 {
     return m_workspaces;
 }
 
 KeyBindings const&
-Model::key_bindings() const
+Manager::key_bindings() const
 {
     return m_key_bindings;
 }
 
 CursorBindings const&
-Model::cursor_bindings() const
+Manager::cursor_bindings() const
 {
     return m_cursor_bindings;
 }
 
 Output_ptr
-Model::create_output(struct wlr_output* wlr_output, Region const&& output_region)
+Manager::create_output(struct wlr_output* wlr_output, Region const&& output_region)
 {
     TRACE();
 
@@ -235,7 +235,7 @@ Model::create_output(struct wlr_output* wlr_output, Region const&& output_region
 }
 
 void
-Model::register_output(Output_ptr output)
+Manager::register_output(Output_ptr output)
 {
     TRACE();
 
@@ -246,7 +246,7 @@ Model::register_output(Output_ptr output)
 }
 
 void
-Model::unregister_output(Output_ptr output)
+Manager::unregister_output(Output_ptr output)
 {
     TRACE();
 
@@ -261,7 +261,7 @@ Model::unregister_output(Output_ptr output)
 }
 
 void
-Model::output_reserve_context(Output_ptr output)
+Manager::output_reserve_context(Output_ptr output)
 {
     TRACE();
 
@@ -287,7 +287,7 @@ Model::output_reserve_context(Output_ptr output)
 }
 
 void
-Model::update_outputs()
+Manager::update_outputs()
 {
     for (Output_ptr output : m_outputs) {
         output->arrange_layers();
@@ -299,7 +299,7 @@ Model::update_outputs()
 }
 
 void
-Model::focus_view(View_ptr view)
+Manager::focus_view(View_ptr view)
 {
     TRACE();
 
@@ -329,7 +329,7 @@ Model::focus_view(View_ptr view)
 }
 
 void
-Model::refocus()
+Manager::refocus()
 {
     TRACE();
 
@@ -350,7 +350,7 @@ Model::refocus()
 }
 
 void
-Model::focus_output(Output_ptr output)
+Manager::focus_output(Output_ptr output)
 {
     TRACE();
 
@@ -359,7 +359,7 @@ Model::focus_output(Output_ptr output)
 }
 
 void
-Model::place_view(Placement& placement)
+Manager::place_view(Placement& placement)
 {
     TRACE();
 
@@ -438,7 +438,7 @@ Model::place_view(Placement& placement)
 }
 
 bool
-Model::view_matches_search(View_ptr view, SearchSelector const& selector) const
+Manager::view_matches_search(View_ptr view, SearchSelector const& selector) const
 {
     TRACE();
 
@@ -473,7 +473,7 @@ Model::view_matches_search(View_ptr view, SearchSelector const& selector) const
 }
 
 View_ptr
-Model::search_view(SearchSelector const& selector)
+Manager::search_view(SearchSelector const& selector)
 {
     TRACE();
 
@@ -518,7 +518,7 @@ Model::search_view(SearchSelector const& selector)
 }
 
 void
-Model::jump_view(SearchSelector const& selector)
+Manager::jump_view(SearchSelector const& selector)
 {
     TRACE();
 
@@ -538,7 +538,7 @@ Model::jump_view(SearchSelector const& selector)
 }
 
 void
-Model::cursor_interactive(Cursor::Mode mode, View_ptr view)
+Manager::cursor_interactive(Cursor::Mode mode, View_ptr view)
 {
     TRACE();
 
@@ -547,14 +547,14 @@ Model::cursor_interactive(Cursor::Mode mode, View_ptr view)
 }
 
 void
-Model::abort_cursor_interactive()
+Manager::abort_cursor_interactive()
 {
     TRACE();
     mp_server->mp_seat->mp_cursor->abort_cursor_interactive();
 }
 
 void
-Model::sync_focus()
+Manager::sync_focus()
 {
     TRACE();
 
@@ -578,7 +578,7 @@ Model::sync_focus()
 }
 
 void
-Model::sync_indicators()
+Manager::sync_indicators()
 {
     TRACE();
 
@@ -601,7 +601,7 @@ Model::sync_indicators()
 }
 
 void
-Model::relayer_views(Workspace_ptr workspace)
+Manager::relayer_views(Workspace_ptr workspace)
 {
     for (View_ptr view : *workspace) {
         if (view->free()) {
@@ -628,19 +628,19 @@ Model::relayer_views(Workspace_ptr workspace)
 }
 
 void
-Model::relayer_views(Context_ptr context)
+Manager::relayer_views(Context_ptr context)
 {
     relayer_views(context->workspace());
 }
 
 void
-Model::relayer_views(Output_ptr output)
+Manager::relayer_views(Output_ptr output)
 {
     relayer_views(output->context());
 }
 
 void
-Model::move_view_to_track(View_ptr view, SceneLayer layer, bool shift_focus)
+Manager::move_view_to_track(View_ptr view, SceneLayer layer, bool shift_focus)
 {
     TRACE();
 
@@ -649,7 +649,7 @@ Model::move_view_to_track(View_ptr view, SceneLayer layer, bool shift_focus)
 }
 
 void
-Model::cycle_focus(Direction direction)
+Manager::cycle_focus(Direction direction)
 {
     TRACE();
 
@@ -661,7 +661,7 @@ Model::cycle_focus(Direction direction)
 }
 
 void
-Model::cycle_focus_track(Direction direction)
+Manager::cycle_focus_track(Direction direction)
 {
     TRACE();
 
@@ -673,7 +673,7 @@ Model::cycle_focus_track(Direction direction)
 }
 
 void
-Model::drag_focus_track(Direction direction)
+Manager::drag_focus_track(Direction direction)
 {
     TRACE();
 
@@ -694,7 +694,7 @@ Model::drag_focus_track(Direction direction)
 }
 
 void
-Model::toggle_track()
+Manager::toggle_track()
 {
     TRACE();
     mp_workspace->toggle_track();
@@ -702,7 +702,7 @@ Model::toggle_track()
 }
 
 void
-Model::activate_track(SceneLayer layer)
+Manager::activate_track(SceneLayer layer)
 {
     TRACE();
     mp_workspace->activate_track(layer);
@@ -710,7 +710,7 @@ Model::activate_track(SceneLayer layer)
 }
 
 void
-Model::cycle_track(Direction direction)
+Manager::cycle_track(Direction direction)
 {
     TRACE();
     mp_workspace->cycle_track(direction);
@@ -718,7 +718,7 @@ Model::cycle_track(Direction direction)
 }
 
 void
-Model::reverse_views()
+Manager::reverse_views()
 {
     TRACE();
 
@@ -731,7 +731,7 @@ Model::reverse_views()
 }
 
 void
-Model::rotate_views(Direction direction)
+Manager::rotate_views(Direction direction)
 {
     TRACE();
 
@@ -745,7 +745,7 @@ Model::rotate_views(Direction direction)
 }
 
 void
-Model::shuffle_main(Direction direction)
+Manager::shuffle_main(Direction direction)
 {
     TRACE();
 
@@ -781,7 +781,7 @@ Model::shuffle_main(Direction direction)
 }
 
 void
-Model::shuffle_stack(Direction direction)
+Manager::shuffle_stack(Direction direction)
 {
     TRACE();
 
@@ -817,7 +817,7 @@ Model::shuffle_stack(Direction direction)
 }
 
 void
-Model::move_focus_to_workspace(Index index)
+Manager::move_focus_to_workspace(Index index)
 {
     TRACE();
 
@@ -826,7 +826,7 @@ Model::move_focus_to_workspace(Index index)
 }
 
 void
-Model::move_view_to_workspace(View_ptr view, Index index)
+Manager::move_view_to_workspace(View_ptr view, Index index)
 {
     TRACE();
 
@@ -835,7 +835,7 @@ Model::move_view_to_workspace(View_ptr view, Index index)
 }
 
 void
-Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
+Manager::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
 {
     TRACE();
 
@@ -873,7 +873,7 @@ Model::move_view_to_workspace(View_ptr view, Workspace_ptr workspace_to)
 }
 
 void
-Model::move_focus_to_next_workspace(Direction direction)
+Manager::move_focus_to_next_workspace(Direction direction)
 {
     TRACE();
 
@@ -882,7 +882,7 @@ Model::move_focus_to_next_workspace(Direction direction)
 }
 
 void
-Model::move_view_to_next_workspace(View_ptr view, Direction direction)
+Manager::move_view_to_next_workspace(View_ptr view, Direction direction)
 {
     TRACE();
 
@@ -891,7 +891,7 @@ Model::move_view_to_next_workspace(View_ptr view, Direction direction)
 }
 
 void
-Model::move_focus_to_context(Index index)
+Manager::move_focus_to_context(Index index)
 {
     TRACE();
 
@@ -900,7 +900,7 @@ Model::move_focus_to_context(Index index)
 }
 
 void
-Model::move_view_to_context(View_ptr view, Index index)
+Manager::move_view_to_context(View_ptr view, Index index)
 {
     TRACE();
 
@@ -909,7 +909,7 @@ Model::move_view_to_context(View_ptr view, Index index)
 }
 
 void
-Model::move_view_to_context(View_ptr view, Context_ptr context_to)
+Manager::move_view_to_context(View_ptr view, Context_ptr context_to)
 {
     TRACE();
 
@@ -944,7 +944,7 @@ Model::move_view_to_context(View_ptr view, Context_ptr context_to)
 }
 
 void
-Model::move_focus_to_next_context(Direction direction)
+Manager::move_focus_to_next_context(Direction direction)
 {
     TRACE();
 
@@ -953,7 +953,7 @@ Model::move_focus_to_next_context(Direction direction)
 }
 
 void
-Model::move_view_to_next_context(View_ptr view, Direction direction)
+Manager::move_view_to_next_context(View_ptr view, Direction direction)
 {
     TRACE();
 
@@ -962,7 +962,7 @@ Model::move_view_to_next_context(View_ptr view, Direction direction)
 }
 
 void
-Model::move_focus_to_output(Index index)
+Manager::move_focus_to_output(Index index)
 {
     TRACE();
 
@@ -971,7 +971,7 @@ Model::move_focus_to_output(Index index)
 }
 
 void
-Model::move_view_to_output(View_ptr view, Index index)
+Manager::move_view_to_output(View_ptr view, Index index)
 {
     TRACE();
 
@@ -980,7 +980,7 @@ Model::move_view_to_output(View_ptr view, Index index)
 }
 
 void
-Model::move_view_to_output(View_ptr view, Output_ptr output_to)
+Manager::move_view_to_output(View_ptr view, Output_ptr output_to)
 {
     TRACE();
 
@@ -1023,7 +1023,7 @@ Model::move_view_to_output(View_ptr view, Output_ptr output_to)
 }
 
 void
-Model::move_focus_to_next_output(Direction direction)
+Manager::move_focus_to_next_output(Direction direction)
 {
     TRACE();
 
@@ -1032,7 +1032,7 @@ Model::move_focus_to_next_output(Direction direction)
 }
 
 void
-Model::move_view_to_next_output(View_ptr view, Direction direction)
+Manager::move_view_to_next_output(View_ptr view, Direction direction)
 {
     TRACE();
 
@@ -1041,14 +1041,14 @@ Model::move_view_to_next_output(View_ptr view, Direction direction)
 }
 
 void
-Model::move_view_to_focused_output(View_ptr view)
+Manager::move_view_to_focused_output(View_ptr view)
 {
     TRACE();
     move_view_to_output(view, mp_output);
 }
 
 void
-Model::toggle_workspace()
+Manager::toggle_workspace()
 {
     TRACE();
 
@@ -1057,7 +1057,7 @@ Model::toggle_workspace()
 }
 
 void
-Model::toggle_workspace_current_context()
+Manager::toggle_workspace_current_context()
 {
     TRACE();
 
@@ -1068,21 +1068,21 @@ Model::toggle_workspace_current_context()
 }
 
 void
-Model::activate_next_workspace(Direction direction)
+Manager::activate_next_workspace(Direction direction)
 {
     TRACE();
     activate_workspace(m_workspaces.next_index(direction));
 }
 
 void
-Model::activate_next_workspace_current_context(Direction direction)
+Manager::activate_next_workspace_current_context(Direction direction)
 {
     TRACE();
     activate_workspace(*mp_context->workspaces().next_element(direction));
 }
 
 void
-Model::activate_workspace(Index index)
+Manager::activate_workspace(Index index)
 {
     TRACE();
 
@@ -1091,7 +1091,7 @@ Model::activate_workspace(Index index)
 }
 
 void
-Model::activate_workspace_current_context(Index index)
+Manager::activate_workspace_current_context(Index index)
 {
     TRACE();
 
@@ -1100,7 +1100,7 @@ Model::activate_workspace_current_context(Index index)
 }
 
 void
-Model::activate_workspace(Workspace_ptr next_workspace)
+Manager::activate_workspace(Workspace_ptr next_workspace)
 {
     TRACE();
 
@@ -1154,7 +1154,7 @@ Model::activate_workspace(Workspace_ptr next_workspace)
 }
 
 void
-Model::toggle_context()
+Manager::toggle_context()
 {
     TRACE();
 
@@ -1163,14 +1163,14 @@ Model::toggle_context()
 }
 
 void
-Model::activate_next_context(Direction direction)
+Manager::activate_next_context(Direction direction)
 {
     TRACE();
     activate_context(m_contexts.next_index(direction));
 }
 
 void
-Model::activate_context(Index index)
+Manager::activate_context(Index index)
 {
     TRACE();
 
@@ -1179,7 +1179,7 @@ Model::activate_context(Index index)
 }
 
 void
-Model::activate_context(Context_ptr next_context)
+Manager::activate_context(Context_ptr next_context)
 {
     TRACE();
 
@@ -1208,7 +1208,7 @@ Model::activate_context(Context_ptr next_context)
 }
 
 void
-Model::toggle_output()
+Manager::toggle_output()
 {
     TRACE();
 
@@ -1217,7 +1217,7 @@ Model::toggle_output()
 }
 
 void
-Model::activate_output(Index index)
+Manager::activate_output(Index index)
 {
     TRACE();
 
@@ -1226,7 +1226,7 @@ Model::activate_output(Index index)
 }
 
 void
-Model::activate_output(Output_ptr next_output)
+Manager::activate_output(Output_ptr next_output)
 {
     TRACE();
 
@@ -1250,7 +1250,7 @@ Model::activate_output(Output_ptr next_output)
 }
 
 void
-Model::toggle_layout()
+Manager::toggle_layout()
 {
     TRACE();
 
@@ -1260,7 +1260,7 @@ Model::toggle_layout()
 }
 
 void
-Model::set_layout(LayoutHandler::LayoutKind layout)
+Manager::set_layout(LayoutHandler::LayoutKind layout)
 {
     TRACE();
 
@@ -1270,7 +1270,7 @@ Model::set_layout(LayoutHandler::LayoutKind layout)
 }
 
 void
-Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
+Manager::set_layout_retain_region(LayoutHandler::LayoutKind layout)
 {
     TRACE();
 
@@ -1306,7 +1306,7 @@ Model::set_layout_retain_region(LayoutHandler::LayoutKind layout)
 }
 
 void
-Model::toggle_layout_data()
+Manager::toggle_layout_data()
 {
     TRACE();
 
@@ -1315,7 +1315,7 @@ Model::toggle_layout_data()
 }
 
 void
-Model::cycle_layout_data(Direction direction)
+Manager::cycle_layout_data(Direction direction)
 {
     TRACE();
 
@@ -1324,7 +1324,7 @@ Model::cycle_layout_data(Direction direction)
 }
 
 void
-Model::copy_data_from_prev_layout()
+Manager::copy_data_from_prev_layout()
 {
     TRACE();
 
@@ -1333,7 +1333,7 @@ Model::copy_data_from_prev_layout()
 }
 
 void
-Model::change_gap_size(Util::Change<int> change)
+Manager::change_gap_size(Util::Change<int> change)
 {
     TRACE();
 
@@ -1342,7 +1342,7 @@ Model::change_gap_size(Util::Change<int> change)
 }
 
 void
-Model::change_main_count(Util::Change<int> change)
+Manager::change_main_count(Util::Change<int> change)
 {
     TRACE();
 
@@ -1351,7 +1351,7 @@ Model::change_main_count(Util::Change<int> change)
 }
 
 void
-Model::change_main_factor(Util::Change<float> change)
+Manager::change_main_factor(Util::Change<float> change)
 {
     TRACE();
 
@@ -1360,7 +1360,7 @@ Model::change_main_factor(Util::Change<float> change)
 }
 
 void
-Model::change_margin(Util::Change<int> change)
+Manager::change_margin(Util::Change<int> change)
 {
     TRACE();
 
@@ -1369,7 +1369,7 @@ Model::change_margin(Util::Change<int> change)
 }
 
 void
-Model::change_margin(Edge edge, Util::Change<int> change)
+Manager::change_margin(Edge edge, Util::Change<int> change)
 {
     TRACE();
 
@@ -1378,7 +1378,7 @@ Model::change_margin(Edge edge, Util::Change<int> change)
 }
 
 void
-Model::reset_gap_size()
+Manager::reset_gap_size()
 {
     TRACE();
 
@@ -1387,7 +1387,7 @@ Model::reset_gap_size()
 }
 
 void
-Model::reset_margin()
+Manager::reset_margin()
 {
     TRACE();
 
@@ -1396,7 +1396,7 @@ Model::reset_margin()
 }
 
 void
-Model::reset_layout_data()
+Manager::reset_layout_data()
 {
     TRACE();
 
@@ -1405,14 +1405,14 @@ Model::reset_layout_data()
 }
 
 void
-Model::save_layout(std::size_t number) const
+Manager::save_layout(std::size_t number) const
 {
     TRACE();
     mp_workspace->save_layout(number);
 }
 
 void
-Model::load_layout(std::size_t number)
+Manager::load_layout(std::size_t number)
 {
     TRACE();
 
@@ -1421,7 +1421,7 @@ Model::load_layout(std::size_t number)
 }
 
 void
-Model::apply_layout(Index index)
+Manager::apply_layout(Index index)
 {
     TRACE();
 
@@ -1430,7 +1430,7 @@ Model::apply_layout(Index index)
 }
 
 void
-Model::apply_layout(Workspace_ptr workspace)
+Manager::apply_layout(Workspace_ptr workspace)
 {
     TRACE();
 
@@ -1443,7 +1443,7 @@ Model::apply_layout(Workspace_ptr workspace)
 }
 
 void
-Model::kill_focus()
+Manager::kill_focus()
 {
     TRACE();
 
@@ -1452,7 +1452,7 @@ Model::kill_focus()
 }
 
 void
-Model::kill_view(View_ptr view)
+Manager::kill_view(View_ptr view)
 {
     TRACE();
 
@@ -1461,7 +1461,7 @@ Model::kill_view(View_ptr view)
 }
 
 void
-Model::set_floating_focus(Toggle toggle)
+Manager::set_floating_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1470,7 +1470,7 @@ Model::set_floating_focus(Toggle toggle)
 }
 
 void
-Model::set_floating_view(Toggle toggle, View_ptr view)
+Manager::set_floating_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1491,7 +1491,7 @@ Model::set_floating_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_fullscreen_focus(Toggle toggle)
+Manager::set_fullscreen_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1500,7 +1500,7 @@ Model::set_fullscreen_focus(Toggle toggle)
 }
 
 void
-Model::set_fullscreen_view(Toggle toggle, View_ptr view)
+Manager::set_fullscreen_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1569,7 +1569,7 @@ Model::set_fullscreen_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_sticky_focus(Toggle toggle)
+Manager::set_sticky_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1578,7 +1578,7 @@ Model::set_sticky_focus(Toggle toggle)
 }
 
 void
-Model::set_sticky_view(Toggle toggle, View_ptr view)
+Manager::set_sticky_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1652,7 +1652,7 @@ Model::set_sticky_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_contained_focus(Toggle toggle)
+Manager::set_contained_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1661,7 +1661,7 @@ Model::set_contained_focus(Toggle toggle)
 }
 
 void
-Model::set_contained_view(Toggle toggle, View_ptr view)
+Manager::set_contained_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1696,7 +1696,7 @@ Model::set_contained_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_invincible_focus(Toggle toggle)
+Manager::set_invincible_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1705,7 +1705,7 @@ Model::set_invincible_focus(Toggle toggle)
 }
 
 void
-Model::set_invincible_view(Toggle toggle, View_ptr view)
+Manager::set_invincible_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1725,7 +1725,7 @@ Model::set_invincible_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_iconifyable_focus(Toggle toggle)
+Manager::set_iconifyable_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1734,7 +1734,7 @@ Model::set_iconifyable_focus(Toggle toggle)
 }
 
 void
-Model::set_iconifyable_view(Toggle toggle, View_ptr view)
+Manager::set_iconifyable_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1754,7 +1754,7 @@ Model::set_iconifyable_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::set_iconify_focus(Toggle toggle)
+Manager::set_iconify_focus(Toggle toggle)
 {
     TRACE();
 
@@ -1763,7 +1763,7 @@ Model::set_iconify_focus(Toggle toggle)
 }
 
 void
-Model::set_iconify_view(Toggle toggle, View_ptr view)
+Manager::set_iconify_view(Toggle toggle, View_ptr view)
 {
     TRACE();
 
@@ -1808,7 +1808,7 @@ Model::set_iconify_view(Toggle toggle, View_ptr view)
 }
 
 void
-Model::center_focus()
+Manager::center_focus()
 {
     TRACE();
 
@@ -1817,7 +1817,7 @@ Model::center_focus()
 }
 
 void
-Model::center_view(View_ptr view)
+Manager::center_view(View_ptr view)
 {
     TRACE();
 
@@ -1837,7 +1837,7 @@ Model::center_view(View_ptr view)
 }
 
 void
-Model::nudge_focus(Edge edge, Util::Change<std::size_t> change)
+Manager::nudge_focus(Edge edge, Util::Change<std::size_t> change)
 {
     TRACE();
 
@@ -1846,7 +1846,7 @@ Model::nudge_focus(Edge edge, Util::Change<std::size_t> change)
 }
 
 void
-Model::nudge_view(Edge edge, Util::Change<std::size_t> change, View_ptr view)
+Manager::nudge_view(Edge edge, Util::Change<std::size_t> change, View_ptr view)
 {
     TRACE();
 
@@ -1890,14 +1890,14 @@ Model::nudge_view(Edge edge, Util::Change<std::size_t> change, View_ptr view)
 }
 
 void
-Model::stretch_focus(Edge edge, Util::Change<int> change)
+Manager::stretch_focus(Edge edge, Util::Change<int> change)
 {
     if (mp_focus)
         stretch_view(edge, change, mp_focus);
 }
 
 void
-Model::stretch_view(Edge edge, Util::Change<int> change, View_ptr view)
+Manager::stretch_view(Edge edge, Util::Change<int> change, View_ptr view)
 {
     TRACE();
 
@@ -1984,7 +1984,7 @@ Model::stretch_view(Edge edge, Util::Change<int> change, View_ptr view)
 }
 
 void
-Model::inflate_focus(Util::Change<int> change)
+Manager::inflate_focus(Util::Change<int> change)
 {
     TRACE();
 
@@ -1993,7 +1993,7 @@ Model::inflate_focus(Util::Change<int> change)
 }
 
 void
-Model::inflate_view(Util::Change<int> change, View_ptr view)
+Manager::inflate_view(Util::Change<int> change, View_ptr view)
 {
     TRACE();
 
@@ -2057,7 +2057,7 @@ Model::inflate_view(Util::Change<int> change, View_ptr view)
 }
 
 void
-Model::snap_focus(uint32_t edges)
+Manager::snap_focus(uint32_t edges)
 {
     TRACE();
 
@@ -2066,7 +2066,7 @@ Model::snap_focus(uint32_t edges)
 }
 
 void
-Model::snap_view(View_ptr view, uint32_t edges)
+Manager::snap_view(View_ptr view, uint32_t edges)
 {
     TRACE();
 
@@ -2104,7 +2104,7 @@ Model::snap_view(View_ptr view, uint32_t edges)
 }
 
 void
-Model::pop_deiconify()
+Manager::pop_deiconify()
 {
     TRACE();
 
@@ -2115,7 +2115,7 @@ Model::pop_deiconify()
 }
 
 void
-Model::deiconify_all()
+Manager::deiconify_all()
 {
     TRACE();
 
@@ -2124,7 +2124,7 @@ Model::deiconify_all()
 }
 
 void
-Model::set_focus_follows_cursor(Toggle toggle, Workspace_ptr workspace)
+Manager::set_focus_follows_cursor(Toggle toggle, Workspace_ptr workspace)
 {
     bool focus_follows_cursor;
 
@@ -2139,7 +2139,7 @@ Model::set_focus_follows_cursor(Toggle toggle, Workspace_ptr workspace)
 }
 
 void
-Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
+Manager::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
 {
     bool focus_follows_cursor;
 
@@ -2162,7 +2162,7 @@ Model::set_focus_follows_cursor(Toggle toggle, Context_ptr context)
 }
 
 void
-Model::initialize_view(View_ptr view, Workspace_ptr workspace)
+Manager::initialize_view(View_ptr view, Workspace_ptr workspace)
 {
     TRACE();
 
@@ -2187,7 +2187,7 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
 
     Output_ptr output;
     if (rules.to_output && *rules.to_output < m_outputs.size()) {
-        view->mp_output = Model::output(*rules.to_output);
+        view->mp_output = Manager::output(*rules.to_output);
         workspace = view->mp_output->workspace();
         output = view->mp_output;
     } else
@@ -2223,7 +2223,7 @@ Model::initialize_view(View_ptr view, Workspace_ptr workspace)
 }
 
 XDGView_ptr
-Model::create_xdg_shell_view(
+Manager::create_xdg_shell_view(
     struct wlr_xdg_surface* wlr_xdg_surface,
     Seat_ptr seat
 )
@@ -2243,7 +2243,7 @@ Model::create_xdg_shell_view(
 
 #ifdef XWAYLAND
 XWaylandView_ptr
-Model::create_xwayland_view(
+Manager::create_xwayland_view(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Seat_ptr seat,
     XWayland_ptr xwayland
@@ -2264,7 +2264,7 @@ Model::create_xwayland_view(
 }
 
 XWaylandUnmanaged_ptr
-Model::create_xwayland_unmanaged(
+Manager::create_xwayland_unmanaged(
     struct wlr_xwayland_surface* wlr_xwayland_surface,
     Seat_ptr seat,
     XWayland_ptr xwayland
@@ -2287,7 +2287,7 @@ Model::create_xwayland_unmanaged(
 }
 
 void
-Model::destroy_unmanaged(XWaylandUnmanaged_ptr unmanaged)
+Manager::destroy_unmanaged(XWaylandUnmanaged_ptr unmanaged)
 {
     TRACE();
 
@@ -2299,7 +2299,7 @@ Model::destroy_unmanaged(XWaylandUnmanaged_ptr unmanaged)
 #endif
 
 void
-Model::register_view(View_ptr view, Workspace_ptr workspace)
+Manager::register_view(View_ptr view, Workspace_ptr workspace)
 {
     TRACE();
 
@@ -2309,7 +2309,7 @@ Model::register_view(View_ptr view, Workspace_ptr workspace)
 }
 
 void
-Model::unregister_view(View_ptr view)
+Manager::unregister_view(View_ptr view)
 {
     TRACE();
 
@@ -2324,7 +2324,7 @@ Model::unregister_view(View_ptr view)
 }
 
 void
-Model::destroy_view(View_ptr view)
+Manager::destroy_view(View_ptr view)
 {
     TRACE();
 
@@ -2334,7 +2334,7 @@ Model::destroy_view(View_ptr view)
 }
 
 Layer_ptr
-Model::create_layer(
+Manager::create_layer(
     struct wlr_layer_surface_v1* layer_surface,
     Output_ptr output,
     SceneLayer scene_layer
@@ -2355,7 +2355,7 @@ Model::create_layer(
 }
 
 void
-Model::register_layer(Layer_ptr layer)
+Manager::register_layer(Layer_ptr layer)
 {
     TRACE();
 
@@ -2364,7 +2364,7 @@ Model::register_layer(Layer_ptr layer)
 }
 
 void
-Model::spawn_external(std::string&& command) const
+Manager::spawn_external(std::string&& command) const
 {
     TRACE();
 

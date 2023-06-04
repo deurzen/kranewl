@@ -10,13 +10,13 @@ extern "C" {
 
 XDGDecoration::XDGDecoration(
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     XDGView_ptr view,
     struct wlr_xdg_toplevel_decoration_v1* wlr_xdg_decoration
 )
     : m_uid(reinterpret_cast<std::uintptr_t>(wlr_xdg_decoration->surface)),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_view(view),
       mp_wlr_xdg_decoration(wlr_xdg_decoration),
       ml_request_mode({ .notify = XDGDecoration::handle_request_mode }),

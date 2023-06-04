@@ -1,7 +1,7 @@
 #include <trace.hh>
 
 #include <kranewl/input/seat.hh>
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/xwayland-view.hh>
 #include <kranewl/xwayland.hh>
@@ -30,14 +30,14 @@ extern "C" {
 XWayland::XWayland(
     struct wlr_xwayland* xwayland,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat
 )
     : mp_wlr_xwayland(xwayland),
       mp_cursor_manager(wlr_xcursor_manager_create(nullptr, 24)),
       m_atoms({}),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       ml_ready({ .notify = XWayland::handle_ready }),
       ml_new_surface({ .notify = XWayland::handle_new_surface })
@@ -153,13 +153,13 @@ XWayland::handle_new_surface(struct wl_listener* listener, void* data)
         = reinterpret_cast<struct wlr_xwayland_surface*>(data);
 
     if (xwayland_surface->override_redirect)
-        xwayland->mp_model->create_xwayland_unmanaged(
+        xwayland->mp_manager->create_xwayland_unmanaged(
             xwayland_surface,
             xwayland->mp_seat,
             xwayland
         );
     else
-        xwayland->mp_model->create_xwayland_view(
+        xwayland->mp_manager->create_xwayland_view(
             xwayland_surface,
             xwayland->mp_seat,
             xwayland

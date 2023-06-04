@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <optional>
 
-class Model;
+class Manager;
 typedef struct View* View_ptr;
 
 typedef

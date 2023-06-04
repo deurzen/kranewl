@@ -15,9 +15,9 @@ struct KeyboardInput {
     uint32_t modifiers;
 };
 
-class Model;
+class Manager;
 struct KeyboardAction {
-    std::function<void(Model&)> action;
+    std::function<void(Manager&)> action;
     bool repeatable;
 };
 
@@ -42,7 +42,7 @@ typedef struct Keyboard {
     uint32_t m_repeat_delay;
 
     struct wl_event_source* mp_key_repeat_source;
-    std::optional<std::function<void(Model&)>>  m_repeat_action;
+    std::optional<std::function<void(Manager&)>>  m_repeat_action;
 
     struct wl_listener ml_modifiers;
     struct wl_listener ml_key;

@@ -16,7 +16,7 @@ extern "C" {
 #include <string>
 #include <unordered_map>
 
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Server* Server_ptr;
 typedef struct View* View_ptr;
 typedef struct XDGDecoration* XDGDecoration_ptr;
@@ -26,7 +26,7 @@ typedef class Server final {
     static constexpr int LAYER_SHELL_VERSION = 3;
 
 public:
-    Server(Model_ptr);
+    Server(Manager_ptr);
     ~Server();
 
     void initialize();
@@ -54,7 +54,7 @@ private:
     static void configure_libinput(struct wlr_input_device*);
 
 public:
-    Model_ptr mp_model = nullptr;
+    Manager_ptr mp_manager = nullptr;
 
     struct wl_display* mp_display;
     struct wl_event_loop* mp_event_loop;

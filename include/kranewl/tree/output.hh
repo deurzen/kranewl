@@ -15,7 +15,7 @@ extern "C" {
 #include <vector>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Context* Context_ptr;
 typedef class Workspace* Workspace_ptr;
 typedef class Layer* Layer_ptr;
@@ -24,7 +24,7 @@ typedef class Output final {
 public:
     Output(
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr,
         struct wlr_output*,
         Region const&&
@@ -75,7 +75,7 @@ private:
 
 public:
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
     std::vector<struct wlr_output_mode*> m_modes;

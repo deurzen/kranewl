@@ -1,6 +1,6 @@
 #include <trace.hh>
 
-#include <kranewl/model.hh>
+#include <kranewl/manager.hh>
 #include <kranewl/server.hh>
 #include <kranewl/tree/layer.hh>
 #include <kranewl/tree/output.hh>
@@ -23,14 +23,14 @@ extern "C" {
 Layer::Layer(
     struct wlr_layer_surface_v1* layer_surface,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat,
     Output_ptr output,
     SceneLayer scene_layer
 )
     : Node(Type::LayerShell, reinterpret_cast<std::uintptr_t>(layer_surface)),
       mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_output(output),
       m_scene_layer(scene_layer),
@@ -116,7 +116,7 @@ unmap_layer(Layer_ptr layer)
     struct wlr_seat* seat = layer->mp_seat->mp_wlr_seat;
 
     if (layer->mp_layer_surface->surface == seat->keyboard_state.focused_surface)
-        layer->mp_model->refocus();
+        layer->mp_manager->refocus();
 
     if (layer->mp_seat->mp_cursor)
         layer->mp_seat->mp_cursor->process_cursor_motion(0);
@@ -187,13 +187,13 @@ create_layer_popup(
     LayerPopup_ptr parent,
     Layer_ptr root,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat
 )
 {
     LayerPopup_ptr popup = parent
-        ? new LayerPopup(wlr_popup, parent, root, server, model, seat)
-        : new LayerPopup(wlr_popup, root, server, model, seat);
+        ? new LayerPopup(wlr_popup, parent, root, server, manager, seat)
+        : new LayerPopup(wlr_popup, root, server, manager, seat);
 
     if (parent)
         parent->m_popups.push_back(popup);
@@ -233,7 +233,7 @@ Layer::handle_new_popup(struct wl_listener* listener, void* data)
         nullptr,
         layer,
         layer->mp_server,
-        layer->mp_model,
+        layer->mp_manager,
         layer->mp_seat
     );
 }
@@ -281,11 +281,11 @@ LayerPopup::LayerPopup(
     struct wlr_xdg_popup* wlr_popup,
     Layer_ptr parent,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat
 )
     : mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_wlr_popup(wlr_popup),
       mp_parent(nullptr),
@@ -306,11 +306,11 @@ LayerPopup::LayerPopup(
     LayerPopup_ptr parent,
     Layer_ptr root,
     Server_ptr server,
-    Model_ptr model,
+    Manager_ptr manager,
     Seat_ptr seat
 )
     : mp_server(server),
-      mp_model(model),
+      mp_manager(manager),
       mp_seat(seat),
       mp_wlr_popup(wlr_popup),
       mp_parent(parent),
@@ -433,7 +433,7 @@ LayerPopup::handle_new_popup(struct wl_listener* listener, void* data)
         popup,
         popup->mp_root,
         popup->mp_server,
-        popup->mp_model,
+        popup->mp_manager,
         popup->mp_seat
     );
 }

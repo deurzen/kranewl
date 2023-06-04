@@ -15,7 +15,7 @@ extern "C" {
 }
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
@@ -44,7 +44,7 @@ typedef struct View : public Node {
         XDGView_ptr,
         Uid,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr,
         struct wlr_surface*
     );
@@ -53,7 +53,7 @@ typedef struct View : public Node {
         XWaylandView_ptr,
         Uid,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr,
         struct wlr_surface*
     );
@@ -178,7 +178,7 @@ typedef struct View : public Node {
     OutsideState outside_state() const;
 
     Server_ptr mp_server;
-    Model_ptr mp_model;
+    Manager_ptr mp_manager;
     Seat_ptr mp_seat;
 
     Output_ptr mp_output;

@@ -6,7 +6,7 @@
 #include <cstdint>
 
 typedef class Server* Server_ptr;
-typedef class Model* Model_ptr;
+typedef class Manager* Manager_ptr;
 typedef class Seat* Seat_ptr;
 typedef class Output* Output_ptr;
 typedef class Context* Context_ptr;
@@ -17,7 +17,7 @@ typedef struct XDGView final : public View {
     XDGView(
         struct wlr_xdg_surface*,
         Server_ptr,
-        Model_ptr,
+        Manager_ptr,
         Seat_ptr
     );
 
