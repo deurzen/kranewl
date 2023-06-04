@@ -4,3 +4,7 @@
 /.ccls-cache
 /.gdb_history
 /include/version.hh
+/subprojects/pixman/
+/subprojects/wayland-protocols/
+/subprojects/wayland/
+/subprojects/wlroots/

@@ -42,22 +42,47 @@ add_project_arguments(
   language: 'cpp',
 )
 
-cmake = import('cmake')
+wayland = subproject(
+  'wayland',
+  version: '>=1.20',
+  default_options: [
+    'tests=false',
+    'documentation=false',
+    'default_library=shared',
+    'werror=false',
+  ],
+)
+
+wlroots = subproject(
+  'wlroots',
+  version: ['>=0.15.0', '<0.16.0'],
+  default_options: [
+    'examples=false',
+    'default_library=static',
+    'werror=false',
+  ],
+)
+
+have_xwlr = wlroots.get_variable('features').get('xwayland')
+xcb = dependency('xcb')
+have_xwayland = xcb.found() and have_xwlr
+if have_xwayland
+  add_project_arguments('-DXWAYLAND', language: 'cpp')
+endif
 
 subdir('protocols')
 
 kranewl_inc = include_directories('include')
-src_files = run_command('globber.sh', check: true)
-kranewl_src = src_files.stdout().strip().split('\n')
+kranewl_src_files = run_command('globber.sh', 'kranewl', check: true)
+kranewl_src = kranewl_src_files.stdout().strip().split('\n')
+
+kranec_inc = include_directories('include')
+kranec_src_files = run_command('globber.sh', 'kranec', check: true)
+kranec_src = kranec_src_files.stdout().strip().split('\n')
 
 kranewl_deps = [
-  dependency(
-    'wlroots',
-    version: ['>=0.15.0', '<0.16.0'],
-  ),
-  dependency('wayland-server'),
-  dependency('xcb'),
-  dependency('lua-5.4'),
+  wlroots.get_variable('wlroots').as_link_whole(),
+  xcb,
   dependency('egl'),
   dependency('gl', 'opengl'),
   dependency('libdrm'),
@@ -72,7 +97,15 @@ kranewl_deps = [
 executable(
   'kranewl',
   kranewl_src + protocol_src,
-  include_directories: [kranewl_inc],
+  include_directories: [kranewl_inc, wlroots.get_variable('wlr_inc')],
+  dependencies: kranewl_deps,
+  install: true
+)
+
+executable(
+  'kranec',
+  kranec_src + protocol_src,
+  include_directories: [kranec_inc],
   dependencies: kranewl_deps,
   install: true
 )
